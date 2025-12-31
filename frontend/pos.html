@@ -39,9 +39,9 @@
 <div id="app">
   <h2>🧾 POS</h2>
 
-<div class="grand-total" v-if="items.length" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
   <button @click="startPOS">▶ Start POS</button>
-  <span>Grand Total: ₱{{ grandTotal }}</span>
+  <span class="grand-total" v-if="items.length" >Grand Total: ₱{{ grandTotal }}</span>
 </div>
 
   <video id="video"></video>
