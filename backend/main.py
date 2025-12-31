@@ -179,6 +179,25 @@ def pos_scan(
     }
 
 
+@app.get("/pos/report")
+def pos_report(db: Session = Depends(get_db)):
+    rows = db.query(Purchase).order_by(Purchase.date.desc()).all()
+
+    return [
+        {
+            "id": r.id,
+            "purchase_number": r.purchase_number,
+            "barcode": r.barcode,
+            "name": r.name,
+            "price": r.price,
+            "quantity": r.quantity,
+            "total_price": r.total_price,
+            "remark": r.remark,
+            "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for r in rows
+    ]
+
 @app.get("/pos/{purchase_number}")
 def get_pos_items(purchase_number: str, db: Session = Depends(get_db)):
     items = db.query(Purchase).filter_by(
@@ -210,22 +229,3 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
         db.add(p)
     db.commit()
     return {"status": "success", "message": f"{len(items)} items saved"}
-
-@app.get("/pos/report")
-def pos_report(db: Session = Depends(get_db)):
-    rows = db.query(Purchase).order_by(Purchase.date.desc()).all()
-
-    return [
-        {
-            "id": r.id,
-            "purchase_number": r.purchase_number,
-            "barcode": r.barcode,
-            "name": r.name,
-            "price": r.price,
-            "quantity": r.quantity,
-            "total_price": r.total_price,
-            "remark": r.remark,
-            "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
-        }
-        for r in rows
-    ]
