@@ -7,53 +7,34 @@
 
   <style>
     video { width: 100%; max-width: 400px; border:2px solid #333; }
-    table { width:100%; border-collapse: collapse; margin-top:15px; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
     th, td { border:1px solid #ccc; padding:6px; }
-    button { padding:12px 20px; font-size:16px; margin-top:10px; }
+    button { padding:14px 22px; font-size:16px; margin-bottom:10px; }
   </style>
 </head>
 <body>
 
-<a href="index.html">⬅️ Back to Dashboard</a>
-
 <div id="app">
-  <h2>🧾 POS</h2>
+  <h2>🧾 POS Test</h2>
 
-  <button @click="startPOS">▶ Start POS</button>
-  <p><b>Purchase #:</b> {{ purchase_number }}</p>
+  <button @click="startPOS">▶ Start Scanner</button>
+  <p>Status: {{ status }}</p>
 
   <video id="video"></video>
 
-  <!-- SCANNED PRODUCT PREVIEW -->
-  <div v-if="currentProduct">
-    <h3>🛒 Scanned Product</h3>
-    <p><b>Name:</b> {{ currentProduct.name }}</p>
-    <p><b>Price:</b> ₱{{ currentProduct.price }}</p>
-    <button @click="addToPOS">➕ Add to Cart</button>
-  </div>
-
-  <p style="color:red">{{ scanError }}</p>
-
-  <!-- CART -->
-  <h3>Cart</h3>
-  <table>
+  <h3>Scanned Items</h3>
+  <table v-if="items.length">
     <tr>
       <th>Barcode</th>
       <th>Name</th>
       <th>Price</th>
-      <th>Qty</th>
-      <th>Total</th>
     </tr>
-    <tr v-for="i in items" :key="i.id">
+    <tr v-for="i in items" :key="i.barcode">
       <td>{{ i.barcode }}</td>
       <td>{{ i.name }}</td>
       <td>₱{{ i.price }}</td>
-      <td>{{ i.quantity }}</td>
-      <td>₱{{ i.total_price }}</td>
     </tr>
   </table>
-
-  <h2>Grand Total: ₱{{ grand_total }}</h2>
 </div>
 
 <script>
@@ -62,59 +43,58 @@ const API = "https://inventory-python.onrender.com";
 Vue.createApp({
   data() {
     return {
-      purchase_number: "",
-      reader: null,
-      currentProduct: null,
-      scanError: "",
       items: [],
-      grand_total: 0
+      reader: null,
+      scanning: false,
+      lastScan: null,
+      status: "idle"
     }
   },
-
   methods: {
-    async startPOS() {
-      const res = await fetch(`${API}/pos/start`, { method: "POST" });
-      const data = await res.json();
-      this.purchase_number = data.purchase_number;
+    startPOS() {
+      this.status = "camera starting";
 
+      if (this.reader) this.reader.reset();
       this.reader = new ZXing.BrowserMultiFormatReader();
-      this.reader.decodeFromVideoDevice(null, "video", this.onScan);
-    },
 
-    async onScan(result) {
-      if (!result) return;
+      this.reader.decodeFromVideoDevice(null, "video", async (result, err) => {
+        if (result && !this.scanning) {
+          this.scanning = true;
+          const barcode = result.text;
 
-      try {
-        const res = await fetch(`${API}/product/${result.text}`);
-        if (!res.ok) throw new Error();
+          // prevent duplicate scans
+          if (barcode === this.lastScan) {
+            this.scanning = false;
+            return;
+          }
 
-        this.currentProduct = await res.json();
-        this.scanError = "";
-      } catch {
-        this.scanError = "❌ Product not found";
-        this.currentProduct = null;
-      }
-    },
+          this.lastScan = barcode;
+          this.status = `scanned: ${barcode}`;
 
-    async addToPOS() {
-      await fetch(`${API}/pos/add`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          purchase_number: this.purchase_number,
-          barcode: this.currentProduct.barcode
-        })
+          try {
+            // fetch product info only
+            const r = await fetch(`${API}/product/${barcode}`);
+            if (!r.ok) throw new Error("Product not found");
+            const data = await r.json();
+
+            this.items.push({
+              barcode: data.barcode,
+              name: data.name,
+              price: data.price
+            });
+
+            this.status = `Product found: ${data.name} - ₱${data.price}`;
+          } catch (e) {
+            this.status = "Product not found";
+            console.error(e);
+          }
+
+          setTimeout(() => {
+            this.scanning = false;
+            this.lastScan = null;
+          }, 800);
+        }
       });
-
-      this.currentProduct = null;
-      this.loadPOS();
-    },
-
-    async loadPOS() {
-      const res = await fetch(`${API}/pos/${this.purchase_number}`);
-      const data = await res.json();
-      this.items = data.items;
-      this.grand_total = data.grand_total;
     }
   }
 }).mount("#app");
