@@ -1,114 +1,126 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/vue@3"></script>
-  <script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
 
   <style>
-    #scanner {
+    video {
       width: 100%;
       max-width: 400px;
-      height: 300px;
       border: 2px solid #333;
-      margin-top: 10px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: #fff;
+      padding: 20px;
+      width: 300px;
+      border-radius: 6px;
+    }
+
+    input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 6px;
+    }
+
+    button {
+      margin-right: 5px;
     }
   </style>
 </head>
 <body>
 
 <div id="app">
-  <button @click="start">📷 Scan Barcode</button>
-  <button @click="saveProduct" :disabled="!barcode">💾 Save Product</button>
-  <button @click="loadProducts">📦 View Products</button>
-
+  <button @click="startScan">📷 Scan Barcode</button>
   <p>Status: {{ status }}</p>
-  <p>Barcode: {{ barcode }}</p>
 
-  <!-- CAMERA CONTAINER (REQUIRED) -->
-  <div id="scanner"></div>
+  <video id="video"></video>
 
-  <ul>
-    <li v-for="p in products" :key="p.id">
-      {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }}
-    </li>
-  </ul>
+  <!-- MODAL -->
+  <div v-if="showModal" class="modal">
+    <div class="modal-box">
+      <h3>New Product</h3>
+
+      <input v-model="form.barcode" readonly />
+      <input v-model="form.name" placeholder="Product name" />
+      <input v-model="form.price" type="number" placeholder="Price" />
+
+      <button @click="save">Save</button>
+      <button @click="cancel">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <script>
-const API = "https://inventory-python.onrender.com"; // BACKEND URL
+const API = "https://inventory-python.onrender.com";
 
 Vue.createApp({
   data() {
     return {
-      barcode: "",
       status: "idle",
-      products: []
+      showModal: false,
+      reader: null,
+      form: {
+        barcode: "",
+        name: "",
+        price: ""
+      }
     }
   },
   methods: {
-    start() {
+    startScan() {
       this.status = "starting camera";
+      this.reader = new ZXing.BrowserMultiFormatReader();
 
-      Quagga.init({
-        inputStream: {
-          type: "LiveStream",
-          target: document.querySelector("#scanner"),
-          constraints: {
-            width: 640,
-            height: 480,
-            facingMode: "environment"
+      this.reader.decodeFromVideoDevice(
+        null,
+        "video",
+        (result, err) => {
+          if (result) {
+            this.form.barcode = result.text;
+            this.showModal = true;
+            this.status = "barcode detected";
+            this.reader.reset();
           }
-        },
-        decoder: {
-          readers: [
-            "ean_reader",
-            "ean_8_reader",
-            "code_128_reader",
-            "upc_reader"
-          ]
-        },
-        locate: true
-      }, err => {
-        if (err) {
-          console.error(err);
-          this.status = "camera error";
-          return;
         }
-        this.status = "camera running";
-        Quagga.start();
-      });
-
-      Quagga.onDetected(res => {
-        this.barcode = res.codeResult.code;
-        this.status = "barcode detected";
-        Quagga.stop();
-      });
+      );
     },
 
-    saveProduct() {
+    save() {
       fetch(`${API}/product`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          barcode: this.barcode,
-          name: "Sample Product",
-          price: 100
+          barcode: this.form.barcode,
+          name: this.form.name,
+          price: Number(this.form.price)
         })
       })
-      .then(r => r.json())
       .then(() => {
-        alert("Saved to DB");
-        this.loadProducts();
+        alert("Saved");
+        this.resetForm();
       });
     },
 
-    loadProducts() {
-      fetch(`${API}/product/${this.barcode}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data) this.products = [data];
-        });
+    cancel() {
+      this.resetForm();
+    },
+
+    resetForm() {
+      this.showModal = false;
+      this.form = { barcode: "", name: "", price: "" };
+      this.status = "idle";
     }
   }
 }).mount("#app");
