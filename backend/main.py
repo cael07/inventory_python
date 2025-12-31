@@ -71,8 +71,11 @@ def update_product_item(
     data: ProductMonitoringCreate,
     db: Session = Depends(get_db)
 ):
+    # Fetch product
     product = db.query(Product).filter_by(barcode=barcode).first()
+
     if not product:
+        # Create new product
         product = Product(
             barcode=data.barcode,
             name=data.name,
@@ -81,20 +84,25 @@ def update_product_item(
         )
         db.add(product)
     else:
+        # Update quantity
         product.quantity += data.quantity
-    db.commit()
 
+    # Add monitoring entry
     monitoring = ProductMonitoring(
         barcode=data.barcode,
         name=data.name,
         price=data.price,
         quantity=data.quantity,
-        total_price=data.price * data.quantity,
+        total_price=data.total_price,  # comes from frontend or calculate here
         remark=data.remark
     )
     db.add(monitoring)
+
+    # Commit everything at once
     db.commit()
+
     return {"message": "Product updated and monitored"}
+
 
 @app.get("/monitoring")
 def get_monitoring(db: Session = Depends(get_db)):
