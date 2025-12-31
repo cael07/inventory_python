@@ -49,37 +49,12 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return {"status": "user created"}
 
 # ---------------- PRODUCTS ----------------
-# ---------------- PRODUCTS ----------------
 @app.post("/product")
 def save_product(p: ProductCreate, db: Session = Depends(get_db)):
-    # 1️⃣ Save product (current stock)
-    product = Product(
-        barcode=p.barcode,
-        name=p.name,
-        price=p.price,
-        quantity=p.quantity
-    )
+    product = Product(**p.dict())
     db.add(product)
     db.commit()
-    db.refresh(product)
-
-    # 2️⃣ Save monitoring record (movement log)
-    monitoring = ProductMonitoring(
-        barcode=p.barcode,
-        name=p.name,
-        price=p.price,
-        quantity=p.quantity,
-        total_price=p.price * p.quantity,
-        remark="Initial stock"
-    )
-    db.add(monitoring)
-    db.commit()
-
-    return {
-        "status": "saved",
-        "product_quantity": product.quantity
-    }
-
+    return {"status": "saved"}
 
 @app.get("/product/{barcode}")
 def get_product(barcode: str, db: Session = Depends(get_db)):
