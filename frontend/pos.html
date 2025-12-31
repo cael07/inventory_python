@@ -18,12 +18,15 @@
   <h2>🧾 POS</h2>
 
   <button @click="startPOS">▶ Start POS</button>
-  <p><b>Purchase #:</b> {{ purchase_number }}</p>
-  <p>Status: {{ status }}</p>
 
   <video id="video"></video>
 
   <h3>Scanned Items</h3>
+  <p><b>Purchase #:</b> {{ purchase_number }}</p>
+  <p>Status: {{ status }}</p>
+  <div class="grand-total" v-if="items.length">
+    Grand Total: ₱{{ grandTotal }}
+  </div>
   <table v-if="items.length">
     <tr>
       <th>#</th>
@@ -44,14 +47,13 @@
       <td><button @click="removeItem(index)">❌</button></td>
     </tr>
   </table>
-
-  <div class="grand-total" v-if="items.length">
-    Grand Total: ₱{{ grandTotal }}
-  </div>
 </div>
 
 <script>
 const API = "https://inventory-python.onrender.com";
+
+// simple beep audio using base64-encoded sound
+const beepSound = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
 
 Vue.createApp({
   data() {
@@ -82,7 +84,6 @@ Vue.createApp({
           this.scanning = true;
           const barcode = result.text;
 
-          // prevent instant duplicate scan
           if (barcode === this.lastScan) {
             this.scanning = false;
             return;
@@ -94,10 +95,8 @@ Vue.createApp({
             if (!res.ok) throw new Error("Product not found");
             const product = await res.json();
 
-            // add to items list
             const existingIndex = this.items.findIndex(x => x.barcode === product.barcode);
             if (existingIndex >= 0) {
-              // increment quantity if already scanned
               this.items[existingIndex].quantity += 1;
               this.items[existingIndex].total_price = this.items[existingIndex].quantity * product.price;
             } else {
@@ -110,6 +109,10 @@ Vue.createApp({
               });
             }
 
+            // play beep on successful scan
+            beepSound.currentTime = 0;
+            beepSound.play();
+
             this.calculateTotal();
             this.status = `Scanned: ${barcode}`;
           } catch (e) {
@@ -117,7 +120,6 @@ Vue.createApp({
             console.error(e);
           }
 
-          // allow next scan after short delay
           setTimeout(() => {
             this.scanning = false;
             this.lastScan = null;
