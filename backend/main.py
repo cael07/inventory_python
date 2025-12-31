@@ -211,3 +211,7 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": f"{len(items)} items saved"}
 
+@app.get("/pos/report")
+def pos_report(db: Session = Depends(get_db)):
+    rows = db.query(Purchase).order_by(Purchase.created_at.desc()).all()
+    return rows

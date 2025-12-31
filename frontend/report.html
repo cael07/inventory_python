@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>POS Sales Report</title>
+  <script src="https://unpkg.com/vue@3"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; padding:10px; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+    th { background:#f4f4f4; }
+    h2 { margin-bottom:5px; }
+    .total { font-weight:bold; font-size:16px; margin-top:10px; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <h2>📊 POS Sales Report</h2>
+
+  <button @click="loadReport">🔄 Refresh</button>
+
+  <table v-if="rows.length">
+    <tr>
+      <th>#</th>
+      <th>Purchase #</th>
+      <th>Product</th>
+      <th>Price</th>
+      <th>Qty</th>
+      <th>Total</th>
+      <th>Date</th>
+    </tr>
+
+    <tr v-for="(r, i) in rows" :key="i">
+      <td>{{ i + 1 }}</td>
+      <td>{{ r.purchase_number }}</td>
+      <td>{{ r.name }}</td>
+      <td>₱{{ r.price }}</td>
+      <td>{{ r.quantity }}</td>
+      <td>₱{{ r.total_price }}</td>
+      <td>{{ r.created_at }}</td>
+    </tr>
+  </table>
+
+  <p v-if="!rows.length">No records found.</p>
+
+  <div class="total" v-if="rows.length">
+    Grand Sales Total: ₱{{ grandTotal }}
+  </div>
+</div>
+
+<script>
+const API = "https://inventory-python.onrender.com";
+
+Vue.createApp({
+  data() {
+    return {
+      rows: [],
+      grandTotal: 0
+    }
+  },
+  methods: {
+    async loadReport() {
+      try {
+        const r = await fetch(`${API}/pos/report`);
+        const d = await r.json();
+        this.rows = d;
+        this.grandTotal = d.reduce((sum, x) => sum + x.total_price, 0);
+      } catch (e) {
+        alert("Failed to load report");
+        console.error(e);
+      }
+    }
+  },
+  mounted() {
+    this.loadReport();
+  }
+}).mount("#app");
+</script>
+
+</body>
+</html>
