@@ -12,7 +12,6 @@
     input { width: 100%; margin-bottom: 10px; padding: 6px; }
     button { margin-right: 5px; }
     ul { margin-top: 20px; }
-    pre { background: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
   </style>
 </head>
 <body>
@@ -67,10 +66,6 @@
       {{ m.date }} — {{ m.barcode }} — {{ m.name }} — ₱{{ m.price }} x {{ m.quantity }} = ₱{{ m.total_price }} — {{ m.remark }}
     </li>
   </ul>
-
-  <!-- DEBUG PAYLOAD -->
-  <h3>Debug Payload</h3>
-  <pre>{{ debugPayload }}</pre>
 </div>
 
 <script>
@@ -87,8 +82,7 @@ Vue.createApp({
       form: { barcode: "", name: "", price: "", quantity: 0 },
       updateForm: { barcode: "", name: "", price: 0, quantity: 0, remark: "" },
       products: [],
-      monitoring: [],
-      debugPayload: ""
+      monitoring: []
     }
   },
   methods: {
@@ -137,48 +131,41 @@ Vue.createApp({
     },
 
     save() {
-      const payload = {
-        barcode: this.form.barcode,
-        name: this.form.name,
-        price: Number(this.form.price),
-        quantity: Number(this.form.quantity),
-        remark: this.existing ? "Update" : "New",
-        total_price: Number(this.form.price) * Number(this.form.quantity)
-      };
+  const payload = {
+    barcode: this.form.barcode,
+    name: this.form.name,
+    price: Number(this.form.price),
+    quantity: Number(this.form.quantity),
+    remark: this.existing ? "Update" : "New",
+    total_price: Number(this.form.price) * Number(this.form.quantity)
+  };
 
-      // Debug JSON display
-      this.debugPayload = JSON.stringify(payload, null, 2);
-
-      fetch(`${API}/update_product/${this.form.barcode}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-      .then(() => {
-        alert(this.existing ? "Updated & Monitored" : "Saved & Monitored");
-        this.resetForm();
-        this.loadProducts();
-        this.loadMonitoring();
-      });
-    },
+  fetch(`${API}/update_product/${this.form.barcode}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    alert(this.existing ? "Updated & Monitored" : "Saved & Monitored");
+    this.resetForm();
+    this.loadProducts();     // refresh product list
+    this.loadMonitoring();   // refresh monitoring list
+  });
+}
+,
 
     updateProduct() {
-      const payload = {
-        barcode: this.updateForm.barcode,
-        name: this.updateForm.name,
-        price: Number(this.updateForm.price),
-        quantity: Number(this.updateForm.quantity),
-        remark: this.updateForm.remark,
-        total_price: Number(this.updateForm.price) * Number(this.updateForm.quantity)
-      };
-
-      // Debug JSON display
-      this.debugPayload = JSON.stringify(payload, null, 2);
-
       fetch(`${API}/update_product/${this.updateForm.barcode}`, {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          barcode: this.updateForm.barcode,
+          name: this.updateForm.name,
+          price: Number(this.updateForm.price),
+          quantity: Number(this.updateForm.quantity),
+          remark: this.updateForm.remark,
+          total_price: Number(this.updateForm.price) * Number(this.updateForm.quantity)
+        })
       }).then(() => {
         alert("Product updated and monitored");
         this.cancelUpdate();
