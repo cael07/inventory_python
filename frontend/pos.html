@@ -10,6 +10,28 @@
     th, td { border:1px solid #ccc; padding:6px; text-align:center; }
     button { padding:8px 12px; font-size:14px; }
     .grand-total { font-size:18px; font-weight:bold; margin-top:10px; }
+
+    /* scan modal animation */
+    .scan-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 255, 0, 0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 48px;
+      font-weight: bold;
+      color: white;
+      animation: fadeSlide 0.8s forwards;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    @keyframes fadeSlide {
+      0% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
@@ -24,9 +46,11 @@
   <h3>Scanned Items</h3>
   <p><b>Purchase #:</b> {{ purchase_number }}</p>
   <p>Status: {{ status }}</p>
+
   <div class="grand-total" v-if="items.length">
     Grand Total: ₱{{ grandTotal }}
   </div>
+
   <table v-if="items.length">
     <tr>
       <th>#</th>
@@ -47,6 +71,11 @@
       <td><button @click="removeItem(index)">❌</button></td>
     </tr>
   </table>
+
+  <!-- Animated scan modal -->
+  <div v-if="showScanModal" class="scan-modal">
+    ✅ Scanned!
+  </div>
 </div>
 
 <script>
@@ -64,7 +93,8 @@ Vue.createApp({
       reader: null,
       scanning: false,
       lastScan: null,
-      status: "idle"
+      status: "idle",
+      showScanModal: false
     }
   },
   methods: {
@@ -112,6 +142,10 @@ Vue.createApp({
             // play beep on successful scan
             beepSound.currentTime = 0;
             beepSound.play();
+
+            // show animated scan modal
+            this.showScanModal = true;
+            setTimeout(() => this.showScanModal = false, 800);
 
             this.calculateTotal();
             this.status = `Scanned: ${barcode}`;
