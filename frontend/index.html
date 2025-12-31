@@ -100,26 +100,34 @@ Vue.createApp({
           this.status = "barcode detected";
 
           // Fetch product by barcode
-          fetch(`${API}/product/${result.text}`)
-            .then(r => r.json())
-            .then(data => {
-              if (data && data.id) {
-                this.existing = true;
-                this.form.name = data.name;
-                this.form.price = data.price;
-              } else {
-                this.existing = false;
-                this.form.name = "";
-                this.form.price = "";
-              }
-              this.showModal = true;
-            })
-            .catch(() => {
-              this.existing = false;
-              this.form.name = "";
-              this.form.price = "";
-              this.showModal = true;
-            });
+          // Fetch product by barcode
+fetch(`${API}/product/${result.text}`)
+  .then(r => r.json())
+  .then(data => {
+    if (data && data.barcode) {
+      // Product exists
+      this.existing = true;
+      this.form.name = data.name;
+      this.form.price = data.price;
+      this.form.quantity = data.quantity;  // ← add this line
+    } else {
+      // New product
+      this.existing = false;
+      this.form.name = "";
+      this.form.price = "";
+      this.form.quantity = 0;  // ← initialize
+    }
+    this.showModal = true;
+  })
+  .catch(() => {
+    // Assume new product if error
+    this.existing = false;
+    this.form.name = "";
+    this.form.price = "";
+    this.form.quantity = 0;  // ← initialize
+    this.showModal = true;
+  });
+
         }
       });
     },
