@@ -61,3 +61,13 @@ def get_products(db: Session = Depends(get_db)):
     Return all products in the database, newest first
     """
     return db.query(models.Product).order_by(models.Product.id.desc()).all()
+
+@app.put("/product/{barcode}")
+def update_product(barcode: str, p: schemas.ProductCreate, db: Session = Depends(get_db)):
+    product = db.query(models.Product).filter_by(barcode=barcode).first()
+    if not product:
+        return {"error": "Product not found"}
+    product.name = p.name
+    product.price = p.price
+    db.commit()
+    return {"status": "updated"}
