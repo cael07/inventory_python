@@ -8,3 +8,4 @@ class ProductCreate(BaseModel):
     barcode: str
     name: str
     price: float
+    quantity: int

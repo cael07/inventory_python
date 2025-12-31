@@ -55,9 +55,11 @@
   <div class="modal-box">
     <h3>Product {{ existing ? 'Found (Editable)' : 'New' }}</h3>
 
-    <input v-model="form.barcode" readonly />
-    <input v-model="form.name" placeholder="Product name" />
-    <input v-model="form.price" type="number" placeholder="Price" />
+<input v-model="form.barcode" readonly />
+<input v-model="form.name" placeholder="Product name" />
+<input v-model="form.price" type="number" placeholder="Price" />
+<input v-model="form.quantity" type="number" placeholder="Quantity" />
+
 
     <button @click="save">Save</button>
     <button @click="cancel">Close</button>
@@ -65,11 +67,11 @@
 </div>
 
   <!-- Product list -->
-  <ul>
-    <li v-for="p in products" :key="p.id">
-      {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }}
-    </li>
-  </ul>
+<ul>
+  <li v-for="p in products" :key="p.id">
+    {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }} — Qty: {{ p.quantity }}
+  </li>
+</ul>
 </div>
 
 <script>
@@ -135,7 +137,8 @@ Vue.createApp({
     body: JSON.stringify({
       barcode: this.form.barcode,
       name: this.form.name,
-      price: Number(this.form.price)
+      price: Number(this.form.price),
+      quantity: Number(this.form.quantity)
     })
   })
   .then(() => {

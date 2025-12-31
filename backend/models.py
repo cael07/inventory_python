@@ -13,3 +13,4 @@ class Product(Base):
     barcode = Column(String, unique=True)
     name = Column(String)
     price = Column(Float)
+    quantity = Column(Integer, default=0)  # NEW

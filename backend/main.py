@@ -6,6 +6,9 @@ from backend.database import SessionLocal, engine
 from backend import models, schemas, auth
 
 models.Base.metadata.create_all(bind=engine)
+# WARNING: This will delete all existing products!
+models.Product.__table__.drop(bind=engine, checkfirst=True)  # drop table if exists
+models.Base.metadata.create_all(bind=engine)                # recreate table with new schema
 
 app = FastAPI(
     title="Inventory API",
@@ -69,5 +72,6 @@ def update_product(barcode: str, p: schemas.ProductCreate, db: Session = Depends
         return {"error": "Product not found"}
     product.name = p.name
     product.price = p.price
+    product.quantity = p.quantity
     db.commit()
     return {"status": "updated"}
