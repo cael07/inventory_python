@@ -7,7 +7,17 @@ from backend import models, schemas, auth
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(
+    title="Inventory API",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
+
+@app.get("/")
+def root():
+    return {"status": "API running"}
+
 
 app.add_middleware(
     CORSMiddleware,
