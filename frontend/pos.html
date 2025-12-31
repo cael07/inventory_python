@@ -8,7 +8,7 @@
     video { width: 100%; max-width: 400px; border:2px solid #333; margin-bottom:10px; }
     table { width:100%; border-collapse: collapse; margin-top:10px; }
     th, td { border:1px solid #ccc; padding:6px; text-align:center; }
-    button { padding:8px 12px; font-size:14px; }
+    button { padding:8px 12px; font-size:14px; margin:2px; }
     .grand-total { font-size:18px; font-weight:bold; margin-top:10px; }
 
     /* scan modal animation */
@@ -39,10 +39,10 @@
 <div id="app">
   <h2>🧾 POS</h2>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-  <button @click="startPOS">▶ Start POS</button>
-  <span class="grand-total" v-if="items.length" >Grand Total: ₱{{ grandTotal }}</span>
-</div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <button @click="startPOS">▶ Start POS</button>
+    <span class="grand-total" v-if="items.length">Grand Total: ₱{{ grandTotal }}</span>
+  </div>
 
   <video id="video"></video>
 
@@ -50,14 +50,10 @@
   <p><b>Purchase #:</b> {{ purchase_number }}</p>
   <p>Status: {{ status }}</p>
 
-  <div class="grand-total" v-if="items.length">
-    Grand Total: ₱{{ grandTotal }}
-  </div>
-
   <table v-if="items.length">
     <tr>
       <th>#</th>
-      <th>Barcode</th>
+      <!-- <th>Barcode</th> hidden -->
       <th>Name</th>
       <th>Price</th>
       <th>Qty</th>
@@ -66,12 +62,15 @@
     </tr>
     <tr v-for="(i, index) in items" :key="i.barcode">
       <td>{{ index + 1 }}</td>
-      <td>{{ i.barcode }}</td>
+      <!-- <td>{{ i.barcode }}</td> hidden -->
       <td>{{ i.name }}</td>
       <td>₱{{ i.price }}</td>
       <td>{{ i.quantity }}</td>
       <td>₱{{ i.total_price }}</td>
-      <td><button @click="removeItem(index)">❌</button></td>
+      <td>
+        <button @click="decreaseQty(index)">➖</button>
+        <button @click="removeItem(index)">❌</button>
+      </td>
     </tr>
   </table>
 
@@ -173,6 +172,14 @@ Vue.createApp({
     removeItem(index) {
       this.items.splice(index, 1);
       this.calculateTotal();
+    },
+
+    decreaseQty(index) {
+      if (this.items[index].quantity > 1) {
+        this.items[index].quantity -= 1;
+        this.items[index].total_price = this.items[index].quantity * this.items[index].price;
+        this.calculateTotal();
+      }
     }
   }
 }).mount("#app");
