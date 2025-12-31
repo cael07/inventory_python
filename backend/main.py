@@ -7,6 +7,8 @@ from backend.models import User, Product, ProductMonitoring, Purchase
 from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate
 from backend import auth
 
+import uuid
+
 # Create tables (safe: won't drop existing data)
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
@@ -132,13 +134,61 @@ def update_product_item(
 def get_monitoring(db: Session = Depends(get_db)):
     return db.query(ProductMonitoring).order_by(ProductMonitoring.date.desc()).all()
 
-@app.post("/purchase")
-def add_purchase(p: PurchaseCreate, db: Session = Depends(get_db)):
-    purchase = Purchase(**p.dict())
+@app.post("/pos/start")
+def start_pos():
+    purchase_number = uuid.uuid4().hex[:10].upper()
+    return {"purchase_number": purchase_number}
+
+@app.post("/pos/scan")
+def pos_scan(
+    purchase_number: str,
+    barcode: str,
+    db: Session = Depends(get_db)
+):
+    product = db.query(Product).filter_by(barcode=barcode).first()
+    if not product:
+        raise HTTPException(404, "Product not found")
+
+    if product.quantity <= 0:
+        raise HTTPException(400, "Out of stock")
+
+    qty = 1
+    total = product.price * qty
+
+    # deduct stock
+    product.quantity -= qty
+
+    purchase = Purchase(
+        purchase_number=purchase_number,
+        barcode=product.barcode,
+        name=product.name,
+        price=product.price,
+        quantity=qty,
+        total_price=total
+    )
+
     db.add(purchase)
     db.commit()
-    return {"status": "Purchase saved"}
 
-@app.get("/purchases")
-def get_purchases(db: Session = Depends(get_db)):
-    return db.query(Purchase).order_by(Purchase.date.desc()).all()
+    return {
+        "barcode": product.barcode,
+        "name": product.name,
+        "price": product.price,
+        "quantity": qty,
+        "total_price": total
+    }
+
+
+@app.get("/pos/{purchase_number}")
+def get_pos_items(purchase_number: str, db: Session = Depends(get_db)):
+    items = db.query(Purchase).filter_by(
+        purchase_number=purchase_number
+    ).all()
+
+    total = sum(i.total_price for i in items)
+
+    return {
+        "items": items,
+        "grand_total": total
+    }
+

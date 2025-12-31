@@ -3,55 +3,39 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/vue@3"></script>
-
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
-    input { width: 100%; margin-bottom: 10px; padding: 6px; }
-    button { padding: 10px 20px; margin-right: 5px; font-size: 16px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    video { width: 100%; max-width: 400px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border:1px solid #ccc; padding:6px; }
+    button { padding:12px; font-size:16px; }
   </style>
 </head>
 <body>
+
 <div id="app">
-  <h2>POS</h2>
+  <h2>🧾 POS</h2>
 
-  <div>
-    <input v-model="form.purchase_number" placeholder="Purchase Number" />
-    <input v-model="form.barcode" placeholder="Barcode" />
-    <input v-model="form.name" placeholder="Product Name" />
-    <input v-model="form.price" type="number" placeholder="Price" />
-    <input v-model="form.quantity" type="number" placeholder="Quantity" />
-    <input v-model="form.remark" placeholder="Remark" />
-    <button @click="savePurchase">Add Purchase</button>
-  </div>
+  <button @click="startPOS">▶ Start POS</button>
+  <p><b>Purchase #:</b> {{ purchase_number }}</p>
 
-  <h3>Purchase Log</h3>
+  <video id="video"></video>
+
+  <h3>Scanned Items</h3>
   <table>
-    <thead>
-      <tr>
-        <th>Purchase #</th>
-        <th>Barcode</th>
-        <th>Name</th>
-        <th>Price</th>
-        <th>Quantity</th>
-        <th>Total Price</th>
-        <th>Remark</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="p in purchases" :key="p.id">
-        <td>{{ p.purchase_number }}</td>
-        <td>{{ p.barcode }}</td>
-        <td>{{ p.name }}</td>
-        <td>₱{{ p.price }}</td>
-        <td>{{ p.quantity }}</td>
-        <td>₱{{ p.total_price }}</td>
-        <td>{{ p.remark }}</td>
-        <td>{{ p.date }}</td>
-      </tr>
-    </tbody>
+    <tr>
+      <th>Barcode</th><th>Name</th><th>Price</th><th>Qty</th><th>Total</th>
+    </tr>
+    <tr v-for="i in items">
+      <td>{{ i.barcode }}</td>
+      <td>{{ i.name }}</td>
+      <td>₱{{ i.price }}</td>
+      <td>{{ i.quantity }}</td>
+      <td>₱{{ i.total_price }}</td>
+    </tr>
   </table>
+
+  <h2>Grand Total: ₱{{ grand_total }}</h2>
 </div>
 
 <script>
@@ -60,56 +44,38 @@ const API = "https://inventory-python.onrender.com";
 Vue.createApp({
   data() {
     return {
-      form: {
-        purchase_number: "",
-        barcode: "",
-        name: "",
-        price: 0,
-        quantity: 0,
-        remark: ""
-      },
-      purchases: []
+      purchase_number: "",
+      items: [],
+      grand_total: 0,
+      reader: null
     }
   },
   methods: {
-    async savePurchase() {
-      this.form.total_price = this.form.price * this.form.quantity;
-      const res = await fetch(`${API}/purchase`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(this.form)
+    async startPOS() {
+      const r = await fetch(`${API}/pos/start`, { method:"POST" });
+      const d = await r.json();
+      this.purchase_number = d.purchase_number;
+
+      this.reader = new ZXing.BrowserMultiFormatReader();
+      this.reader.decodeFromVideoDevice(null, "video", async (result) => {
+        if (result) {
+          await fetch(`${API}/pos/scan?purchase_number=${this.purchase_number}&barcode=${result.text}`, {
+            method: "POST"
+          });
+          this.loadPOS();
+        }
       });
-
-      if (!res.ok) {
-        alert("Failed to save purchase");
-        return;
-      }
-
-      alert("Purchase added");
-      this.resetForm();
-      this.loadPurchases();
     },
 
-    resetForm() {
-      this.form = {
-        purchase_number: "",
-        barcode: "",
-        name: "",
-        price: 0,
-        quantity: 0,
-        remark: ""
-      };
-    },
-
-    async loadPurchases() {
-      const res = await fetch(`${API}/purchases`);
-      this.purchases = await res.json();
+    async loadPOS() {
+      const r = await fetch(`${API}/pos/${this.purchase_number}`);
+      const d = await r.json();
+      this.items = d.items;
+      this.grand_total = d.grand_total;
     }
-  },
-  mounted() {
-    this.loadPurchases();
   }
 }).mount("#app");
 </script>
+
 </body>
 </html>
