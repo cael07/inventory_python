@@ -7,24 +7,36 @@
 
   <style>
     video { width: 100%; max-width: 400px; border:2px solid #333; }
-    table { width:100%; border-collapse: collapse; margin-top:10px; }
+    table { width:100%; border-collapse: collapse; margin-top:15px; }
     th, td { border:1px solid #ccc; padding:6px; }
-    button { padding:14px 22px; font-size:16px; margin-bottom:10px; }
+    button { padding:12px 20px; font-size:16px; margin-top:10px; }
   </style>
 </head>
 <body>
+
+<a href="index.html">⬅️ Back to Dashboard</a>
 
 <div id="app">
   <h2>🧾 POS</h2>
 
   <button @click="startPOS">▶ Start POS</button>
   <p><b>Purchase #:</b> {{ purchase_number }}</p>
-  <p>Status: {{ status }}</p>
 
   <video id="video"></video>
 
-  <h3>Scanned Items</h3>
-  <table v-if="items.length">
+  <!-- SCANNED PRODUCT PREVIEW -->
+  <div v-if="currentProduct">
+    <h3>🛒 Scanned Product</h3>
+    <p><b>Name:</b> {{ currentProduct.name }}</p>
+    <p><b>Price:</b> ₱{{ currentProduct.price }}</p>
+    <button @click="addToPOS">➕ Add to Cart</button>
+  </div>
+
+  <p style="color:red">{{ scanError }}</p>
+
+  <!-- CART -->
+  <h3>Cart</h3>
+  <table>
     <tr>
       <th>Barcode</th>
       <th>Name</th>
@@ -32,7 +44,7 @@
       <th>Qty</th>
       <th>Total</th>
     </tr>
-    <tr v-for="i in items" :key="i.barcode">
+    <tr v-for="i in items" :key="i.id">
       <td>{{ i.barcode }}</td>
       <td>{{ i.name }}</td>
       <td>₱{{ i.price }}</td>
@@ -41,7 +53,7 @@
     </tr>
   </table>
 
-  <h2 v-if="items.length">Grand Total: ₱{{ grand_total }}</h2>
+  <h2>Grand Total: ₱{{ grand_total }}</h2>
 </div>
 
 <script>
@@ -51,66 +63,58 @@ Vue.createApp({
   data() {
     return {
       purchase_number: "",
-      items: [],
-      grand_total: 0,
       reader: null,
-      scanning: false,
-      lastScan: null,
-      status: "idle"
+      currentProduct: null,
+      scanError: "",
+      items: [],
+      grand_total: 0
     }
   },
+
   methods: {
     async startPOS() {
-      // create purchase
-      const r = await fetch(`${API}/pos/start`, { method:"POST" });
-      const d = await r.json();
-      this.purchase_number = d.purchase_number;
+      const res = await fetch(`${API}/pos/start`, { method: "POST" });
+      const data = await res.json();
+      this.purchase_number = data.purchase_number;
 
-      this.status = "camera starting";
-
-      if (this.reader) this.reader.reset();
       this.reader = new ZXing.BrowserMultiFormatReader();
+      this.reader.decodeFromVideoDevice(null, "video", this.onScan);
+    },
 
-      this.reader.decodeFromVideoDevice(null, "video", async (result, err) => {
-        if (result && !this.scanning) {
-          this.scanning = true;
-          const barcode = result.text;
+    async onScan(result) {
+      if (!result) return;
 
-          // prevent instant duplicate scans
-          if (barcode === this.lastScan) {
-            this.scanning = false;
-            return;
-          }
+      try {
+        const res = await fetch(`${API}/product/${result.text}`);
+        if (!res.ok) throw new Error();
 
-          this.lastScan = barcode;
-          this.status = `scanned: ${barcode}`;
+        this.currentProduct = await res.json();
+        this.scanError = "";
+      } catch {
+        this.scanError = "❌ Product not found";
+        this.currentProduct = null;
+      }
+    },
 
-          try {
-            await fetch(
-              `${API}/pos/scan?purchase_number=${this.purchase_number}&barcode=${barcode}`,
-              { method:"POST" }
-            );
-
-            await this.loadPOS();
-          } catch (e) {
-            alert("Scan failed");
-          }
-
-          // allow next scan after delay
-          setTimeout(() => {
-            this.scanning = false;
-            this.lastScan = null;
-            this.status = "ready for next scan";
-          }, 800);
-        }
+    async addToPOS() {
+      await fetch(`${API}/pos/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          purchase_number: this.purchase_number,
+          barcode: this.currentProduct.barcode
+        })
       });
+
+      this.currentProduct = null;
+      this.loadPOS();
     },
 
     async loadPOS() {
-      const r = await fetch(`${API}/pos/${this.purchase_number}`);
-      const d = await r.json();
-      this.items = d.items;
-      this.grand_total = d.grand_total;
+      const res = await fetch(`${API}/pos/${this.purchase_number}`);
+      const data = await res.json();
+      this.items = data.items;
+      this.grand_total = data.grand_total;
     }
   }
 }).mount("#app");
