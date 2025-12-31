@@ -1,47 +1,114 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://unpkg.com/vue@3"></script>
   <script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
+
+  <style>
+    #scanner {
+      width: 100%;
+      max-width: 400px;
+      height: 300px;
+      border: 2px solid #333;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
 
 <div id="app">
-  <button @click="start">Scan</button>
+  <button @click="start">📷 Scan Barcode</button>
+  <button @click="saveProduct" :disabled="!barcode">💾 Save Product</button>
+  <button @click="loadProducts">📦 View Products</button>
+
   <p>Status: {{ status }}</p>
   <p>Barcode: {{ barcode }}</p>
+
+  <!-- CAMERA CONTAINER (REQUIRED) -->
+  <div id="scanner"></div>
+
+  <ul>
+    <li v-for="p in products" :key="p.id">
+      {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }}
+    </li>
+  </ul>
 </div>
 
 <script>
-const API = "https://YOUR-BACKEND.onrender.com";
+const API = "https://inventory-python.onrender.com"; // BACKEND URL
 
 Vue.createApp({
   data() {
-    return { barcode: "", status: "idle" }
+    return {
+      barcode: "",
+      status: "idle",
+      products: []
+    }
   },
   methods: {
     start() {
       this.status = "starting camera";
+
       Quagga.init({
         inputStream: {
           type: "LiveStream",
-          constraints: { facingMode: "environment" }
+          target: document.querySelector("#scanner"),
+          constraints: {
+            width: 640,
+            height: 480,
+            facingMode: "environment"
+          }
         },
-        decoder: { readers: ["ean_reader","code_128_reader"] }
+        decoder: {
+          readers: [
+            "ean_reader",
+            "ean_8_reader",
+            "code_128_reader",
+            "upc_reader"
+          ]
+        },
+        locate: true
       }, err => {
-        if (err) return console.error(err);
+        if (err) {
+          console.error(err);
+          this.status = "camera error";
+          return;
+        }
+        this.status = "camera running";
         Quagga.start();
       });
 
       Quagga.onDetected(res => {
         this.barcode = res.codeResult.code;
-        this.status = "detected";
+        this.status = "barcode detected";
         Quagga.stop();
-
-        fetch(`${API}/product/${this.barcode}`)
-          .then(r => r.json())
-          .then(console.log);
       });
+    },
+
+    saveProduct() {
+      fetch(`${API}/product`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          barcode: this.barcode,
+          name: "Sample Product",
+          price: 100
+        })
+      })
+      .then(r => r.json())
+      .then(() => {
+        alert("Saved to DB");
+        this.loadProducts();
+      });
+    },
+
+    loadProducts() {
+      fetch(`${API}/product/${this.barcode}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data) this.products = [data];
+        });
     }
   }
 }).mount("#app");
