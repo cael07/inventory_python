@@ -1,53 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://unpkg.com/vue@3"></script>
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
-
-  <style>
-    video {
-      width: 100%;
-      max-width: 400px;
-      border: 2px solid #333;
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-box {
-      background: #fff;
-      padding: 20px;
-      width: 300px;
-      border-radius: 6px;
-    }
-
-    input {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 6px;
-    }
-
-    button {
-      margin-right: 5px;
-    }
-  </style>
-</head>
-<body>
-
 <div id="app">
-  <button @click="startScan">📷 Scan Barcode</button>
+  <button @click="startScan('add')">📷 Scan to Add</button>
+  <button @click="startScan('search')">🔍 Scan to Search</button>
+  <button @click="loadProducts">📦 Show All Products</button>
+
   <p>Status: {{ status }}</p>
 
   <video id="video"></video>
 
-  <!-- MODAL -->
+  <!-- Modal for adding new product -->
   <div v-if="showModal" class="modal">
     <div class="modal-box">
       <h3>New Product</h3>
@@ -60,6 +20,13 @@
       <button @click="cancel">Cancel</button>
     </div>
   </div>
+
+  <!-- List of products (for search / show all) -->
+  <ul>
+    <li v-for="p in products" :key="p.id">
+      {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }}
+    </li>
+  </ul>
 </div>
 
 <script>
@@ -71,30 +38,45 @@ Vue.createApp({
       status: "idle",
       showModal: false,
       reader: null,
-      form: {
-        barcode: "",
-        name: "",
-        price: ""
-      }
+      products: [],
+      scanMode: null, // 'add' or 'search'
+      form: { barcode: "", name: "", price: "" }
     }
   },
   methods: {
-    startScan() {
+    startScan(mode) {
+      this.scanMode = mode;
       this.status = "starting camera";
-      this.reader = new ZXing.BrowserMultiFormatReader();
 
-      this.reader.decodeFromVideoDevice(
-        null,
-        "video",
-        (result, err) => {
-          if (result) {
-            this.form.barcode = result.text;
+      this.reader = new ZXing.BrowserMultiFormatReader();
+      this.reader.decodeFromVideoDevice(null, "video", (result, err) => {
+        if (result) {
+          this.form.barcode = result.text;
+          this.reader.reset();
+
+          if (this.scanMode === 'add') {
             this.showModal = true;
-            this.status = "barcode detected";
-            this.reader.reset();
+            this.status = "barcode detected (add)";
+          } else if (this.scanMode === 'search') {
+            this.status = "barcode detected (search)";
+            this.fetchProduct(result.text);
           }
         }
-      );
+      });
+    },
+
+    fetchProduct(barcode) {
+      fetch(`${API}/product/${barcode}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data) {
+            this.products = [data];
+          } else {
+            alert("Product not found");
+            this.products = [];
+          }
+          this.status = "search complete";
+        });
     },
 
     save() {
@@ -121,10 +103,13 @@ Vue.createApp({
       this.showModal = false;
       this.form = { barcode: "", name: "", price: "" };
       this.status = "idle";
+    },
+
+    loadProducts() {
+      fetch(`${API}/products`)
+        .then(r => r.json())
+        .then(data => { this.products = data; });
     }
   }
 }).mount("#app");
 </script>
-
-</body>
-</html>
