@@ -213,5 +213,19 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
 
 @app.get("/pos/report")
 def pos_report(db: Session = Depends(get_db)):
-    rows = db.query(Purchase).order_by(Purchase.created_at.desc()).all()
-    return rows
+    rows = db.query(Purchase).order_by(Purchase.date.desc()).all()
+
+    return [
+        {
+            "id": r.id,
+            "purchase_number": r.purchase_number,
+            "barcode": r.barcode,
+            "name": r.name,
+            "price": r.price,
+            "quantity": r.quantity,
+            "total_price": r.total_price,
+            "remark": r.remark,
+            "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for r in rows
+    ]
