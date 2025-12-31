@@ -11,10 +11,11 @@
     button { padding:8px 12px; font-size:14px; margin:2px; }
     .grand-total { font-size:18px; font-weight:bold; margin-top:10px; }
     .paid-info { font-size:16px; margin-top:6px; }
+    .paid-amount { color: green; font-weight:bold; }
+    .diff-amount { color: red; font-weight:bold; }
     .modal { position: fixed; inset:0; background: rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; }
     .modal-box { background:white; padding:20px; border-radius:6px; width:300px; text-align:center; }
     input { width:100%; padding:6px; margin-bottom:10px; }
-    /* scan modal animation */
     .scan-modal { position: fixed; inset: 0; background: rgba(0, 255, 0, 0.2); display: flex; justify-content: center; align-items: center; font-size: 48px; font-weight: bold; color: white; animation: fadeSlide 2s forwards; pointer-events: none; z-index: 9999; }
     @keyframes fadeSlide { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(1); } }
   </style>
@@ -30,11 +31,11 @@
     <span class="grand-total" v-if="items.length">Grand Total: ₱{{ grandTotal }}</span>
   </div>
 
-  <video id="video"></video>
-
   <div class="paid-info" v-if="paidAmount !== null">
-    Paid Amount: ₱{{ paidAmount }} | Change/Diff: ₱{{ diffAmount }}
+    Paid Amount: <span class="paid-amount">₱{{ paidAmount }}</span> | Change/Diff: <span class="diff-amount">₱{{ diffAmount }}</span>
   </div>
+
+  <video id="video"></video>
 
   <h3>Scanned Items</h3>
   <p><b>Purchase #:</b> {{ purchase_number }}</p>
@@ -62,10 +63,8 @@
     </tr>
   </table>
 
-  <!-- Animated scan modal -->
   <div v-if="showScanModal" class="scan-modal">✅ Scanned!</div>
 
-  <!-- Paid Amount Modal -->
   <div v-if="showPaidModal" class="modal">
     <div class="modal-box">
       <h3>Enter Paid Amount</h3>
@@ -99,14 +98,19 @@ Vue.createApp({
   },
   methods: {
     async startPOS() {
-      // create purchase number
+      // reset all UI and data for new POS
+      this.items = [];
+      this.grandTotal = 0;
+      this.status = "camera starting";
+      this.paidAmount = null;
+      this.diffAmount = null;
+      this.paidInput = null;
+
       const r = await fetch(`${API}/pos/start`, { method:"POST" });
       const d = await r.json();
       this.purchase_number = d.purchase_number;
+
       this.posActive = true;
-      this.paidAmount = null;
-      this.diffAmount = null;
-      this.status = "camera starting";
 
       if (this.reader) this.reader.reset();
       this.reader = new ZXing.BrowserMultiFormatReader();
@@ -177,11 +181,9 @@ Vue.createApp({
       if(this.paidInput === null || this.paidInput < 0) return alert("Enter valid amount");
       this.paidAmount = this.paidInput;
       this.diffAmount = this.grandTotal - this.paidAmount;
-
       this.showPaidModal = false;
       this.posActive = false;
 
-      // stop camera
       if(this.reader) this.reader.reset();
     }
   }
