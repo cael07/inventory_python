@@ -9,3 +9,11 @@ class ProductCreate(BaseModel):
     name: str
     price: float
     quantity: int
+
+class ProductMonitoringCreate(BaseModel):
+    barcode: str
+    name: str
+    price: float
+    quantity: int
+    total_price: float
+    remark: Optional[str] = "" 

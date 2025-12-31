@@ -3,12 +3,14 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database import SessionLocal, engine
-from backend import models, schemas, auth
+from backend.models import User, Product, ProductMonitoring
+from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate
+from backend import auth
 
-models.Base.metadata.create_all(bind=engine)
-# WARNING: This will delete all existing products!
-models.Product.__table__.drop(bind=engine, checkfirst=True)  # drop table if exists
-models.Base.metadata.create_all(bind=engine)                # recreate table with new schema
+# Create tables (safe: won't drop existing data)
+Product.__table__.create(bind=engine, checkfirst=True)
+ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
+User.__table__.create(bind=engine, checkfirst=True)
 
 app = FastAPI(
     title="Inventory API",
@@ -16,11 +18,6 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json"
 )
-
-@app.get("/")
-def root():
-    return {"status": "API running"}
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,42 +33,69 @@ def get_db():
     finally:
         db.close()
 
+@app.get("/")
+def root():
+    return {"status": "API running"}
+
+# ---------------- AUTH ----------------
 @app.post("/register")
-def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = models.User(
-        username=user.username,
-        password=auth.hash_password(user.password)
-    )
-    db.add(db_user)
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter_by(username=user.username).first()
+    if db_user:
+        return {"status": "User already exists"}
+    new_user = User(username=user.username, password=auth.hash_password(user.password))
+    db.add(new_user)
     db.commit()
     return {"status": "user created"}
 
+# ---------------- PRODUCTS ----------------
 @app.post("/product")
-def save_product(p: schemas.ProductCreate, db: Session = Depends(get_db)):
-    product = models.Product(**p.dict())
+def save_product(p: ProductCreate, db: Session = Depends(get_db)):
+    product = Product(**p.dict())
     db.add(product)
     db.commit()
     return {"status": "saved"}
 
 @app.get("/product/{barcode}")
 def get_product(barcode: str, db: Session = Depends(get_db)):
-    p = db.query(models.Product).filter_by(barcode=barcode).first()
-    return p
+    return db.query(Product).filter_by(barcode=barcode).first()
 
 @app.get("/products")
 def get_products(db: Session = Depends(get_db)):
-    """
-    Return all products in the database, newest first
-    """
-    return db.query(models.Product).order_by(models.Product.id.desc()).all()
+    return db.query(Product).order_by(Product.id.desc()).all()
 
-@app.put("/product/{barcode}")
-def update_product(barcode: str, p: schemas.ProductCreate, db: Session = Depends(get_db)):
-    product = db.query(models.Product).filter_by(barcode=barcode).first()
+# ---------------- MONITORING ----------------
+@app.put("/update_product/{barcode}")
+def update_product_item(
+    barcode: str,
+    data: ProductMonitoringCreate,
+    db: Session = Depends(get_db)
+):
+    product = db.query(Product).filter_by(barcode=barcode).first()
     if not product:
-        return {"error": "Product not found"}
-    product.name = p.name
-    product.price = p.price
-    product.quantity = p.quantity
+        product = Product(
+            barcode=data.barcode,
+            name=data.name,
+            price=data.price,
+            quantity=data.quantity
+        )
+        db.add(product)
+    else:
+        product.quantity += data.quantity
     db.commit()
-    return {"status": "updated"}
+
+    monitoring = ProductMonitoring(
+        barcode=data.barcode,
+        name=data.name,
+        price=data.price,
+        quantity=data.quantity,
+        total_price=data.price * data.quantity,
+        remark=data.remark
+    )
+    db.add(monitoring)
+    db.commit()
+    return {"message": "Product updated and monitored"}
+
+@app.get("/monitoring")
+def get_monitoring(db: Session = Depends(get_db)):
+    return db.query(ProductMonitoring).order_by(ProductMonitoring.date.desc()).all()

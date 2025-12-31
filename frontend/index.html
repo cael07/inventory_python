@@ -6,38 +6,11 @@
   <script src="https://unpkg.com/@zxing/library@latest"></script>
 
   <style>
-    video {
-      width: 100%;
-      max-width: 400px;
-      border: 2px solid #333;
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-box {
-      background: #fff;
-      padding: 20px;
-      width: 300px;
-      border-radius: 6px;
-    }
-
-    input {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 6px;
-    }
-
-    button {
-      margin-right: 5px;
-    }
-
+    video { width: 100%; max-width: 400px; border: 2px solid #333; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: #fff; padding: 20px; width: 300px; border-radius: 6px; }
+    input { width: 100%; margin-bottom: 10px; padding: 6px; }
+    button { margin-right: 5px; }
     ul { margin-top: 20px; }
   </style>
 </head>
@@ -46,32 +19,53 @@
 <div id="app">
   <button @click="startScan">📷 Scan Barcode</button>
   <button @click="loadProducts">📦 Show All Products</button>
+  <button @click="loadMonitoring">📝 Show Monitoring Log</button>
   <p>Status: {{ status }}</p>
 
   <video id="video"></video>
 
-<!-- MODAL -->
-<div v-if="showModal" class="modal">
-  <div class="modal-box">
-    <h3>Product {{ existing ? 'Found (Editable)' : 'New' }}</h3>
-
-<input v-model="form.barcode" readonly />
-<input v-model="form.name" placeholder="Product name" />
-<input v-model="form.price" type="number" placeholder="Price" />
-<input v-model="form.quantity" type="number" placeholder="Quantity" />
-
-
-    <button @click="save">Save</button>
-    <button @click="cancel">Close</button>
+  <!-- ADD / EDIT PRODUCT MODAL -->
+  <div v-if="showModal" class="modal">
+    <div class="modal-box">
+      <h3>Product {{ existing ? 'Found (Editable)' : 'New' }}</h3>
+      <input v-model="form.barcode" readonly />
+      <input v-model="form.name" placeholder="Product name" />
+      <input v-model="form.price" type="number" placeholder="Price" />
+      <input v-model="form.quantity" type="number" placeholder="Quantity" />
+      <button @click="save">Save</button>
+      <button @click="cancel">Close</button>
+    </div>
   </div>
-</div>
+
+  <!-- UPDATE PRODUCT MODAL -->
+  <div v-if="showUpdateModal" class="modal">
+    <div class="modal-box">
+      <h3>Update Product (Monitor)</h3>
+      <input v-model="updateForm.barcode" readonly />
+      <input v-model="updateForm.name" readonly />
+      <input v-model="updateForm.price" readonly />
+      <input v-model="updateForm.quantity" type="number" placeholder="Add Quantity" />
+      <input v-model="updateForm.remark" placeholder="Remark" />
+      <button @click="updateProduct">Save</button>
+      <button @click="cancelUpdate">Close</button>
+    </div>
+  </div>
 
   <!-- Product list -->
-<ul>
-  <li v-for="p in products" :key="p.id">
-    {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }} — Qty: {{ p.quantity }}
-  </li>
-</ul>
+  <h3>Products</h3>
+  <ul>
+    <li v-for="p in products" :key="p.id">
+      {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }} — Qty: {{ p.quantity }}
+    </li>
+  </ul>
+
+  <!-- Monitoring log -->
+  <h3>Monitoring Log</h3>
+  <ul>
+    <li v-for="m in monitoring" :key="m.id">
+      {{ m.date }} — {{ m.barcode }} — {{ m.name }} — ₱{{ m.price }} x {{ m.quantity }} = ₱{{ m.total_price }} — {{ m.remark }}
+    </li>
+  </ul>
 </div>
 
 <script>
@@ -82,10 +76,13 @@ Vue.createApp({
     return {
       status: "idle",
       showModal: false,
+      showUpdateModal: false,
       existing: false,
       reader: null,
-      form: { barcode: "", name: "", price: "" },
-      products: []
+      form: { barcode: "", name: "", price: "", quantity: 0 },
+      updateForm: { barcode: "", name: "", price: 0, quantity: 0, remark: "" },
+      products: [],
+      monitoring: []
     }
   },
   methods: {
@@ -96,81 +93,104 @@ Vue.createApp({
       this.reader.decodeFromVideoDevice(null, "video", (result, err) => {
         if (result) {
           this.reader.reset();
-          this.form.barcode = result.text;
+          const barcode = result.text;
           this.status = "barcode detected";
 
-          // Fetch product by barcode
-          // Fetch product by barcode
-fetch(`${API}/product/${result.text}`)
-  .then(r => r.json())
-  .then(data => {
-    if (data && data.barcode) {
-      // Product exists
-      this.existing = true;
-      this.form.name = data.name;
-      this.form.price = data.price;
-      this.form.quantity = data.quantity;  // ← add this line
-    } else {
-      // New product
-      this.existing = false;
-      this.form.name = "";
-      this.form.price = "";
-      this.form.quantity = 0;  // ← initialize
-    }
-    this.showModal = true;
-  })
-  .catch(() => {
-    // Assume new product if error
-    this.existing = false;
-    this.form.name = "";
-    this.form.price = "";
-    this.form.quantity = 0;  // ← initialize
-    this.showModal = true;
-  });
-
+          fetch(`${API}/product/${barcode}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data && data.barcode) {
+                // Product exists → show update modal
+                this.updateForm.barcode = data.barcode;
+                this.updateForm.name = data.name;
+                this.updateForm.price = data.price;
+                this.updateForm.quantity = 0;
+                this.updateForm.remark = "";
+                this.showUpdateModal = true;
+              } else {
+                // New product → show add modal
+                this.form.barcode = barcode;
+                this.form.name = "";
+                this.form.price = 0;
+                this.form.quantity = 0;
+                this.existing = false;
+                this.showModal = true;
+              }
+            })
+            .catch(() => {
+              // On error, treat as new product
+              this.form.barcode = barcode;
+              this.form.name = "";
+              this.form.price = 0;
+              this.form.quantity = 0;
+              this.existing = false;
+              this.showModal = true;
+            });
         }
       });
     },
 
     save() {
-  const url = this.existing
-    ? `${API}/product/${this.form.barcode}`   // update existing
-    : `${API}/product`;                       // create new
+      const url = this.existing ? `${API}/product/${this.form.barcode}` : `${API}/product`;
+      const method = this.existing ? "PUT" : "POST";
 
-  const method = this.existing ? "PUT" : "POST";
-
-  fetch(url, {
-    method: method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      barcode: this.form.barcode,
-      name: this.form.name,
-      price: Number(this.form.price),
-      quantity: Number(this.form.quantity)
-    })
-  })
-  .then(() => {
-    alert(this.existing ? "Updated" : "Saved");
-    this.resetForm();
-    this.loadProducts(); // refresh list
-  });
-},
-
-    cancel() {
-      this.resetForm();
+      fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          barcode: this.form.barcode,
+          name: this.form.name,
+          price: Number(this.form.price),
+          quantity: Number(this.form.quantity)
+        })
+      }).then(() => {
+        alert(this.existing ? "Updated" : "Saved");
+        this.resetForm();
+        this.loadProducts();
+      });
     },
 
-    resetForm() {
+    updateProduct() {
+      fetch(`${API}/update_product/${this.updateForm.barcode}`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          barcode: this.updateForm.barcode,
+          name: this.updateForm.name,
+          price: Number(this.updateForm.price),
+          quantity: Number(this.updateForm.quantity),
+          remark: this.updateForm.remark,
+          total_price: Number(this.updateForm.price) * Number(this.updateForm.quantity)
+        })
+      }).then(() => {
+        alert("Product updated and monitored");
+        this.cancelUpdate();
+        this.loadProducts();
+        this.loadMonitoring();
+      });
+    },
+
+    cancel() {
       this.showModal = false;
       this.existing = false;
-      this.form = { barcode: "", name: "", price: "" };
-      this.status = "idle";
+      this.form = { barcode: "", name: "", price: "", quantity: 0 };
+    },
+
+    cancelUpdate() {
+      this.showUpdateModal = false;
+      this.updateForm = { barcode: "", name: "", price: 0, quantity: 0, remark: "" };
     },
 
     loadProducts() {
       fetch(`${API}/products`)
         .then(r => r.json())
         .then(data => { this.products = data; });
+    },
+
+    loadMonitoring() {
+      fetch(`${API}/monitoring`)
+        .then(r => r.json())
+        .then(data => { this.monitoring = data; });
     }
   }
 }).mount("#app");
