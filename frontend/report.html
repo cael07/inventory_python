@@ -2,52 +2,48 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>POS Sales Report</title>
   <script src="https://unpkg.com/vue@3"></script>
 
   <style>
-    body { font-family: Arial, sans-serif; padding:10px; }
+    body { font-family: Arial, sans-serif; }
     table { width:100%; border-collapse: collapse; margin-top:10px; }
-    th, td { border:1px solid #ccc; padding:6px; text-align:center; }
-    th { background:#f4f4f4; }
-    h2 { margin-bottom:5px; }
-    .total { font-weight:bold; font-size:16px; margin-top:10px; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+    th { background:#f2f2f2; position: sticky; top: 0; }
+    .loading { text-align:center; padding:10px; font-weight:bold; }
   </style>
 </head>
 <body>
 
 <div id="app">
-  <h2>📊 POS Sales Report</h2>
+  <h2>📊 POS Report</h2>
 
-  <button @click="loadReport">🔄 Refresh</button>
-
-  <table v-if="rows.length">
-    <tr>
-      <th>#</th>
-      <th>Purchase #</th>
-      <th>Product</th>
-      <th>Price</th>
-      <th>Qty</th>
-      <th>Total</th>
-      <th>Date</th>
-    </tr>
-
-    <tr v-for="(r, i) in rows" :key="i">
-      <td>{{ i + 1 }}</td>
-      <td>{{ r.purchase_number }}</td>
-      <td>{{ r.name }}</td>
-      <td>₱{{ r.price }}</td>
-      <td>{{ r.quantity }}</td>
-      <td>₱{{ r.total_price }}</td>
-      <td>{{ r.date }}</td>
-    </tr>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Purchase #</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Total</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(r, index) in rows" :key="r.id">
+        <td>{{ index + 1 }}</td>
+        <td>{{ r.purchase_number }}</td>
+        <td>{{ r.name }}</td>
+        <td>₱{{ r.price }}</td>
+        <td>{{ r.quantity }}</td>
+        <td>₱{{ r.total_price }}</td>
+        <td>{{ formatDate(r.date) }}</td>
+      </tr>
+    </tbody>
   </table>
 
-  <p v-if="!rows.length">No records found.</p>
-
-  <div class="total" v-if="rows.length">
-    Grand Sales Total: ₱{{ grandTotal }}
-  </div>
+  <div class="loading" v-if="loading">Loading more…</div>
+  <div class="loading" v-if="!hasMore">No more records</div>
 </div>
 
 <script>
@@ -57,24 +53,56 @@ Vue.createApp({
   data() {
     return {
       rows: [],
-      grandTotal: 0
+      page: 1,
+      limit: 10,
+      loading: false,
+      hasMore: true
     }
   },
+
   methods: {
-    async loadReport() {
-      try {
-        const r = await fetch(`${API}/pos/report`);
-        const d = await r.json();
-        this.rows = d;
-        this.grandTotal = d.reduce((sum, x) => sum + x.total_price, 0);
-      } catch (e) {
-        alert("Failed to load report");
-        console.error(e);
+    async loadMore() {
+      if (this.loading || !this.hasMore) return;
+
+      this.loading = true;
+
+      const res = await fetch(
+        `${API}/pos/report?page=${this.page}&limit=${this.limit}`
+      );
+      const data = await res.json();
+
+      if (data.items.length === 0) {
+        this.hasMore = false;
+      } else {
+        this.rows.push(...data.items);
+        this.page++;
+      }
+
+      this.loading = false;
+    },
+
+    formatDate(d) {
+      return new Date(d).toLocaleString();
+    },
+
+    handleScroll() {
+      const bottom =
+        window.innerHeight + window.scrollY >=
+        document.body.offsetHeight - 200;
+
+      if (bottom) {
+        this.loadMore();
       }
     }
   },
+
   mounted() {
-    this.loadReport();
+    this.loadMore();
+    window.addEventListener("scroll", this.handleScroll);
+  },
+
+  unmounted() {
+    window.removeEventListener("scroll", this.handleScroll);
   }
 }).mount("#app");
 </script>

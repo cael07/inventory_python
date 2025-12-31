@@ -178,25 +178,31 @@ def pos_scan(
         "total_price": total
     }
 
-
 @app.get("/pos/report")
-def pos_report(db: Session = Depends(get_db)):
-    rows = db.query(Purchase).order_by(Purchase.date.desc()).all()
+def pos_report(
+    page: int = 1,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    offset = (page - 1) * limit
 
-    return [
-        {
-            "id": r.id,
-            "purchase_number": r.purchase_number,
-            "barcode": r.barcode,
-            "name": r.name,
-            "price": r.price,
-            "quantity": r.quantity,
-            "total_price": r.total_price,
-            "remark": r.remark,
-            "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
-        }
-        for r in rows
-    ]
+    rows = (
+        db.query(Purchase)
+        .order_by(Purchase.date.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    total = db.query(Purchase).count()
+
+    return {
+        "page": page,
+        "limit": limit,
+        "total_records": total,
+        "items": rows
+    }
+
 
 @app.get("/pos/{purchase_number}")
 def get_pos_items(purchase_number: str, db: Session = Depends(get_db)):
