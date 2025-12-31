@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://unpkg.com/vue@3"></script>
+  <script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <button @click="start">Scan</button>
+  <p>Status: {{ status }}</p>
+  <p>Barcode: {{ barcode }}</p>
+</div>
+
+<script>
+const API = "https://YOUR-BACKEND.onrender.com";
+
+Vue.createApp({
+  data() {
+    return { barcode: "", status: "idle" }
+  },
+  methods: {
+    start() {
+      this.status = "starting camera";
+      Quagga.init({
+        inputStream: {
+          type: "LiveStream",
+          constraints: { facingMode: "environment" }
+        },
+        decoder: { readers: ["ean_reader","code_128_reader"] }
+      }, err => {
+        if (err) return console.error(err);
+        Quagga.start();
+      });
+
+      Quagga.onDetected(res => {
+        this.barcode = res.codeResult.code;
+        this.status = "detected";
+        Quagga.stop();
+
+        fetch(`${API}/product/${this.barcode}`)
+          .then(r => r.json())
+          .then(console.log);
+      });
+    }
+  }
+}).mount("#app");
+</script>
+
+</body>
+</html>
