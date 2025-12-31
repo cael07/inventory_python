@@ -200,8 +200,22 @@ def pos_report(
         "page": page,
         "limit": limit,
         "total_records": total,
-        "items": rows
+        "items": [
+            {
+                "id": r.id,
+                "purchase_number": r.purchase_number,
+                "barcode": r.barcode,
+                "name": r.name,
+                "price": r.price,
+                "quantity": r.quantity,
+                "total_price": r.total_price,
+                "remark": r.remark,
+                "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            for r in rows
+        ]
     }
+
 
 
 @app.get("/pos/{purchase_number}")

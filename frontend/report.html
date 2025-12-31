@@ -3,13 +3,10 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/vue@3"></script>
-
   <style>
-    body { font-family: Arial, sans-serif; }
-    table { width:100%; border-collapse: collapse; margin-top:10px; }
-    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-    th { background:#f2f2f2; position: sticky; top: 0; }
-    .loading { text-align:center; padding:10px; font-weight:bold; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+    button { padding:10px 14px; font-size:15px; margin:10px auto; display:block; }
   </style>
 </head>
 <body>
@@ -17,33 +14,33 @@
 <div id="app">
   <h2>📊 POS Report</h2>
 
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Purchase #</th>
-        <th>Name</th>
-        <th>Price</th>
-        <th>Qty</th>
-        <th>Total</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="(r, index) in rows" :key="r.id">
-        <td>{{ index + 1 }}</td>
-        <td>{{ r.purchase_number }}</td>
-        <td>{{ r.name }}</td>
-        <td>₱{{ r.price }}</td>
-        <td>{{ r.quantity }}</td>
-        <td>₱{{ r.total_price }}</td>
-        <td>{{ formatDate(r.date) }}</td>
-      </tr>
-    </tbody>
+  <table v-if="rows.length">
+    <tr>
+      <th>Date</th>
+      <th>Purchase #</th>
+      <th>Barcode</th>
+      <th>Name</th>
+      <th>Price</th>
+      <th>Qty</th>
+      <th>Total</th>
+    </tr>
+
+    <tr v-for="r in rows" :key="r.id">
+      <td>{{ r.date }}</td>
+      <td>{{ r.purchase_number }}</td>
+      <td>{{ r.barcode }}</td>
+      <td>{{ r.name }}</td>
+      <td>₱{{ r.price }}</td>
+      <td>{{ r.quantity }}</td>
+      <td>₱{{ r.total_price }}</td>
+    </tr>
   </table>
 
-  <div class="loading" v-if="loading">Loading more…</div>
-  <div class="loading" v-if="!hasMore">No more records</div>
+  <p v-if="!rows.length && !loading">No records found</p>
+
+  <button v-if="canLoadMore" @click="loadMore">
+    {{ loading ? "Loading..." : "Load More" }}
+  </button>
 </div>
 
 <script>
@@ -55,15 +52,19 @@ Vue.createApp({
       rows: [],
       page: 1,
       limit: 10,
-      loading: false,
-      hasMore: true
+      total: 0,
+      loading: false
+    }
+  },
+
+  computed: {
+    canLoadMore() {
+      return this.rows.length < this.total && !this.loading;
     }
   },
 
   methods: {
     async loadMore() {
-      if (this.loading || !this.hasMore) return;
-
       this.loading = true;
 
       const res = await fetch(
@@ -71,38 +72,16 @@ Vue.createApp({
       );
       const data = await res.json();
 
-      if (data.items.length === 0) {
-        this.hasMore = false;
-      } else {
-        this.rows.push(...data.items);
-        this.page++;
-      }
+      this.rows.push(...data.items);
+      this.total = data.total_records;
+      this.page += 1;
 
       this.loading = false;
-    },
-
-    formatDate(d) {
-      return new Date(d).toLocaleString();
-    },
-
-    handleScroll() {
-      const bottom =
-        window.innerHeight + window.scrollY >=
-        document.body.offsetHeight - 200;
-
-      if (bottom) {
-        this.loadMore();
-      }
     }
   },
 
   mounted() {
-    this.loadMore();
-    window.addEventListener("scroll", this.handleScroll);
-  },
-
-  unmounted() {
-    window.removeEventListener("scroll", this.handleScroll);
+    this.loadMore(); // initial load
   }
 }).mount("#app");
 </script>
