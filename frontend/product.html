@@ -10,7 +10,8 @@
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
     .modal-box { background: #fff; padding: 20px; width: 300px; border-radius: 6px; }
     input { width: 100%; margin-bottom: 10px; padding: 6px; }
-    button { margin-right: 5px; }
+    button { margin-right: 5px;     padding: 12px 20px;       /* make buttons bigger */
+    font-size: 16px;          /* larger text */}
     ul { margin-top: 20px; }
   </style>
 </head>
@@ -151,45 +152,71 @@ Vue.createApp({
       });
     },
 
-    save() {
-      const url = this.existing ? `${API}/product/${this.form.barcode}` : `${API}/product`;
-      const method = this.existing ? "PUT" : "POST";
+    async save() {
+  const payload = {
+    barcode: this.form.barcode,
+    name: this.form.name,
+    price: Number(this.form.price),
+    quantity: Number(this.form.quantity),
+    remark: this.existing ? "Update" : "New",
+    total_price: Number(this.form.price) * Number(this.form.quantity)
+  };
 
-      fetch(url, {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          barcode: this.form.barcode,
-          name: this.form.name,
-          price: Number(this.form.price),
-          quantity: Number(this.form.quantity)
-        })
-      }).then(() => {
-        alert(this.existing ? "Updated" : "Saved");
-        this.resetForm();
-        this.loadProducts();
-      });
-    },
+  try {
+    const res = await fetch(`${API}/update_product/${this.form.barcode}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-    updateProduct() {
-      fetch(`${API}/update_product/${this.updateForm.barcode}`, {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          barcode: this.updateForm.barcode,
-          name: this.updateForm.name,
-          price: Number(this.updateForm.price),
-          quantity: Number(this.updateForm.quantity),
-          remark: this.updateForm.remark,
-          total_price: Number(this.updateForm.price) * Number(this.updateForm.quantity)
-        })
-      }).then(() => {
-        alert("Product updated and monitored");
-        this.cancelUpdate();
-        this.loadProducts();
-        this.loadMonitoring();
-      });
-    },
+    if (!res.ok) throw new Error("Failed to save");
+
+    // Auto-close modal immediately
+    this.resetForm();
+
+    // Refresh data
+    this.loadProducts();
+    this.loadMonitoring();
+
+    alert(this.existing ? "Updated & Monitored" : "Saved & Monitored");
+  } catch (err) {
+    console.error(err);
+    alert("Error saving product");
+  }
+},
+async updateProduct() {
+  const payload = {
+    barcode: this.updateForm.barcode,
+    name: this.updateForm.name,
+    price: Number(this.updateForm.price),
+    quantity: Number(this.updateForm.quantity),
+    remark: this.updateForm.remark,
+    total_price: Number(this.updateForm.price) * Number(this.updateForm.quantity)
+  };
+
+  try {
+    const res = await fetch(`${API}/update_product/${this.updateForm.barcode}`, {
+      method: "PUT",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error("Failed to update");
+
+    // Auto-close modal
+    this.cancelUpdate();
+
+    // Refresh data
+    this.loadProducts();
+    this.loadMonitoring();
+
+    alert("Product updated and monitored");
+  } catch (err) {
+    console.error(err);
+    alert("Error updating product");
+  }
+},
+
 
     cancel() {
       this.showModal = false;
