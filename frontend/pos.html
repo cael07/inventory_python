@@ -4,20 +4,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/vue@3"></script>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-
   <style>
-    video { width: 100%; max-width: 400px; border:2px solid #333; }
+    video { width: 100%; max-width: 400px; border:2px solid #333; margin-bottom:10px; }
     table { width:100%; border-collapse: collapse; margin-top:10px; }
-    th, td { border:1px solid #ccc; padding:6px; }
-    button { padding:14px 22px; font-size:16px; margin-bottom:10px; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+    button { padding:8px 12px; font-size:14px; }
+    .grand-total { font-size:18px; font-weight:bold; margin-top:10px; }
   </style>
 </head>
 <body>
 
 <div id="app">
-  <h2>🧾 POS Test</h2>
+  <h2>🧾 POS</h2>
 
-  <button @click="startPOS">▶ Start Scanner</button>
+  <button @click="startPOS">▶ Start POS</button>
+  <p><b>Purchase #:</b> {{ purchase_number }}</p>
   <p>Status: {{ status }}</p>
 
   <video id="video"></video>
@@ -25,16 +26,28 @@
   <h3>Scanned Items</h3>
   <table v-if="items.length">
     <tr>
+      <th>#</th>
       <th>Barcode</th>
       <th>Name</th>
       <th>Price</th>
+      <th>Qty</th>
+      <th>Total</th>
+      <th>Action</th>
     </tr>
-    <tr v-for="i in items" :key="i.barcode">
+    <tr v-for="(i, index) in items" :key="i.barcode">
+      <td>{{ index + 1 }}</td>
       <td>{{ i.barcode }}</td>
       <td>{{ i.name }}</td>
       <td>₱{{ i.price }}</td>
+      <td>{{ i.quantity }}</td>
+      <td>₱{{ i.total_price }}</td>
+      <td><button @click="removeItem(index)">❌</button></td>
     </tr>
   </table>
+
+  <div class="grand-total" v-if="items.length">
+    Grand Total: ₱{{ grandTotal }}
+  </div>
 </div>
 
 <script>
@@ -43,7 +56,9 @@ const API = "https://inventory-python.onrender.com";
 Vue.createApp({
   data() {
     return {
+      purchase_number: "",
       items: [],
+      grandTotal: 0,
       reader: null,
       scanning: false,
       lastScan: null,
@@ -51,7 +66,12 @@ Vue.createApp({
     }
   },
   methods: {
-    startPOS() {
+    async startPOS() {
+      // create purchase number
+      const r = await fetch(`${API}/pos/start`, { method:"POST" });
+      const d = await r.json();
+      this.purchase_number = d.purchase_number;
+
       this.status = "camera starting";
 
       if (this.reader) this.reader.reset();
@@ -62,39 +82,58 @@ Vue.createApp({
           this.scanning = true;
           const barcode = result.text;
 
-          // prevent duplicate scans
+          // prevent instant duplicate scan
           if (barcode === this.lastScan) {
             this.scanning = false;
             return;
           }
-
           this.lastScan = barcode;
-          this.status = `scanned: ${barcode}`;
 
           try {
-            // fetch product info only
-            const r = await fetch(`${API}/product/${barcode}`);
-            if (!r.ok) throw new Error("Product not found");
-            const data = await r.json();
+            const res = await fetch(`${API}/product/${barcode}`);
+            if (!res.ok) throw new Error("Product not found");
+            const product = await res.json();
 
-            this.items.push({
-              barcode: data.barcode,
-              name: data.name,
-              price: data.price
-            });
+            // add to items list
+            const existingIndex = this.items.findIndex(x => x.barcode === product.barcode);
+            if (existingIndex >= 0) {
+              // increment quantity if already scanned
+              this.items[existingIndex].quantity += 1;
+              this.items[existingIndex].total_price = this.items[existingIndex].quantity * product.price;
+            } else {
+              this.items.push({
+                barcode: product.barcode,
+                name: product.name,
+                price: product.price,
+                quantity: 1,
+                total_price: product.price
+              });
+            }
 
-            this.status = `Product found: ${data.name} - ₱${data.price}`;
+            this.calculateTotal();
+            this.status = `Scanned: ${barcode}`;
           } catch (e) {
-            this.status = "Product not found";
+            alert("Scan failed or product not found");
             console.error(e);
           }
 
+          // allow next scan after short delay
           setTimeout(() => {
             this.scanning = false;
             this.lastScan = null;
+            this.status = "ready for next scan";
           }, 800);
         }
       });
+    },
+
+    calculateTotal() {
+      this.grandTotal = this.items.reduce((sum, i) => sum + i.total_price, 0);
+    },
+
+    removeItem(index) {
+      this.items.splice(index, 1);
+      this.calculateTotal();
     }
   }
 }).mount("#app");
