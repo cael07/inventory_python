@@ -131,28 +131,24 @@ Vue.createApp({
     },
 
     save() {
-  const payload = {
-    barcode: this.form.barcode,
-    name: this.form.name,
-    price: Number(this.form.price),
-    quantity: Number(this.form.quantity),
-    remark: this.existing ? "Update" : "New",
-    total_price: Number(this.form.price) * Number(this.form.quantity)
-  };
+      const url = this.existing ? `${API}/product/${this.form.barcode}` : `${API}/product`;
+      const method = this.existing ? "PUT" : "POST";
 
-  fetch(`${API}/update_product/${this.form.barcode}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(() => {
-    alert(this.existing ? "Updated & Monitored" : "Saved & Monitored");
-    this.resetForm();
-    this.loadProducts();     // refresh product list
-    this.loadMonitoring();   // refresh monitoring list
-  });
-}
-,
+      fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          barcode: this.form.barcode,
+          name: this.form.name,
+          price: Number(this.form.price),
+          quantity: Number(this.form.quantity)
+        })
+      }).then(() => {
+        alert(this.existing ? "Updated" : "Saved");
+        this.resetForm();
+        this.loadProducts();
+      });
+    },
 
     updateProduct() {
       fetch(`${API}/update_product/${this.updateForm.barcode}`, {
