@@ -192,3 +192,22 @@ def get_pos_items(purchase_number: str, db: Session = Depends(get_db)):
         "grand_total": total
     }
 
+@app.post("/pos/save")
+def save_purchase(data: dict, db: Session = Depends(get_db)):
+    purchase_number = data["purchase_number"]
+    items = data["items"]
+    paid_amount = data.get("paid_amount", 0)
+
+    for item in items:
+        p = Purchase(
+            purchase_number=purchase_number,
+            barcode=item["barcode"],
+            name=item["name"],
+            price=item["price"],
+            quantity=item["quantity"],
+            total_price=item["total_price"]
+        )
+        db.add(p)
+    db.commit()
+    return {"status": "success", "message": f"{len(items)} items saved"}
+

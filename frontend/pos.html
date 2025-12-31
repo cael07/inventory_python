@@ -65,6 +65,7 @@
 
   <div v-if="showScanModal" class="scan-modal">✅ Scanned!</div>
 
+  <!-- Paid Amount Modal -->
   <div v-if="showPaidModal" class="modal">
     <div class="modal-box">
       <h3>Enter Paid Amount</h3>
@@ -177,7 +178,7 @@ Vue.createApp({
       this.paidInput = null;
     },
 
-    confirmPaid() {
+    async confirmPaid() {
       if(this.paidInput === null || this.paidInput < 0) return alert("Enter valid amount");
       this.paidAmount = this.paidInput;
       this.diffAmount = this.grandTotal - this.paidAmount;
@@ -185,6 +186,24 @@ Vue.createApp({
       this.posActive = false;
 
       if(this.reader) this.reader.reset();
+
+      // save purchase to backend
+      try {
+        const res = await fetch(`${API}/pos/save`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            purchase_number: this.purchase_number,
+            items: this.items,
+            paid_amount: this.paidAmount
+          })
+        });
+        if (!res.ok) throw new Error("Failed to save purchase");
+        alert("Purchase saved successfully!");
+      } catch (e) {
+        alert("Error saving purchase");
+        console.error(e);
+      }
     }
   }
 }).mount("#app");
