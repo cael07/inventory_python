@@ -24,32 +24,52 @@
 
   <video id="video"></video>
 
-  <!-- ADD / EDIT PRODUCT MODAL -->
-  <div v-if="showModal" class="modal">
-    <div class="modal-box">
-      <h3>Product {{ existing ? 'Found (Editable)' : 'New' }}</h3>
-      <input v-model="form.barcode" readonly />
-      <input v-model="form.name" placeholder="Product name" />
-      <input v-model="form.price" type="number" placeholder="Price" />
-      <input v-model="form.quantity" type="number" placeholder="Quantity" />
-      <button @click="save">Save</button>
-      <button @click="cancel">Close</button>
-    </div>
-  </div>
+<!-- ADD / EDIT PRODUCT MODAL -->
+<div v-if="showModal" class="modal">
+  <div class="modal-box">
+    <h3>Product {{ existing ? 'Found (Editable)' : 'New' }}</h3>
 
-  <!-- UPDATE PRODUCT MODAL -->
-  <div v-if="showUpdateModal" class="modal">
-    <div class="modal-box">
-      <h3>Update Product (Monitor)</h3>
-      <input v-model="updateForm.barcode" readonly />
-      <input v-model="updateForm.name" readonly />
-      <input v-model="updateForm.price" readonly />
-      <input v-model="updateForm.quantity" type="number" placeholder="Add Quantity" />
-      <input v-model="updateForm.remark" placeholder="Remark" />
-      <button @click="updateProduct">Save</button>
-      <button @click="cancelUpdate">Close</button>
-    </div>
+    <label>Barcode</label>
+    <input v-model="form.barcode" readonly />
+
+    <label>Product Name</label>
+    <input v-model="form.name" placeholder="Product name" />
+
+    <label>Price</label>
+    <input v-model="form.price" type="number" placeholder="Price" />
+
+    <label>Quantity</label>
+    <input v-model="form.quantity" type="number" placeholder="Quantity" />
+
+    <button @click="save">Save</button>
+    <button @click="cancel">Close</button>
   </div>
+</div>
+
+<!-- UPDATE PRODUCT MODAL -->
+<div v-if="showUpdateModal" class="modal">
+  <div class="modal-box">
+    <h3>Update Product (Monitor)</h3>
+
+    <label>Barcode</label>
+    <input v-model="updateForm.barcode" readonly />
+
+    <label>Product Name</label>
+    <input v-model="updateForm.name" readonly />
+
+    <label>Price</label>
+    <input v-model="updateForm.price" type="number" placeholder="Price" />
+
+    <label>Quantity</label>
+    <input v-model="updateForm.quantity" type="number" placeholder="Add Quantity" />
+
+    <label>Remark</label>
+    <input v-model="updateForm.remark" placeholder="Remark" />
+
+    <button @click="updateProduct">Save</button>
+    <button @click="cancelUpdate">Close</button>
+  </div>
+</div>
 
   <!-- Product list -->
   <h3>Products</h3>

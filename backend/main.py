@@ -109,7 +109,7 @@ def update_product_item(
     else:
         # Update quantity
         product.quantity += data.quantity
-
+        product.price = data.price
     # Add monitoring entry
     monitoring = ProductMonitoring(
         barcode=data.barcode,
