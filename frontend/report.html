@@ -4,9 +4,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/vue@3"></script>
   <style>
-    table { width:100%; border-collapse: collapse; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
     th, td { border:1px solid #ccc; padding:6px; text-align:center; }
     button { padding:10px 14px; font-size:15px; margin:10px auto; display:block; }
+    .grand-total { font-size:18px; font-weight:bold; margin-top:12px; text-align:right; }
   </style>
 </head>
 <body>
@@ -16,6 +17,7 @@
 
   <table v-if="rows.length">
     <tr>
+      <th>#</th>
       <th>Date</th>
       <th>Purchase #</th>
       <th>Barcode</th>
@@ -25,7 +27,8 @@
       <th>Total</th>
     </tr>
 
-    <tr v-for="r in rows" :key="r.id">
+    <tr v-for="(r, index) in rows" :key="r.id">
+      <td>{{ index + 1 }}</td>
       <td>{{ r.date }}</td>
       <td>{{ r.purchase_number }}</td>
       <td>{{ r.barcode }}</td>
@@ -37,6 +40,11 @@
   </table>
 
   <p v-if="!rows.length && !loading">No records found</p>
+
+  <!-- Grand Total of LOADED rows -->
+  <div class="grand-total" v-if="rows.length">
+    Grand Total (shown): ₱{{ grandTotal }}
+  </div>
 
   <button v-if="canLoadMore" @click="loadMore">
     {{ loading ? "Loading..." : "Load More" }}
@@ -60,6 +68,12 @@ Vue.createApp({
   computed: {
     canLoadMore() {
       return this.rows.length < this.total && !this.loading;
+    },
+
+    grandTotal() {
+      return this.rows
+        .reduce((sum, r) => sum + Number(r.total_price), 0)
+        .toFixed(2);
     }
   },
 
@@ -81,7 +95,7 @@ Vue.createApp({
   },
 
   mounted() {
-    this.loadMore(); // initial load
+    this.loadMore();
   }
 }).mount("#app");
 </script>
