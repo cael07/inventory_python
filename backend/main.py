@@ -54,3 +54,10 @@ def save_product(p: schemas.ProductCreate, db: Session = Depends(get_db)):
 def get_product(barcode: str, db: Session = Depends(get_db)):
     p = db.query(models.Product).filter_by(barcode=barcode).first()
     return p
+
+@app.get("/products")
+def get_products(db: Session = Depends(get_db)):
+    """
+    Return all products in the database, newest first
+    """
+    return db.query(models.Product).order_by(models.Product.id.desc()).all()

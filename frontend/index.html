@@ -1,27 +1,71 @@
-<div id="app">
-  <button @click="startScan('add')">📷 Scan to Add</button>
-  <button @click="startScan('search')">🔍 Scan to Search</button>
-  <button @click="loadProducts">📦 Show All Products</button>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/vue@3"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
 
+  <style>
+    video {
+      width: 100%;
+      max-width: 400px;
+      border: 2px solid #333;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: #fff;
+      padding: 20px;
+      width: 300px;
+      border-radius: 6px;
+    }
+
+    input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 6px;
+    }
+
+    button {
+      margin-right: 5px;
+    }
+
+    ul { margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <button @click="startScan">📷 Scan Barcode</button>
+  <button @click="loadProducts">📦 Show All Products</button>
   <p>Status: {{ status }}</p>
 
   <video id="video"></video>
 
-  <!-- Modal for adding new product -->
+  <!-- MODAL -->
   <div v-if="showModal" class="modal">
     <div class="modal-box">
-      <h3>New Product</h3>
+      <h3 v-if="existing">Product Found</h3>
+      <h3 v-else>New Product</h3>
 
       <input v-model="form.barcode" readonly />
-      <input v-model="form.name" placeholder="Product name" />
-      <input v-model="form.price" type="number" placeholder="Price" />
+      <input v-model="form.name" placeholder="Product name" :readonly="existing" />
+      <input v-model="form.price" type="number" placeholder="Price" :readonly="existing" />
 
-      <button @click="save">Save</button>
-      <button @click="cancel">Cancel</button>
+      <button v-if="!existing" @click="save">Save</button>
+      <button @click="cancel">Close</button>
     </div>
   </div>
 
-  <!-- List of products (for search / show all) -->
+  <!-- Product list -->
   <ul>
     <li v-for="p in products" :key="p.id">
       {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }}
@@ -37,46 +81,46 @@ Vue.createApp({
     return {
       status: "idle",
       showModal: false,
+      existing: false,
       reader: null,
-      products: [],
-      scanMode: null, // 'add' or 'search'
-      form: { barcode: "", name: "", price: "" }
+      form: { barcode: "", name: "", price: "" },
+      products: []
     }
   },
   methods: {
-    startScan(mode) {
-      this.scanMode = mode;
+    startScan() {
       this.status = "starting camera";
-
       this.reader = new ZXing.BrowserMultiFormatReader();
+
       this.reader.decodeFromVideoDevice(null, "video", (result, err) => {
         if (result) {
-          this.form.barcode = result.text;
           this.reader.reset();
+          this.form.barcode = result.text;
+          this.status = "barcode detected";
 
-          if (this.scanMode === 'add') {
-            this.showModal = true;
-            this.status = "barcode detected (add)";
-          } else if (this.scanMode === 'search') {
-            this.status = "barcode detected (search)";
-            this.fetchProduct(result.text);
-          }
+          // Fetch product by barcode
+          fetch(`${API}/product/${result.text}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data && data.id) {
+                this.existing = true;
+                this.form.name = data.name;
+                this.form.price = data.price;
+              } else {
+                this.existing = false;
+                this.form.name = "";
+                this.form.price = "";
+              }
+              this.showModal = true;
+            })
+            .catch(() => {
+              this.existing = false;
+              this.form.name = "";
+              this.form.price = "";
+              this.showModal = true;
+            });
         }
       });
-    },
-
-    fetchProduct(barcode) {
-      fetch(`${API}/product/${barcode}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data) {
-            this.products = [data];
-          } else {
-            alert("Product not found");
-            this.products = [];
-          }
-          this.status = "search complete";
-        });
     },
 
     save() {
@@ -92,6 +136,7 @@ Vue.createApp({
       .then(() => {
         alert("Saved");
         this.resetForm();
+        this.loadProducts();
       });
     },
 
@@ -101,6 +146,7 @@ Vue.createApp({
 
     resetForm() {
       this.showModal = false;
+      this.existing = false;
       this.form = { barcode: "", name: "", price: "" };
       this.status = "idle";
     },
@@ -113,3 +159,6 @@ Vue.createApp({
   }
 }).mount("#app");
 </script>
+
+</body>
+</html>
