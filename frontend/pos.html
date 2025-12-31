@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/vue@3"></script>
+
+  <style>
+    input { width: 100%; margin-bottom: 10px; padding: 6px; }
+    button { padding: 10px 20px; margin-right: 5px; font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <h2>POS</h2>
+
+  <div>
+    <input v-model="form.purchase_number" placeholder="Purchase Number" />
+    <input v-model="form.barcode" placeholder="Barcode" />
+    <input v-model="form.name" placeholder="Product Name" />
+    <input v-model="form.price" type="number" placeholder="Price" />
+    <input v-model="form.quantity" type="number" placeholder="Quantity" />
+    <input v-model="form.remark" placeholder="Remark" />
+    <button @click="savePurchase">Add Purchase</button>
+  </div>
+
+  <h3>Purchase Log</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Purchase #</th>
+        <th>Barcode</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Quantity</th>
+        <th>Total Price</th>
+        <th>Remark</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="p in purchases" :key="p.id">
+        <td>{{ p.purchase_number }}</td>
+        <td>{{ p.barcode }}</td>
+        <td>{{ p.name }}</td>
+        <td>₱{{ p.price }}</td>
+        <td>{{ p.quantity }}</td>
+        <td>₱{{ p.total_price }}</td>
+        <td>{{ p.remark }}</td>
+        <td>{{ p.date }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const API = "https://inventory-python.onrender.com";
+
+Vue.createApp({
+  data() {
+    return {
+      form: {
+        purchase_number: "",
+        barcode: "",
+        name: "",
+        price: 0,
+        quantity: 0,
+        remark: ""
+      },
+      purchases: []
+    }
+  },
+  methods: {
+    async savePurchase() {
+      this.form.total_price = this.form.price * this.form.quantity;
+      const res = await fetch(`${API}/purchase`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(this.form)
+      });
+
+      if (!res.ok) {
+        alert("Failed to save purchase");
+        return;
+      }
+
+      alert("Purchase added");
+      this.resetForm();
+      this.loadPurchases();
+    },
+
+    resetForm() {
+      this.form = {
+        purchase_number: "",
+        barcode: "",
+        name: "",
+        price: 0,
+        quantity: 0,
+        remark: ""
+      };
+    },
+
+    async loadPurchases() {
+      const res = await fetch(`${API}/purchases`);
+      this.purchases = await res.json();
+    }
+  },
+  mounted() {
+    this.loadPurchases();
+  }
+}).mount("#app");
+</script>
+</body>
+</html>

@@ -25,3 +25,15 @@ class ProductMonitoring(Base):
     total_price = Column(Float)
     remark = Column(String, default="")
     date = Column(DateTime(timezone=True), server_default=func.now())
+
+class Purchase(Base):
+    __tablename__ = "purchases"
+    id = Column(Integer, primary_key=True, index=True)
+    purchase_number = Column(String)  # e.g., "POS-0001"
+    barcode = Column(String)
+    name = Column(String)
+    price = Column(Float)
+    quantity = Column(Integer)
+    total_price = Column(Float)
+    remark = Column(String, default="")
+    date = Column(DateTime(timezone=True), server_default=func.now())

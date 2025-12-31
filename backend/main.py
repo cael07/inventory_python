@@ -3,14 +3,15 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database import SessionLocal, engine
-from backend.models import User, Product, ProductMonitoring
-from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate
+from backend.models import User, Product, ProductMonitoring, Purchase
+from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate
 from backend import auth
 
 # Create tables (safe: won't drop existing data)
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
 User.__table__.create(bind=engine, checkfirst=True)
+Purchase.__table__.create(bind=engine, checkfirst=True)
 
 app = FastAPI(
     title="Inventory API",
@@ -130,3 +131,14 @@ def update_product_item(
 @app.get("/monitoring")
 def get_monitoring(db: Session = Depends(get_db)):
     return db.query(ProductMonitoring).order_by(ProductMonitoring.date.desc()).all()
+
+@app.post("/purchase")
+def add_purchase(p: PurchaseCreate, db: Session = Depends(get_db)):
+    purchase = Purchase(**p.dict())
+    db.add(purchase)
+    db.commit()
+    return {"status": "Purchase saved"}
+
+@app.get("/purchases")
+def get_purchases(db: Session = Depends(get_db)):
+    return db.query(Purchase).order_by(Purchase.date.desc()).all()

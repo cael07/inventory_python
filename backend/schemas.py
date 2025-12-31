@@ -18,3 +18,12 @@ class ProductMonitoringCreate(BaseModel):
     quantity: int
     total_price: float
     remark: Optional[str] = "" 
+
+class PurchaseCreate(BaseModel):
+    purchase_number: str
+    barcode: str
+    name: str
+    price: float
+    quantity: int
+    total_price: float
+    remark: Optional[str] = ""
