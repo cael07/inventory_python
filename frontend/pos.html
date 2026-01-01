@@ -4,76 +4,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/vue@3"></script>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-
   <style>
     video { width: 100%; max-width: 400px; border:2px solid #333; margin-bottom:10px; }
     table { width:100%; border-collapse: collapse; margin-top:10px; }
     th, td { border:1px solid #ccc; padding:6px; text-align:center; }
     button { padding:8px 12px; font-size:14px; margin:2px; }
-    input.qty { width:60px; text-align:center; }
     .grand-total { font-size:18px; font-weight:bold; margin-top:10px; }
     .paid-info { font-size:16px; margin-top:6px; }
     .paid-amount { color: green; font-weight:bold; }
     .diff-amount { color: red; font-weight:bold; }
-
-    .scan-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 255, 0, 0.2);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 48px;
-      font-weight: bold;
-      color: white;
-      animation: fadeSlide 1s forwards;
-      pointer-events: none;
-      z-index: 9999;
-    }
-
-    @keyframes fadeSlide {
-      0% { opacity: 0; transform: scale(0.7); }
-      50% { opacity: 1; transform: scale(1.1); }
-      100% { opacity: 0; transform: scale(1); }
-    }
-
-    .modal {
-      position: fixed;
-      inset:0;
-      background: rgba(0,0,0,0.5);
-      display:flex;
-      justify-content:center;
-      align-items:center;
-    }
-
-    .modal-box {
-      background:white;
-      padding:20px;
-      border-radius:6px;
-      width:300px;
-      text-align:center;
-    }
+    .modal { position: fixed; inset:0; background: rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; }
+    .modal-box { background:white; padding:20px; border-radius:6px; width:300px; text-align:center; }
+    input { width:100%; padding:6px; margin-bottom:10px; }
+    .scan-modal { position: fixed; inset: 0; background: rgba(0, 255, 0, 0.2); display: flex; justify-content: center; align-items: center; font-size: 48px; font-weight: bold; color: white; animation: fadeSlide 2s forwards; pointer-events: none; z-index: 9999; }
+    @keyframes fadeSlide { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(1); } }
   </style>
 </head>
-
 <body>
-<div id="app">
 
+<div id="app">
   <h2>🧾 POS</h2>
 
-  <div style="display:flex; justify-content:space-between; align-items:center;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
     <button @click="startPOS" :disabled="posActive">▶ Start POS</button>
     <button @click="donePOS" :disabled="!posActive">✅ Done</button>
-    <span class="grand-total" v-if="items.length">₱ {{ grandTotal }}</span>
+    <span class="grand-total" v-if="items.length">Grand Total: ₱{{ grandTotal }}</span>
   </div>
 
   <div class="paid-info" v-if="paidAmount !== null">
-    Paid: <span class="paid-amount">₱{{ paidAmount }}</span> |
-    Change/Diff: <span class="diff-amount">₱{{ diffAmount }}</span>
+    Paid Amount: <span class="paid-amount">₱{{ paidAmount }}</span> | Change/Diff: <span class="diff-amount">₱{{ diffAmount }}</span>
   </div>
 
   <video id="video"></video>
 
+  <h3>Scanned Items</h3>
   <p><b>Purchase #:</b> {{ purchase_number }}</p>
   <p>Status: {{ status }}</p>
 
@@ -86,25 +50,14 @@
       <th>Total</th>
       <th>Action</th>
     </tr>
-
     <tr v-for="(i, index) in items" :key="i.barcode">
       <td>{{ index + 1 }}</td>
       <td>{{ i.name }}</td>
       <td>₱{{ i.price }}</td>
-
-      <!-- ✅ EDITABLE QTY -->
-      <td>
-        <input
-          class="qty"
-          type="number"
-          min="1"
-          v-model.number="i.quantity"
-          @input="updateQty(index)"
-        />
-      </td>
-
+      <td>{{ i.quantity }}</td>
       <td>₱{{ i.total_price }}</td>
       <td>
+        <button @click="decreaseQty(index)">➖</button>
         <button @click="removeItem(index)">❌</button>
       </td>
     </tr>
@@ -112,15 +65,14 @@
 
   <div v-if="showScanModal" class="scan-modal">✅ Scanned!</div>
 
-  <!-- Paid Modal -->
+  <!-- Paid Amount Modal -->
   <div v-if="showPaidModal" class="modal">
     <div class="modal-box">
       <h3>Enter Paid Amount</h3>
-      <input type="number" v-model.number="paidInput" placeholder="₱ Amount">
+      <input type="number" v-model.number="paidInput" placeholder="₱ Amount" />
       <button @click="confirmPaid">OK</button>
     </div>
   </div>
-
 </div>
 
 <script>
@@ -145,87 +97,80 @@ Vue.createApp({
       diffAmount: null
     }
   },
-
   methods: {
     async startPOS() {
+      // reset all UI and data for new POS
       this.items = [];
       this.grandTotal = 0;
-      this.status = "starting camera";
+      this.status = "camera starting";
       this.paidAmount = null;
       this.diffAmount = null;
+      this.paidInput = null;
 
       const r = await fetch(`${API}/pos/start`, { method:"POST" });
       const d = await r.json();
       this.purchase_number = d.purchase_number;
+
       this.posActive = true;
 
       if (this.reader) this.reader.reset();
       this.reader = new ZXing.BrowserMultiFormatReader();
 
       this.reader.decodeFromVideoDevice(null, "video", async (result) => {
-        if (!result || this.scanning) return;
-        this.scanning = true;
+        if (result && !this.scanning) {
+          this.scanning = true;
+          const barcode = result.text;
 
-        const barcode = result.text;
-        if (barcode === this.lastScan) { this.scanning = false; return; }
-        this.lastScan = barcode;
+          if (barcode === this.lastScan) { this.scanning = false; return; }
+          this.lastScan = barcode;
 
-        try {
-          const res = await fetch(`${API}/product/${barcode}`);
-          if (!res.ok) throw new Error();
-          const product = await res.json();
+          try {
+            const res = await fetch(`${API}/product/${barcode}`);
+            if (!res.ok) throw new Error("Product not found");
+            const product = await res.json();
 
-          const idx = this.items.findIndex(x => x.barcode === product.barcode);
+            const existingIndex = this.items.findIndex(x => x.barcode === product.barcode);
+            if (existingIndex >= 0) {
+              this.items[existingIndex].quantity += 1;
+              this.items[existingIndex].total_price = this.items[existingIndex].quantity * product.price;
+            } else {
+              this.items.push({
+                barcode: product.barcode,
+                name: product.name,
+                price: product.price,
+                quantity: 1,
+                total_price: product.price
+              });
+            }
 
-          if (idx >= 0) {
-            // ✅ ALWAYS ADD +1 (manual qty does NOT affect scan logic)
-            this.items[idx].quantity += 1;
-            this.items[idx].total_price =
-              this.items[idx].quantity * this.items[idx].price;
-          } else {
-            this.items.push({
-              barcode: product.barcode,
-              name: product.name,
-              price: product.price,
-              quantity: 1,          // ✅ RESET TO 1 ON SCAN
-              total_price: product.price
-            });
+            // beep
+            beepSound.currentTime = 0;
+            beepSound.play();
+
+            // show scan modal
+            this.showScanModal = true;
+            setTimeout(() => this.showScanModal = false, 800);
+
+            this.calculateTotal();
+            this.status = `Scanned: ${barcode}`;
+          } catch(e) {
+            alert("Scan failed or product not found");
+            console.error(e);
           }
 
-          beepSound.currentTime = 0;
-          beepSound.play();
-
-          this.showScanModal = true;
-          setTimeout(() => this.showScanModal = false, 600);
-
-          this.calculateTotal();
-          this.status = `Scanned: ${barcode}`;
-        } catch {
-          alert("Product not found");
+          setTimeout(() => { this.scanning=false; this.lastScan=null; this.status="ready for next scan"; }, 800);
         }
-
-        setTimeout(() => {
-          this.scanning = false;
-          this.lastScan = null;
-          this.status = "ready";
-        }, 700);
       });
     },
 
-    updateQty(index) {
-      const i = this.items[index];
-      if (!i.quantity || i.quantity < 1) i.quantity = 1;
-      i.total_price = i.quantity * i.price;
-      this.calculateTotal();
-    },
-
-    calculateTotal() {
-      this.grandTotal = this.items.reduce((s,i)=>s+i.total_price,0);
-    },
-
-    removeItem(index) {
-      this.items.splice(index,1);
-      this.calculateTotal();
+    calculateTotal() { this.grandTotal = this.items.reduce((sum,i)=>sum+i.total_price,0); },
+    removeItem(index) { this.items.splice(index,1); this.calculateTotal(); },
+    decreaseQty(index) {
+      if(this.items[index].quantity>1){
+        this.items[index].quantity -=1;
+        this.items[index].total_price = this.items[index].quantity * this.items[index].price;
+        this.calculateTotal();
+      }
     },
 
     donePOS() {
@@ -234,23 +179,31 @@ Vue.createApp({
     },
 
     async confirmPaid() {
+      if(this.paidInput === null || this.paidInput < 0) return alert("Enter valid amount");
       this.paidAmount = this.paidInput;
       this.diffAmount = this.grandTotal - this.paidAmount;
       this.showPaidModal = false;
       this.posActive = false;
-      if (this.reader) this.reader.reset();
 
-      await fetch(`${API}/pos/save`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-          purchase_number: this.purchase_number,
-          items: this.items,
-          paid_amount: this.paidAmount
-        })
-      });
+      if(this.reader) this.reader.reset();
 
-      alert("Purchase saved!");
+      // save purchase to backend
+      try {
+        const res = await fetch(`${API}/pos/save`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            purchase_number: this.purchase_number,
+            items: this.items,
+            paid_amount: this.paidAmount
+          })
+        });
+        if (!res.ok) throw new Error("Failed to save purchase");
+        alert("Purchase saved successfully!");
+      } catch (e) {
+        alert("Error saving purchase");
+        console.error(e);
+      }
     }
   }
 }).mount("#app");
