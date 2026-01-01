@@ -1,3 +1,6 @@
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+import pandas as pd
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
@@ -182,19 +185,36 @@ def pos_scan(
 def pos_report(
     page: int = 1,
     limit: int = 10,
+    purchase_number: str | None = None,
+    barcode: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     db: Session = Depends(get_db)
 ):
     offset = (page - 1) * limit
 
+    query = db.query(Purchase)
+
+    if purchase_number:
+        query = query.filter(Purchase.purchase_number.ilike(f"%{purchase_number}%"))
+
+    if barcode:
+        query = query.filter(Purchase.barcode.ilike(f"%{barcode}%"))
+
+    if date_from:
+        query = query.filter(Purchase.date >= date_from)
+
+    if date_to:
+        query = query.filter(Purchase.date <= date_to)
+
+    total = query.count()
+
     rows = (
-        db.query(Purchase)
-        .order_by(Purchase.date.desc())
+        query.order_by(Purchase.date.desc())
         .offset(offset)
         .limit(limit)
         .all()
     )
-
-    total = db.query(Purchase).count()
 
     return {
         "page": page,
@@ -249,3 +269,52 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
         db.add(p)
     db.commit()
     return {"status": "success", "message": f"{len(items)} items saved"}
+
+@app.get("/pos/report/export")
+def export_pos_report(
+    purchase_number: str | None = None,
+    barcode: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(Purchase)
+
+    if purchase_number:
+        query = query.filter(Purchase.purchase_number.ilike(f"%{purchase_number}%"))
+
+    if barcode:
+        query = query.filter(Purchase.barcode.ilike(f"%{barcode}%"))
+
+    if date_from:
+        query = query.filter(Purchase.date >= date_from)
+
+    if date_to:
+        query = query.filter(Purchase.date <= date_to)
+
+    rows = query.order_by(Purchase.date.desc()).all()
+
+    data = [
+        {
+            "Date": r.date.strftime("%Y-%m-%d %H:%M:%S"),
+            "Purchase Number": r.purchase_number,
+            "Barcode": r.barcode,
+            "Name": r.name,
+            "Price": r.price,
+            "Quantity": r.quantity,
+            "Total": r.total_price,
+        }
+        for r in rows
+    ]
+
+    df = pd.DataFrame(data)
+
+    buffer = BytesIO()
+    df.to_excel(buffer, index=False, engine="openpyxl")
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=pos_report.xlsx"}
+    )
