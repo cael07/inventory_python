@@ -6,7 +6,7 @@
   <script src="https://unpkg.com/vue@3"></script>
   <style>
     table { width:100%; border-collapse: collapse; }
-    th, td { border:1px solid #ccc; padding:6px; font-size:14px; }
+    th, td { border:1px solid #ccc; padding:6px; font-size:14px; text-align:center; }
     .loader { text-align:center; padding:10px; }
   </style>
 </head>
@@ -27,7 +27,6 @@
       <th>Total</th>
       <th>Remark</th>
     </tr>
-
     <tr v-for="(m, i) in rows" :key="m.id">
       <td>{{ i + 1 }}</td>
       <td>{{ m.date }}</td>
@@ -41,7 +40,8 @@
   </table>
 
   <div class="loader" v-if="loading">Loading...</div>
-  <div class="loader" v-if="!canLoadMore">End of log</div>
+  <div class="loader" v-if="!loading && rows.length && !canLoadMore">End of log</div>
+  <div class="loader" v-if="!loading && rows.length === 0">No records found</div>
 </div>
 
 <script>
@@ -69,16 +69,21 @@ Vue.createApp({
       if (this.loading || !this.canLoadMore) return;
       this.loading = true;
 
-      const res = await fetch(
-        `${API}/monitoring?page=${this.page}&limit=${this.limit}`
-      );
-      const data = await res.json();
+      try {
+        const res = await fetch(`${API}/monitoring?page=${this.page}&limit=${this.limit}`);
+        const data = await res.json();
 
-      this.rows.push(...data.items);
-      this.total = data.total_records;
-      this.page++;
+        if (data.items && data.items.length > 0) {
+          this.rows.push(...data.items); // append new items
+        }
 
-      this.loading = false;
+        this.total = data.total_records;
+        this.page++;
+      } catch (err) {
+        console.error("Error loading monitoring log:", err);
+      } finally {
+        this.loading = false;
+      }
     },
 
     handleScroll() {
@@ -92,8 +97,12 @@ Vue.createApp({
   },
 
   mounted() {
-    this.loadMore();
+    this.loadMore(); // initial load
     window.addEventListener("scroll", this.handleScroll);
+  },
+
+  unmounted() {
+    window.removeEventListener("scroll", this.handleScroll);
   }
 }).mount("#app");
 </script>
