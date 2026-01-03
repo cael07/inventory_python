@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Products</title>
+  <title>All Products</title>
   <script src="https://unpkg.com/vue@3"></script>
 
   <style>
@@ -10,6 +10,26 @@
       font-family: Arial, sans-serif;
       background: #f5f6fa;
       margin: 0;
+      padding: 0;
+    }
+
+    /* 🔷 TOP BAR */
+    .topbar {
+      width: 100%;
+      background: #1f3a5f; /* dark blue */
+      padding: 10px 16px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar img {
+      height: 32px;
+      cursor: pointer;
+    }
+
+    /* Page padding */
+    .page {
       padding: 20px;
     }
 
@@ -48,7 +68,7 @@
       position: relative;
       display: inline-block;
       padding: 6px 12px;
-      background: #1f3a5f;        /* dark blue */
+      background: #1f3a5f;
       color: white;
       font-size: 15px;
       border-radius: 6px;
@@ -68,7 +88,7 @@
       left: 0;
       width: 100%;
       height: 18px;
-      fill: #3498db;              /* blue wave */
+      fill: #3498db;
     }
 
     .wave-btn svg path {
@@ -84,39 +104,50 @@
 </head>
 <body>
 
-<!-- 🔹 Inline Header -->
-<div class="header">
-  <a href="product_management.html" class="wave-btn">
-    <span>⬅️ Back</span>
-    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
-      <path d="M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"></path>
-    </svg>
+<!-- 🔷 TOP BAR WITH LOGO -->
+<div class="topbar">
+  <a href="index.html">
+    <img src="logo.ico" alt="Logo">
   </a>
-
-  <h2>📦 All Products</h2>
 </div>
 
-<div id="app">
-  <table v-if="rows.length">
-    <tr>
-      <th>#</th>
-      <th>Barcode</th>
-      <th>Name</th>
-      <th>Price</th>
-      <th>Qty</th>
-    </tr>
-    <tr v-for="(p, i) in rows" :key="p.id">
-      <td>{{ i + 1 }}</td>
-      <td>{{ p.barcode }}</td>
-      <td>{{ p.name }}</td>
-      <td>₱{{ p.price }}</td>
-      <td>{{ p.quantity }}</td>
-    </tr>
-  </table>
+<div class="page">
 
-  <div class="loader" v-if="loading">Loading...</div>
-  <div class="loader" v-if="!loading && rows.length === 0">No records found</div>
-  <div class="loader" v-if="rows.length > 0 && !canLoadMore && !loading">End of list</div>
+  <!-- 🔹 Inline Header -->
+  <div class="header">
+    <a href="product_management.html" class="wave-btn">
+      <span>⬅️ Back</span>
+      <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+        <path d="M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"></path>
+      </svg>
+    </a>
+
+    <h2>📦 All Products</h2>
+  </div>
+
+  <div id="app">
+    <table v-if="rows.length">
+      <tr>
+        <th>#</th>
+        <th>Barcode</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Qty</th>
+      </tr>
+      <tr v-for="(p, i) in rows" :key="p.id">
+        <td>{{ i + 1 }}</td>
+        <td>{{ p.barcode }}</td>
+        <td>{{ p.name }}</td>
+        <td>₱{{ p.price }}</td>
+        <td>{{ p.quantity }}</td>
+      </tr>
+    </table>
+
+    <div class="loader" v-if="loading">Loading...</div>
+    <div class="loader" v-if="!loading && rows.length === 0">No records found</div>
+    <div class="loader" v-if="rows.length > 0 && !canLoadMore && !loading">End of list</div>
+  </div>
+
 </div>
 
 <script>
