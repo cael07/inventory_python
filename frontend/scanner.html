@@ -105,7 +105,7 @@
     </div>
   </div>
 
-  <!-- LAST 5 PRODUCTS -->
+  <!-- LAST 5 FROM MONITORING -->
   <div class="recent">
     <h3>🧾 Last 5 Products Added / Updated</h3>
 
@@ -210,9 +210,18 @@ Vue.createApp({
     },
 
     async loadRecent() {
-      const res = await fetch(`${API}/products`);
+      const res = await fetch(`${API}/monitoring`);
       const data = await res.json();
-      this.recentProducts = data.slice(-5).reverse();
+
+      // get latest entry per barcode
+      const map = {};
+      for (const m of data) {
+        if (!map[m.barcode]) {
+          map[m.barcode] = m;
+        }
+      }
+
+      this.recentProducts = Object.values(map).slice(0, 5);
     },
 
     cancel() {
