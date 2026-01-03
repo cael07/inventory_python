@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/vue@3"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <style>
+    video { width:100%; max-width:400px; border:2px solid #333; }
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
+    .modal-box { background:#fff; padding:20px; width:300px; border-radius:6px; }
+    input { width:100%; margin-bottom:10px; padding:6px; }
+    button { padding:12px 20px; font-size:16px; margin-right:5px; }
+  </style>
+</head>
+
+<body>
+<a href="index.html">⬅️ Back to Dashboard</a>
+
+<div id="app">
+  <h2>📷 Product Scanner</h2>
+  <button @click="startScan">Scan Barcode</button>
+  <p>Status: {{ status }}</p>
+
+  <video id="video"></video>
+
+  <!-- ADD PRODUCT -->
+  <div v-if="showAdd" class="modal">
+    <div class="modal-box">
+      <h3>New Product</h3>
+      <input v-model="form.barcode" readonly>
+      <input v-model="form.name" placeholder="Name">
+      <input v-model="form.price" type="number" placeholder="Price">
+      <input v-model="form.quantity" type="number" placeholder="Quantity">
+      <button @click="save">Save</button>
+      <button @click="close">Close</button>
+    </div>
+  </div>
+
+  <!-- UPDATE PRODUCT -->
+  <div v-if="showUpdate" class="modal">
+    <div class="modal-box">
+      <h3>Update Product</h3>
+      <input v-model="update.barcode" readonly>
+      <input v-model="update.name" readonly>
+      <input v-model="update.price" type="number">
+      <input v-model="update.quantity" type="number" placeholder="Add Qty">
+      <input v-model="update.remark" placeholder="Remark">
+      <button @click="updateProduct">Save</button>
+      <button @click="closeUpdate">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://inventory-python.onrender.com";
+
+Vue.createApp({
+  data() {
+    return {
+      reader:null,
+      status:"idle",
+      showAdd:false,
+      showUpdate:false,
+      form:{ barcode:"", name:"", price:0, quantity:0 },
+      update:{ barcode:"", name:"", price:0, quantity:0, remark:"" }
+    }
+  },
+  methods:{
+    startScan(){
+      this.reader = new ZXing.BrowserMultiFormatReader();
+      this.status="scanning";
+
+      this.reader.decodeFromVideoDevice(null,"video",(res)=>{
+        if(!res) return;
+        this.reader.reset();
+        const code = res.text;
+
+        fetch(`${API}/product/${code}`)
+          .then(r=>r.json())
+          .then(p=>{
+            if(p && p.barcode){
+              this.update = { barcode:p.barcode, name:p.name, price:p.price, quantity:0, remark:"" };
+              this.showUpdate=true;
+            } else {
+              this.form = { barcode:code, name:"", price:0, quantity:0 };
+              this.showAdd=true;
+            }
+          })
+          .catch(()=>{
+            this.form = { barcode:code, name:"", price:0, quantity:0 };
+            this.showAdd=true;
+          });
+      });
+    },
+
+    async save(){
+      await fetch(`${API}/update_product/${this.form.barcode}`,{
+        method:"PUT",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          ...this.form,
+          total_price:this.form.price*this.form.quantity,
+          remark:"New"
+        })
+      });
+      alert("Saved");
+      this.close();
+    },
+
+    async updateProduct(){
+      await fetch(`${API}/update_product/${this.update.barcode}`,{
+        method:"PUT",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          ...this.update,
+          total_price:this.update.price*this.update.quantity
+        })
+      });
+      alert("Updated");
+      this.closeUpdate();
+    },
+
+    close(){ this.showAdd=false; },
+    closeUpdate(){ this.showUpdate=false; }
+  }
+}).mount("#app");
+</script>
+</body>
+</html>

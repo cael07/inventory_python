@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/vue@3"></script>
+  <style>
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ border:1px solid #ccc; padding:6px; text-align:center; }
+  </style>
+</head>
+
+<body>
+<a href="index.html">⬅️ Back</a>
+
+<div id="app">
+  <h2>📝 Monitoring Log</h2>
+
+  <table>
+    <tr>
+      <th>#</th><th>Date</th><th>Barcode</th><th>Name</th>
+      <th>Price</th><th>Qty</th><th>Total</th><th>Remark</th>
+    </tr>
+
+    <tr v-for="(m,i) in logs" :key="m.id">
+      <td>{{ i+1 }}</td>
+      <td>{{ m.date }}</td>
+      <td>{{ m.barcode }}</td>
+      <td>{{ m.name }}</td>
+      <td>₱{{ m.price }}</td>
+      <td>{{ m.quantity }}</td>
+      <td>₱{{ m.total_price }}</td>
+      <td>{{ m.remark }}</td>
+    </tr>
+  </table>
+</div>
+
+<script>
+const API="https://inventory-python.onrender.com";
+Vue.createApp({
+  data(){ return{ logs:[] } },
+  mounted(){
+    fetch(`${API}/monitoring`)
+      .then(r=>r.json())
+      .then(d=>this.logs=d);
+  }
+}).mount("#app");
+</script>
+</body>
+</html>
