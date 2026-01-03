@@ -16,10 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <!-- Dropdown Menu -->
     <div class="topbar-dropdown" id="dropdown-menu">
-      <a href="product_management.html">Product Management</a>
-      <a href="scanner.html">Scanner</a>
-      <a href="products.html">All Products</a>
-      <a href="monitoring.html">Monitoring Log</a>
+        <a href="pos.html">🧾 POS</a>
+        <a href="product_management.html">📦 Product Management</a>
+        <a href="report.html">📊 Reports</a>
+        <a href="#">⚙️ Settings</a>
     </div>
   `;
 
