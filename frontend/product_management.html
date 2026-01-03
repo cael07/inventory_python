@@ -39,16 +39,19 @@ h2 {
   text-decoration: none;
 }
 
-/* Wave SVG overlay */
+/* Wave overlay */
 .wave-btn svg {
   position: absolute;
-  bottom: 0;
+  bottom: 0;         /* lower wave */
   left: 0;
-  width: 200%;
-  height: 100%;
-  fill: rgba(255,255,255,0.2);
-  animation: wave 4s linear infinite;
-  z-index: 0;
+  width: 100%;
+  height: 40px;      /* wave height */
+  fill: #3498db;     /* blue color */
+}
+
+/* Animate wave like seesaw */
+.wave-btn svg path {
+  animation: waveOscillate 2s ease-in-out infinite alternate;
 }
 
 /* Keep text above wave */
@@ -70,10 +73,11 @@ h2 {
   background: #95a5a6;
 }
 
-/* Wave movement animation */
-@keyframes wave {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+/* Seesaw wave animation */
+@keyframes waveOscillate {
+  0%   { d: path("M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"); }
+  50%  { d: path("M0,10 C30,0 60,30 120,10 L120,40 L0,40 Z"); }
+  100% { d: path("M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"); }
 }
 </style>
 </head>
@@ -84,29 +88,29 @@ h2 {
 <div class="menu">
   <a href="scanner.html" class="wave-btn">
     <span>📷 Product Scanner</span>
-    <svg viewBox="0 0 120 28" preserveAspectRatio="none">
-      <path d="M0,10 C30,20 60,0 120,10 L120,30 L0,30 Z"></path>
+    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+      <path d="M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"></path>
     </svg>
   </a>
 
   <a href="products.html" class="wave-btn">
     <span>📦 View All Products</span>
-    <svg viewBox="0 0 120 28" preserveAspectRatio="none">
-      <path d="M0,10 C30,20 60,0 120,10 L120,30 L0,30 Z"></path>
+    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+      <path d="M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"></path>
     </svg>
   </a>
 
   <a href="monitoring.html" class="wave-btn">
     <span>📝 Monitoring Log</span>
-    <svg viewBox="0 0 120 28" preserveAspectRatio="none">
-      <path d="M0,10 C30,20 60,0 120,10 L120,30 L0,30 Z"></path>
+    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+      <path d="M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"></path>
     </svg>
   </a>
 
   <a href="index.html" class="wave-btn back">
     <span>⬅️ Back to Dashboard</span>
-    <svg viewBox="0 0 120 28" preserveAspectRatio="none">
-      <path d="M0,10 C30,20 60,0 120,10 L120,30 L0,30 Z"></path>
+    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+      <path d="M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"></path>
     </svg>
   </a>
 </div>
