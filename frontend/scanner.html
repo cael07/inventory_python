@@ -1,69 +1,143 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Product Scanner</title>
-  <script src="https://unpkg.com/vue@3"></script>
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
-  <style>
-    body { font-family: Arial; padding: 10px; }
-    video { width: 100%; max-width: 400px; border: 2px solid #333; }
-    button { padding: 12px 18px; font-size: 16px; margin: 5px 5px 5px 0; }
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
-    .modal-box { background: #fff; padding: 20px; width: 300px; border-radius: 6px; }
-    input { width: 100%; padding: 6px; margin-bottom: 10px; }
-    .recent { margin-top: 20px; background: #f4f4f4; padding: 10px; border-radius: 6px; }
-    .recent h3 { margin-top: 0; }
-    .recent-item { font-size: 14px; padding: 6px 0; border-bottom: 1px solid #ddd; }
-    .recent-item:last-child { border-bottom: none; }
-  </style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scanner</title>
+<script src="https://unpkg.com/vue@3"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<style>
+body { font-family: Arial; padding: 0; margin: 0; background: #f5f6fa; }
+
+/* 🔷 Top bar placeholder */
+.page {
+  padding: 20px;
+}
+
+/* 🔹 Inline header with wave back button */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+/* 🌊 Wave Back Button */
+.wave-btn {
+  position: relative;
+  display: inline-block;
+  padding: 6px 12px;
+  background: #1f3a5f;
+  color: white;
+  font-size: 15px;
+  border-radius: 6px;
+  text-decoration: none;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.wave-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+.wave-btn svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 18px;
+  fill: #3498db;
+}
+
+.wave-btn svg path {
+  animation: waveOscillate 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes waveOscillate {
+  0%   { d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"); }
+  50%  { d: path("M0,8 C30,0 60,20 120,8 L120,40 L0,40 Z"); }
+  100% { d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"); }
+}
+
+/* Scanner video & buttons */
+video { width: 100%; max-width: 400px; border: 2px solid #333; margin-top: 10px; }
+button { padding: 12px 18px; font-size: 16px; margin: 5px 5px 5px 0; }
+
+/* Modal */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+.modal-box { background: #fff; padding: 20px; width: 300px; border-radius: 6px; }
+input { width: 100%; padding: 6px; margin-bottom: 10px; }
+
+/* Recent products */
+.recent { margin-top: 20px; background: #f4f4f4; padding: 10px; border-radius: 6px; }
+.recent h3 { margin-top: 0; }
+.recent-item { font-size: 14px; padding: 6px 0; border-bottom: 1px solid #ddd; }
+.recent-item:last-child { border-bottom: none; }
+</style>
 </head>
 <body>
 
-<a href="product_management.html">⬅️ Back to Menu</a>
+<div class="page">
 
-<div id="app">
-  <h2>📷 Product Scanner</h2>
-  <button @click="startScan">Scan Barcode</button>
-  <p>Status: {{ status }}</p>
-  <video id="video"></video>
+  <!-- 🔹 Header with wave back button inline -->
+  <div class="header">
+    <a href="product_management.html" class="wave-btn">
+      <span>⬅️ Back</span>
+      <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+        <path d="M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"></path>
+      </svg>
+    </a>
+    <h2>📷 Product Scanner</h2>
+  </div>
 
-  <!-- ADD PRODUCT -->
-  <div v-if="showModal" class="modal">
-    <div class="modal-box">
-      <h3>New Product</h3>
-      <input v-model="form.barcode" readonly />
-      <input v-model="form.name" placeholder="Product Name" />
-      <input v-model="form.price" type="number" placeholder="Price" />
-      <input v-model="form.quantity" type="number" placeholder="Quantity" />
-      <button @click="save">Save</button>
-      <button @click="cancel">Close</button>
+  <div id="app">
+    <button @click="startScan">Scan Barcode</button>
+    <p>Status: {{ status }}</p>
+    <video id="video"></video>
+
+    <!-- ADD PRODUCT -->
+    <div v-if="showModal" class="modal">
+      <div class="modal-box">
+        <h3>New Product</h3>
+        <input v-model="form.barcode" readonly />
+        <input v-model="form.name" placeholder="Product Name" />
+        <input v-model="form.price" type="number" placeholder="Price" />
+        <input v-model="form.quantity" type="number" placeholder="Quantity" />
+        <button @click="save">Save</button>
+        <button @click="cancel">Close</button>
+      </div>
+    </div>
+
+    <!-- UPDATE PRODUCT -->
+    <div v-if="showUpdateModal" class="modal">
+      <div class="modal-box">
+        <h3>Update Product</h3>
+        <input v-model="updateForm.barcode" readonly />
+        <input v-model="updateForm.name" readonly />
+        <input v-model="updateForm.price" type="number" placeholder="Price" />
+        <input v-model="updateForm.quantity" type="number" placeholder="Add Quantity" />
+        <input v-model="updateForm.remark" placeholder="Remark" />
+        <button @click="updateProduct">Save</button>
+        <button @click="cancelUpdate">Close</button>
+      </div>
+    </div>
+
+    <!-- LAST 5 FROM MONITORING -->
+    <div class="recent">
+      <h3>🧾 Latest 5 Products</h3>
+      <div v-if="recentProducts.length === 0">No products yet</div>
+      <div v-for="p in recentProducts" :key="p.id" class="recent-item">
+        <b>{{ p.name }}</b><br>
+        {{ p.barcode }} — ₱{{ p.price }} — Qty: {{ p.quantity }}
+      </div>
     </div>
   </div>
 
-  <!-- UPDATE PRODUCT -->
-  <div v-if="showUpdateModal" class="modal">
-    <div class="modal-box">
-      <h3>Update Product</h3>
-      <input v-model="updateForm.barcode" readonly />
-      <input v-model="updateForm.name" readonly />
-      <input v-model="updateForm.price" type="number" placeholder="Price" />
-      <input v-model="updateForm.quantity" type="number" placeholder="Add Quantity" />
-      <input v-model="updateForm.remark" placeholder="Remark" />
-      <button @click="updateProduct">Save</button>
-      <button @click="cancelUpdate">Close</button>
-    </div>
-  </div>
-
-  <!-- LAST 5 FROM MONITORING -->
-  <div class="recent">
-    <h3>🧾 Last 5 Products Added / Updated</h3>
-    <div v-if="recentProducts.length === 0">No products yet</div>
-    <div v-for="p in recentProducts" :key="p.id" class="recent-item">
-      <b>{{ p.name }}</b><br>
-      {{ p.barcode }} — ₱{{ p.price }} — Qty: {{ p.quantity }}
-    </div>
-  </div>
 </div>
 
 <script>
@@ -90,7 +164,6 @@ Vue.createApp({
     startScan() {
       this.status = "Scanning...";
       this.reader = new ZXing.BrowserMultiFormatReader();
-
       this.reader.decodeFromVideoDevice(null, "video", async (result) => {
         if (result) {
           this.reader.reset();
@@ -122,7 +195,7 @@ Vue.createApp({
         body: JSON.stringify({ ...this.form, total_price: this.form.price * this.form.quantity, remark: "New" })
       });
       this.cancel();
-      await this.loadRecent(); // reload latest
+      await this.loadRecent();
       alert("Product saved");
     },
 
@@ -133,7 +206,7 @@ Vue.createApp({
         body: JSON.stringify({ ...this.updateForm, total_price: this.updateForm.price * this.updateForm.quantity })
       });
       this.cancelUpdate();
-      await this.loadRecent(); // reload latest
+      await this.loadRecent();
       alert("Product updated");
     },
 
