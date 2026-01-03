@@ -4,6 +4,7 @@ import pandas as pd
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func, cast, Date
 
 from backend.database import SessionLocal, engine
 from backend.models import User, Product, ProductMonitoring, Purchase
@@ -385,3 +386,39 @@ def export_pos_report(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=pos_report.xlsx"}
     )
+
+
+# ---------------- 📊 PURCHASE STATS ----------------
+@app.get("/stats/purchases/daily")
+def purchase_stats_daily(db: Session = Depends(get_db)):
+    rows = (
+        db.query(
+            cast(Purchase.date, Date).label("date"),
+            func.sum(Purchase.total_price).label("total")
+        )
+        .group_by(cast(Purchase.date, Date))
+        .order_by(cast(Purchase.date, Date))
+        .all()
+    )
+
+    return [
+        {"date": r.date.strftime("%Y-%m-%d"), "total": float(r.total or 0)}
+        for r in rows
+    ]
+
+@app.get("/stats/purchases/monthly")
+def purchase_stats_monthly(db: Session = Depends(get_db)):
+    rows = (
+        db.query(
+            func.to_char(Purchase.date, "YYYY-MM").label("month"),
+            func.sum(Purchase.total_price).label("total")
+        )
+        .group_by(func.to_char(Purchase.date, "YYYY-MM"))
+        .order_by(func.to_char(Purchase.date, "YYYY-MM"))
+        .all()
+    )
+
+    return [
+        {"month": r.month, "total": float(r.total or 0)}
+        for r in rows
+    ]

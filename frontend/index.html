@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="/static/css/topbar.css">
   <script src="/static/js/topbar.js" defer></script>
 
+  <!-- 📊 Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     /* Reset body padding/margin for topbar */
     body {
@@ -19,7 +22,7 @@
 
     /* Page content wrapper */
     .page {
-      padding: 20px; /* only page content has padding */
+      padding: 20px;
       max-width: 800px;
       margin: 0 auto;
     }
@@ -43,27 +46,21 @@
       transform: translateY(-2px);
     }
 
-    /* Optional: topbar hamburger button */
-    .topbar-hamburger {
-      width: 32px;
-      height: 32px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-around;
-      cursor: pointer;
+    h3 {
+      margin-top: 30px;
     }
 
-    .topbar-hamburger span {
-      display: block;
-      height: 3px;
+    canvas {
       background: white;
-      border-radius: 2px;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
   </style>
 </head>
 <body>
 
-<!-- Topbar is injected by topbar.js -->
+<!-- Topbar injected by topbar.js -->
 
 <div class="page">
   <h2>📊 Dashboard</h2>
@@ -73,7 +70,67 @@
   <a href="products.html" class="menu-link">📦 All Products</a>
   <a href="monitoring.html" class="menu-link">📝 Monitoring</a>
   <a href="product_management.html" class="menu-link">⚙️ Product Management</a>
+
+  <!-- 📊 GRAPHS -->
+  <h3>📊 Daily Purchases</h3>
+  <canvas id="dailyChart" height="120"></canvas>
+
+  <h3>📈 Monthly Purchases</h3>
+  <canvas id="monthlyChart" height="120"></canvas>
 </div>
+
+<script>
+const API = "https://inventory-python.onrender.com"; // or http://localhost:8000
+
+async function loadDailyChart() {
+  const res = await fetch(`${API}/stats/purchases/daily`);
+  const data = await res.json();
+
+  new Chart(document.getElementById("dailyChart"), {
+    type: "bar",
+    data: {
+      labels: data.map(d => d.date),
+      datasets: [{
+        label: "Daily Purchase Total (₱)",
+        data: data.map(d => d.total),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+
+async function loadMonthlyChart() {
+  const res = await fetch(`${API}/stats/purchases/monthly`);
+  const data = await res.json();
+
+  new Chart(document.getElementById("monthlyChart"), {
+    type: "line",
+    data: {
+      labels: data.map(d => d.month),
+      datasets: [{
+        label: "Monthly Purchase Total (₱)",
+        data: data.map(d => d.total),
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+
+loadDailyChart();
+loadMonthlyChart();
+</script>
 
 </body>
 </html>
