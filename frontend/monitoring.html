@@ -5,9 +5,9 @@
   <title>Monitoring Log</title>
   <script src="https://unpkg.com/vue@3"></script>
   <style>
-    table { width:100%; border-collapse: collapse; }
+    table { width:100%; border-collapse: collapse; margin-bottom: 20px; }
     th, td { border:1px solid #ccc; padding:6px; font-size:14px; text-align:center; }
-    .loader { text-align:center; padding:10px; }
+    .loader { text-align:center; padding:10px; font-weight:bold; }
   </style>
 </head>
 <body>
@@ -16,7 +16,7 @@
 <h2>📝 Monitoring Log</h2>
 
 <div id="app">
-  <table v-if="rows.length">
+  <table v-if="rows.length > 0">
     <tr>
       <th>#</th>
       <th>Date</th>
@@ -29,7 +29,7 @@
     </tr>
     <tr v-for="(m, i) in rows" :key="m.id">
       <td>{{ i + 1 }}</td>
-      <td>{{ m.date }}</td>
+      <td>{{ formatDate(m.date) }}</td>
       <td>{{ m.barcode }}</td>
       <td>{{ m.name }}</td>
       <td>₱{{ m.price }}</td>
@@ -66,7 +66,7 @@ Vue.createApp({
 
   methods: {
     async loadMore() {
-      if (this.loading || !this.canLoadMore) return;
+      if (this.loading || (this.total && !this.canLoadMore)) return;
       this.loading = true;
 
       try {
@@ -93,6 +93,12 @@ Vue.createApp({
       ) {
         this.loadMore();
       }
+    },
+
+    formatDate(dt) {
+      // simple format YYYY-MM-DD HH:MM:SS
+      if (!dt) return "";
+      return dt.replace("T", " ").split(".")[0];
     }
   },
 
