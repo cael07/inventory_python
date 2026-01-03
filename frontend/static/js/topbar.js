@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bar.innerHTML = `
     <div class="topbar">
       <a href="index.html">
-        <img src="/static/img/logo.ico" alt="Logo">
+        <img src="/static/img/cael.ico" alt="Logo">
       </a>
     </div>
   `;
