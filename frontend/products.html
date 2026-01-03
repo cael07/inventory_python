@@ -2,43 +2,94 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>All Products</title>
   <script src="https://unpkg.com/vue@3"></script>
   <style>
-    table{ width:100%; border-collapse:collapse; }
-    th,td{ border:1px solid #ccc; padding:6px; text-align:center; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+    .loader { text-align:center; padding:10px; }
   </style>
 </head>
-
 <body>
-<a href="index.html">⬅️ Back</a>
+
+<a href="product_management.html">⬅️ Back</a>
+<h2>📦 All Products</h2>
 
 <div id="app">
-  <h2>📦 Products</h2>
-
-  <table>
+  <table v-if="rows.length">
     <tr>
-      <th>#</th><th>Barcode</th><th>Name</th><th>Price</th><th>Qty</th>
+      <th>#</th>
+      <th>Barcode</th>
+      <th>Name</th>
+      <th>Price</th>
+      <th>Qty</th>
     </tr>
-    <tr v-for="(p,i) in products" :key="p.id">
-      <td>{{ i+1 }}</td>
+    <tr v-for="(p, i) in rows" :key="p.id">
+      <td>{{ i + 1 }}</td>
       <td>{{ p.barcode }}</td>
       <td>{{ p.name }}</td>
       <td>₱{{ p.price }}</td>
       <td>{{ p.quantity }}</td>
     </tr>
   </table>
+
+  <div class="loader" v-if="loading">Loading...</div>
+  <div class="loader" v-if="!canLoadMore">End of list</div>
 </div>
 
 <script>
-const API="https://inventory-python.onrender.com";
+const API = "https://inventory-python.onrender.com";
+
 Vue.createApp({
-  data(){ return{ products:[] } },
-  mounted(){
-    fetch(`${API}/products`)
-      .then(r=>r.json())
-      .then(d=>this.products=d);
+  data() {
+    return {
+      rows: [],
+      page: 1,
+      limit: 20,
+      total: 0,
+      loading: false
+    }
+  },
+
+  computed: {
+    canLoadMore() {
+      return this.rows.length < this.total;
+    }
+  },
+
+  methods: {
+    async loadMore() {
+      if (this.loading || !this.canLoadMore) return;
+      this.loading = true;
+
+      const res = await fetch(
+        `${API}/products?page=${this.page}&limit=${this.limit}`
+      );
+      const data = await res.json();
+
+      this.rows.push(...data.items);
+      this.total = data.total_records;
+      this.page++;
+
+      this.loading = false;
+    },
+
+    handleScroll() {
+      if (
+        window.innerHeight + window.scrollY >=
+        document.body.offsetHeight - 50
+      ) {
+        this.loadMore();
+      }
+    }
+  },
+
+  mounted() {
+    this.loadMore();
+    window.addEventListener("scroll", this.handleScroll);
   }
 }).mount("#app");
 </script>
+
 </body>
 </html>

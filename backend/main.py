@@ -90,8 +90,29 @@ def get_product(barcode: str, db: Session = Depends(get_db)):
     return db.query(Product).filter_by(barcode=barcode).first()
 
 @app.get("/products")
-def get_products(db: Session = Depends(get_db)):
-    return db.query(Product).order_by(Product.id.desc()).all()
+def get_products(
+    page: int = 1,
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    offset = (page - 1) * limit
+
+    items = (
+        db.query(Product)
+        .order_by(Product.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    total = db.query(Product).count()
+
+    return {
+        "page": page,
+        "limit": limit,
+        "total_records": total,
+        "items": items
+    }
 
 # ---------------- MONITORING ----------------
 @app.put("/update_product/{barcode}")
@@ -134,8 +155,42 @@ def update_product_item(
 
 
 @app.get("/monitoring")
-def get_monitoring(db: Session = Depends(get_db)):
-    return db.query(ProductMonitoring).order_by(ProductMonitoring.date.desc()).all()
+def get_monitoring(
+    page: int = 1,
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    offset = (page - 1) * limit
+
+    rows = (
+        db.query(ProductMonitoring)
+        .order_by(ProductMonitoring.date.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    total = db.query(ProductMonitoring).count()
+
+    return {
+        "page": page,
+        "limit": limit,
+        "total_records": total,
+        "items": [
+            {
+                "id": r.id,
+                "barcode": r.barcode,
+                "name": r.name,
+                "price": r.price,
+                "quantity": r.quantity,
+                "total_price": r.total_price,
+                "remark": r.remark,
+                "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            for r in rows
+        ]
+    }
+
 
 @app.post("/pos/start")
 def start_pos():
