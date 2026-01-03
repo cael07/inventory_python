@@ -12,6 +12,11 @@
   <script src="/static/js/topbar.js" defer></script>
 
   <style>
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: #f5f6fa;
@@ -37,10 +42,18 @@
       font-size: 22px;
     }
 
-    table {
+    /* ✅ TABLE SCROLL CONTAINER */
+    .table-wrap {
       width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      min-width: 900px; /* allows wide columns safely */
       border-collapse: collapse;
       margin-bottom: 20px;
+      background: #fff;
     }
 
     th, td {
@@ -48,6 +61,7 @@
       padding: 6px;
       font-size: 14px;
       text-align: center;
+      white-space: nowrap;
     }
 
     .loader {
@@ -98,6 +112,8 @@
 
 <body>
 
+<!-- 🔷 TOP BAR (Injected by topbar.js) -->
+
 <div class="page">
 
   <!-- 🔹 Inline Header -->
@@ -113,33 +129,38 @@
   </div>
 
   <div id="app">
-    <table v-if="rows.length > 0">
-      <tr>
-        <th>#</th>
-        <th>Date</th>
-        <th>Barcode</th>
-        <th>Name</th>
-        <th>Price</th>
-        <th>Qty</th>
-        <th>Total</th>
-        <th>Remark</th>
-      </tr>
 
-      <tr v-for="(m, i) in rows" :key="m.id">
-        <td>{{ i + 1 }}</td>
-        <td>{{ formatDate(m.date) }}</td>
-        <td>{{ m.barcode }}</td>
-        <td>{{ m.name }}</td>
-        <td>₱{{ m.price }}</td>
-        <td>{{ m.quantity }}</td>
-        <td>₱{{ m.total_price }}</td>
-        <td>{{ m.remark }}</td>
-      </tr>
-    </table>
+    <!-- ✅ Scroll-safe table -->
+    <div class="table-wrap">
+      <table v-if="rows.length > 0">
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Barcode</th>
+          <th>Name</th>
+          <th>Price</th>
+          <th>Qty</th>
+          <th>Total</th>
+          <th>Remark</th>
+        </tr>
+
+        <tr v-for="(m, i) in rows" :key="m.id">
+          <td>{{ i + 1 }}</td>
+          <td>{{ formatDate(m.date) }}</td>
+          <td>{{ m.barcode }}</td>
+          <td>{{ m.name }}</td>
+          <td>₱{{ m.price }}</td>
+          <td>{{ m.quantity }}</td>
+          <td>₱{{ m.total_price }}</td>
+          <td>{{ m.remark }}</td>
+        </tr>
+      </table>
+    </div>
 
     <div class="loader" v-if="loading">Loading...</div>
     <div class="loader" v-if="!loading && rows.length && !canLoadMore">End of log</div>
     <div class="loader" v-if="!loading && rows.length === 0">No records found</div>
+
   </div>
 
 </div>
