@@ -13,6 +13,16 @@ body {
   font-family: Arial, sans-serif;
   background: #f5f6fa;
   margin: 0;
+  padding: 0; /* remove page padding for topbar */
+}
+
+/* 🔷 Top bar placeholder if needed */
+.topbar {
+  width: 100%;
+}
+
+/* Page content padding */
+.page {
   padding: 20px;
 }
 
@@ -41,59 +51,108 @@ h2 {
   overflow: hidden;
 }
 
-/* 🌈 Animated text */
+/* Animated text wrapper */
 .menu-btn span {
   display: inline-block;
   animation: textWave 4s ease-in-out infinite;
+}
+
+/* Scanner: blue theme */
+.menu-btn.scanner span {
+  --start-color: #ecf0f1;
+  --color1: #5dade2;
+  --color2: #48c9b0;
+  --color3: #85c1e9;
+  animation-name: textWaveBlue;
+}
+
+/* Products: red theme */
+.menu-btn.products span {
+  --start-color: #f0e5e5;
+  --color1: #e74c3c;
+  --color2: #ec7063;
+  --color3: #f1948a;
+  animation-name: textWaveRed;
+}
+
+/* Monitoring: green theme */
+.menu-btn.monitoring span {
+  --start-color: #e8f8f5;
+  --color1: #27ae60;
+  --color2: #2ecc71;
+  --color3: #58d68d;
+  animation-name: textWaveGreen;
+}
+
+/* Dashboard button (gray, static) */
+.menu-btn.dashboard {
+  background: #7f8c8d;
+}
+
+.menu-btn.dashboard span {
+  animation: none;
+  color: #ffffff;
+}
+
+/* 🔹 ANIMATION KEYFRAMES */
+@keyframes textWaveBlue {
+  0%   { color: var(--start-color); }
+  25%  { color: var(--color1); }
+  50%  { color: var(--color2); }
+  75%  { color: var(--color3); }
+  100% { color: var(--start-color); }
+}
+
+@keyframes textWaveRed {
+  0%   { color: var(--start-color); }
+  25%  { color: var(--color1); }
+  50%  { color: var(--color2); }
+  75%  { color: var(--color3); }
+  100% { color: var(--start-color); }
+}
+
+@keyframes textWaveGreen {
+  0%   { color: var(--start-color); }
+  25%  { color: var(--color1); }
+  50%  { color: var(--color2); }
+  75%  { color: var(--color3); }
+  100% { color: var(--start-color); }
 }
 
 /* Faster animation on hover */
 .menu-btn:hover span {
   animation-duration: 1.5s;
 }
-
-/* Dashboard button (NO animation) */
-.dashboard {
-  background: #7f8c8d;
-}
-
-.dashboard span {
-  animation: none;
-  color: #ffffff;
-}
-
-/* 🌊 TEXT COLOR ANIMATION */
-@keyframes textWave {
-  0%   { color: #ecf0f1; }
-  25%  { color: #5dade2; }
-  50%  { color: #48c9b0; }
-  75%  { color: #85c1e9; }
-  100% { color: #ecf0f1; }
-}
 </style>
 </head>
-
 <body>
 
-<h2>📦 Product Management</h2>
+<!-- 🔷 TOP BAR -->
+<div class="topbar">
+  <!-- optional logo here -->
+</div>
 
-<div class="menu">
-  <a href="scanner.html" class="menu-btn">
-    <span>📷 Product Scanner</span>
-  </a>
+<div class="page">
+  <h2>📦 Product Management</h2>
 
-  <a href="products.html" class="menu-btn">
-    <span>📦 View All Products</span>
-  </a>
+  <div class="menu">
+    <a href="scanner.html" class="menu-btn scanner">
+      <span>📷 Product Scanner</span>
+    </a>
 
-  <a href="monitoring.html" class="menu-btn">
-    <span>📝 Monitoring Log</span>
-  </a>
+    <a href="products.html" class="menu-btn products">
+      <span>📦 View All Products</span>
+    </a>
 
-  <!-- Dashboard button (static gray) -->
-  <a href="index.html" class="menu-btn dashboard">
-    <span>⬅️ Back to Dashboard</span>
-  </a>
+    <a href="monitoring.html" class="menu-btn monitoring">
+      <span>📝 Monitoring Log</span>
+    </a>
+
+    <!-- Dashboard button (static gray) -->
+    <a href="index.html" class="menu-btn dashboard">
+      <span>⬅️ Back to Dashboard</span>
+    </a>
+  </div>
 </div>
 
 </body>
