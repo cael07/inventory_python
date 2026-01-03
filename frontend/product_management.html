@@ -13,57 +13,43 @@ body {
   font-family: Arial, sans-serif;
   background: #f5f6fa;
   margin: 0;
-  padding: 0; /* remove default page padding */
+  padding: 0; /* remove page padding for topbar */
 }
 
-/* Page content */
+/* Page content padding */
 .page {
   padding: 20px;
-  margin-top: 50px; /* same as topbar height */
 }
 
-/* Inline header row */
-.header {
-  display: flex;
-  align-items: center; /* vertical center */
-  gap: 10px;
-  margin-bottom: 15px;
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
 }
 
-/* Inline h2 */
-.header h2 {
-  margin: 0;
-  font-size: 20px;
-  line-height: 1.2; /* compact line */
-}
-
-/* Menu container */
 .menu {
   max-width: 400px;
   margin: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
 }
 
-/* Menu buttons */
+/* 🔹 MENU BUTTON */
 .menu-btn {
   display: block;
-  padding: 8px 14px; /* compact padding */
-  font-size: 16px;
+  padding: 18px;
   text-align: center;
-  border-radius: 6px;
+  font-size: 18px;
   background: #2c3e50;
-  color: white;
+  border-radius: 8px;
   text-decoration: none;
   overflow: hidden;
 }
 
-/* Animated text */
+/* Animated text wrapper */
 .menu-btn span {
   display: inline-block;
   animation: textWave 4s ease-in-out infinite;
-  line-height: 1.2;
 }
 
 /* Scanner: blue theme */
@@ -97,12 +83,13 @@ body {
 .menu-btn.dashboard {
   background: #7f8c8d;
 }
+
 .menu-btn.dashboard span {
   animation: none;
   color: #ffffff;
 }
 
-/* Keyframes for animated text */
+/* 🔹 ANIMATION KEYFRAMES */
 @keyframes textWaveBlue {
   0%   { color: var(--start-color); }
   25%  { color: var(--color1); }
@@ -110,6 +97,7 @@ body {
   75%  { color: var(--color3); }
   100% { color: var(--start-color); }
 }
+
 @keyframes textWaveRed {
   0%   { color: var(--start-color); }
   25%  { color: var(--color1); }
@@ -117,6 +105,7 @@ body {
   75%  { color: var(--color3); }
   100% { color: var(--start-color); }
 }
+
 @keyframes textWaveGreen {
   0%   { color: var(--start-color); }
   25%  { color: var(--color1); }
@@ -133,19 +122,8 @@ body {
 </head>
 <body>
 
-<!-- 🔷 TOP BAR -->
-<div class="topbar">
-  <!-- optional logo -->
-</div>
-
 <div class="page">
-  <!-- Inline header -->
-  <div class="header">
-    <a href="index.html" class="menu-btn dashboard">
-      <span>⬅️ Back</span>
-    </a>
-    <h2>📦 Product Management</h2>
-  </div>
+  <h2>📦 Product Management</h2>
 
   <div class="menu">
     <a href="scanner.html" class="menu-btn scanner">
@@ -160,6 +138,7 @@ body {
       <span>📝 Monitoring Log</span>
     </a>
 
+    <!-- Dashboard button (static gray) -->
     <a href="index.html" class="menu-btn dashboard">
       <span>⬅️ Back to Dashboard</span>
     </a>
