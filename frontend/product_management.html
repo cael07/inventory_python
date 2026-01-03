@@ -1,97 +1,114 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Product Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product Management</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f6fa;
-      margin: 0;
-      padding: 20px;
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f6fa;
+  margin: 0;
+  padding: 20px;
+}
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
 
-    .menu {
-      max-width: 400px;
-      margin: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
+.menu {
+  max-width: 400px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
 
-    a {
-      position: relative;
-      display: block;
-      text-decoration: none;
-      background: #2c3e50;
-      color: white;
-      padding: 18px;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 18px;
-      overflow: hidden;
-    }
+/* Button wrapper */
+.wave-btn {
+  position: relative;
+  display: block;
+  padding: 18px;
+  text-align: center;
+  font-size: 18px;
+  color: white;
+  background: #2c3e50;
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+}
 
-    /* Ocean wave using pseudo element */
-    a::before {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 200%;
-      height: 100%;
-      background: rgba(255,255,255,0.2);
-      border-radius: 100%;
-      animation: wave 4s linear infinite;
-      transform: translateY(0);
-      z-index: 0;
-    }
+/* Wave SVG overlay */
+.wave-btn svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  fill: rgba(255,255,255,0.2);
+  animation: wave 4s linear infinite;
+  z-index: 0;
+}
 
-    /* Move the wave up/down with sine-like motion */
-    @keyframes wave {
-      0%   { transform: translateX(-50%) translateY(0); }
-      25%  { transform: translateX(-25%) translateY(-5px); }
-      50%  { transform: translateX(0%) translateY(0); }
-      75%  { transform: translateX(25%) translateY(5px); }
-      100% { transform: translateX(50%) translateY(0); }
-    }
+/* Keep text above wave */
+.wave-btn span {
+  position: relative;
+  z-index: 1;
+}
 
-    /* Keep text above the wave */
-    a span {
-      position: relative;
-      z-index: 1;
-    }
+/* Hover color change */
+.wave-btn:hover {
+  background: #34495e;
+}
 
-    /* Hover changes color */
-    a:hover {
-      background: #34495e;
-    }
+.back {
+  background: #7f8c8d;
+}
 
-    .back {
-      background: #7f8c8d;
-    }
+.back:hover {
+  background: #95a5a6;
+}
 
-    .back:hover {
-      background: #95a5a6;
-    }
-  </style>
+/* Wave movement animation */
+@keyframes wave {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+</style>
 </head>
-
 <body>
 
 <h2>📦 Product Management</h2>
 
 <div class="menu">
-  <a href="scanner.html"><span>📷 Product Scanner</span></a>
-  <a href="products.html"><span>📦 View All Products</span></a>
-  <a href="monitoring.html"><span>📝 Monitoring Log</span></a>
-  <a href="index.html" class="back"><span>⬅️ Back to Dashboard</span></a>
+  <a href="scanner.html" class="wave-btn">
+    <span>📷 Product Scanner</span>
+    <svg viewBox="0 0 120 28" preserveAspectRatio="none">
+      <path d="M0,10 C30,20 60,0 120,10 L120,30 L0,30 Z"></path>
+    </svg>
+  </a>
+
+  <a href="products.html" class="wave-btn">
+    <span>📦 View All Products</span>
+    <svg viewBox="0 0 120 28" preserveAspectRatio="none">
+      <path d="M0,10 C30,20 60,0 120,10 L120,30 L0,30 Z"></path>
+    </svg>
+  </a>
+
+  <a href="monitoring.html" class="wave-btn">
+    <span>📝 Monitoring Log</span>
+    <svg viewBox="0 0 120 28" preserveAspectRatio="none">
+      <path d="M0,10 C30,20 60,0 120,10 L120,30 L0,30 Z"></path>
+    </svg>
+  </a>
+
+  <a href="index.html" class="wave-btn back">
+    <span>⬅️ Back to Dashboard</span>
+    <svg viewBox="0 0 120 28" preserveAspectRatio="none">
+      <path d="M0,10 C30,20 60,0 120,10 L120,30 L0,30 Z"></path>
+    </svg>
+  </a>
 </div>
 
 </body>
