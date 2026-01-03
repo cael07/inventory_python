@@ -25,7 +25,7 @@ h2 {
   gap: 15px;
 }
 
-/* All regular buttons with wave */
+/* Regular wave buttons */
 .wave-btn {
   position: relative;
   display: block;
@@ -40,72 +40,51 @@ h2 {
   cursor: pointer;
 }
 
-/* Wave overlay */
 .wave-btn svg {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   height: 40px;
-  fill: #3498db; /* blue wave */
+  fill: #3498db;
 }
 
-/* Animated seesaw wave */
 .wave-btn svg path {
   animation: waveOscillate 2s ease-in-out infinite alternate;
 }
 
-/* Keep text above wave */
 .wave-btn span {
   position: relative;
   z-index: 1;
 }
 
-/* Hover color change */
 .wave-btn:hover {
   background: #34495e;
 }
 
-/* Dashboard button - plain gray, no wave */
+/* Dashboard button: gray, no wave, same padding & text centered */
 .dashboard {
   background: #7f8c8d;
+  padding: 18px;
+  text-align: center;
+  font-size: 18px;
   color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  display: block;
   position: relative;
-  overflow: hidden;
 }
 
-/* Remove wave SVG for dashboard */
+/* Remove wave for dashboard */
 .dashboard svg {
   display: none;
 }
 
-/* Ripple effect for dashboard */
-.dashboard:after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  transform: scale(0);
-  background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 80%);
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Animate ripple */
-.ripple {
-  animation: rippleEffect 0.6s linear;
-}
-
+/* Seesaw wave animation for other buttons */
 @keyframes waveOscillate {
   0%   { d: path("M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"); }
   50%  { d: path("M0,10 C30,0 60,30 120,10 L120,40 L0,40 Z"); }
   100% { d: path("M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"); }
-}
-
-@keyframes rippleEffect {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
 }
 </style>
 </head>
@@ -135,35 +114,11 @@ h2 {
     </svg>
   </a>
 
-  <!-- Dashboard button plain gray, ripple on click -->
-  <a href="index.html" class="dashboard" id="dashboardBtn">
+  <!-- Dashboard button gray, no wave -->
+  <a href="index.html" class="dashboard">
     <span>⬅️ Back to Dashboard</span>
   </a>
 </div>
-
-<script>
-// Add proper click ripple for dashboard button
-const dashboardBtn = document.getElementById('dashboardBtn');
-
-dashboardBtn.addEventListener('click', function(e) {
-  const circle = document.createElement('span');
-  const diameter = Math.max(this.clientWidth, this.clientHeight);
-  const radius = diameter / 2;
-  
-  circle.style.width = circle.style.height = `${diameter}px`;
-  circle.style.left = `${e.clientX - this.getBoundingClientRect().left - radius}px`;
-  circle.style.top = `${e.clientY - this.getBoundingClientRect().top - radius}px`;
-  circle.classList.add('ripple');
-  circle.style.position = 'absolute';
-  circle.style.borderRadius = '50%';
-  circle.style.background = 'radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 80%)';
-  circle.style.pointerEvents = 'none';
-  
-  this.appendChild(circle);
-  
-  circle.addEventListener('animationend', () => circle.remove());
-});
-</script>
 
 </body>
 </html>
