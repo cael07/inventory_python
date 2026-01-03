@@ -92,7 +92,7 @@ def get_product(barcode: str, db: Session = Depends(get_db)):
 @app.get("/products")
 def get_products(
     page: int = 1,
-    limit: int = 20,
+    limit: int = 25,
     db: Session = Depends(get_db)
 ):
     offset = (page - 1) * limit
@@ -169,7 +169,7 @@ def update_product_item(
 @app.get("/monitoring")
 def get_monitoring(
     page: int = 1,
-    limit: int = 20,
+    limit: int = 25,
     db: Session = Depends(get_db)
 ):
     offset = (page - 1) * limit
