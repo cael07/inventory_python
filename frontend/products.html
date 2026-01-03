@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>All Products</title>
+  <title>Products</title>
   <script src="https://unpkg.com/vue@3"></script>
 
   <style>
@@ -13,9 +13,17 @@
       padding: 20px;
     }
 
-    h2 {
-      text-align: center;
+    /* Header row */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       margin-bottom: 15px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 22px;
     }
 
     table {
@@ -35,24 +43,23 @@
       padding:10px;
     }
 
-    /* 🌊 Back Button (compact, left aligned) */
+    /* 🌊 Back Button */
     .wave-btn {
       position: relative;
       display: inline-block;
-      padding: 6px 12px;          /* compact padding */
-      margin-bottom: 12px;
+      padding: 6px 12px;
       background: #1f3a5f;        /* dark blue */
       color: white;
       font-size: 15px;
       border-radius: 6px;
       text-decoration: none;
       overflow: hidden;
+      white-space: nowrap;
     }
 
     .wave-btn span {
       position: relative;
       z-index: 1;
-      white-space: nowrap;
     }
 
     .wave-btn svg {
@@ -68,31 +75,26 @@
       animation: waveOscillate 2.2s ease-in-out infinite alternate;
     }
 
-    /* Smooth ocean seesaw wave */
     @keyframes waveOscillate {
-      0% {
-        d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z");
-      }
-      50% {
-        d: path("M0,8 C30,0 60,20 120,8 L120,40 L0,40 Z");
-      }
-      100% {
-        d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z");
-      }
+      0%   { d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"); }
+      50%  { d: path("M0,8 C30,0 60,20 120,8 L120,40 L0,40 Z"); }
+      100% { d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"); }
     }
   </style>
 </head>
 <body>
 
-<!-- 🌊 Compact Back Button -->
-<a href="product_management.html" class="wave-btn">
-  <span>⬅️ Back</span>
-  <svg viewBox="0 0 120 40" preserveAspectRatio="none">
-    <path d="M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"></path>
-  </svg>
-</a>
+<!-- 🔹 Inline Header -->
+<div class="header">
+  <a href="product_management.html" class="wave-btn">
+    <span>⬅️ Back</span>
+    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+      <path d="M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"></path>
+    </svg>
+  </a>
 
-<h2>📦 All Products</h2>
+  <h2>📦 All Products</h2>
+</div>
 
 <div id="app">
   <table v-if="rows.length">
@@ -146,14 +148,12 @@ Vue.createApp({
         const res = await fetch(`${API}/products?page=${this.page}&limit=${this.limit}`);
         const data = await res.json();
 
-        if (data.items && data.items.length > 0) {
+        if (data.items && data.items.length) {
           this.rows.push(...data.items);
         }
 
         this.total = data.total_records;
         this.page++;
-      } catch (err) {
-        console.error(err);
       } finally {
         this.loading = false;
       }
