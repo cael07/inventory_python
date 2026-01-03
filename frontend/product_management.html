@@ -4,6 +4,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Product Management</title>
 
+<!-- 🔷 Reusable Top Bar -->
+<link rel="stylesheet" href="/static/css/topbar.css">
+<script src="/static/js/topbar.js" defer></script>
+
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -25,97 +29,69 @@ h2 {
   gap: 15px;
 }
 
-/* Regular wave buttons */
-.wave-btn {
-  position: relative;
+/* 🔹 MENU BUTTON */
+.menu-btn {
   display: block;
   padding: 18px;
   text-align: center;
   font-size: 18px;
-  color: white;
   background: #2c3e50;
   border-radius: 8px;
-  overflow: hidden;
   text-decoration: none;
-  cursor: pointer;
+  overflow: hidden;
 }
 
-.wave-btn svg {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 40px;
-  fill: #3498db;
+/* 🌈 Animated text */
+.menu-btn span {
+  display: inline-block;
+  animation: textWave 4s ease-in-out infinite;
 }
 
-.wave-btn svg path {
-  animation: waveOscillate 2s ease-in-out infinite alternate;
+/* Faster animation on hover */
+.menu-btn:hover span {
+  animation-duration: 1.5s;
 }
 
-.wave-btn span {
-  position: relative;
-  z-index: 1;
-}
-
-.wave-btn:hover {
-  background: #34495e;
-}
-
-/* Dashboard button: gray, no wave, same padding & text centered */
+/* Dashboard button (NO animation) */
 .dashboard {
   background: #7f8c8d;
-  padding: 18px;
-  text-align: center;
-  font-size: 18px;
-  color: white;
-  border-radius: 8px;
-  text-decoration: none;
-  display: block;
-  position: relative;
 }
 
-/* Remove wave for dashboard */
-.dashboard svg {
-  display: none;
+.dashboard span {
+  animation: none;
+  color: #ffffff;
 }
 
-/* Seesaw wave animation for other buttons */
-@keyframes waveOscillate {
-  0%   { d: path("M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"); }
-  50%  { d: path("M0,10 C30,0 60,30 120,10 L120,40 L0,40 Z"); }
-  100% { d: path("M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"); }
+/* 🌊 TEXT COLOR ANIMATION */
+@keyframes textWave {
+  0%   { color: #ecf0f1; }
+  25%  { color: #5dade2; }
+  50%  { color: #48c9b0; }
+  75%  { color: #85c1e9; }
+  100% { color: #ecf0f1; }
 }
 </style>
 </head>
+
 <body>
 
 <h2>📦 Product Management</h2>
 
 <div class="menu">
-  <a href="scanner.html" class="wave-btn">
+  <a href="scanner.html" class="menu-btn">
     <span>📷 Product Scanner</span>
-    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
-      <path d="M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"></path>
-    </svg>
   </a>
 
-  <a href="products.html" class="wave-btn">
+  <a href="products.html" class="menu-btn">
     <span>📦 View All Products</span>
-    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
-      <path d="M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"></path>
-    </svg>
   </a>
 
-  <a href="monitoring.html" class="wave-btn">
+  <a href="monitoring.html" class="menu-btn">
     <span>📝 Monitoring Log</span>
-    <svg viewBox="0 0 120 40" preserveAspectRatio="none">
-      <path d="M0,20 C30,30 60,10 120,20 L120,40 L0,40 Z"></path>
-    </svg>
   </a>
 
-  <!-- Dashboard button gray, no wave -->
-  <a href="index.html" class="dashboard">
+  <!-- Dashboard button (static gray) -->
+  <a href="index.html" class="menu-btn dashboard">
     <span>⬅️ Back to Dashboard</span>
   </a>
 </div>
