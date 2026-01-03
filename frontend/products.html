@@ -5,7 +5,7 @@
   <title>All Products</title>
   <script src="https://unpkg.com/vue@3"></script>
   <style>
-    table { width:100%; border-collapse: collapse; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
     th, td { border:1px solid #ccc; padding:6px; text-align:center; }
     .loader { text-align:center; padding:10px; }
   </style>
@@ -16,6 +16,7 @@
 <h2>📦 All Products</h2>
 
 <div id="app">
+  <!-- Table -->
   <table v-if="rows.length">
     <tr>
       <th>#</th>
@@ -33,8 +34,14 @@
     </tr>
   </table>
 
+  <!-- Loading -->
   <div class="loader" v-if="loading">Loading...</div>
-  <div class="loader" v-if="!canLoadMore">End of list</div>
+
+  <!-- No records -->
+  <div class="loader" v-if="!loading && rows.length === 0">No records found</div>
+
+  <!-- End of list -->
+  <div class="loader" v-if="rows.length > 0 && !canLoadMore && !loading">End of list</div>
 </div>
 
 <script>
@@ -59,19 +66,24 @@ Vue.createApp({
 
   methods: {
     async loadMore() {
-      if (this.loading || !this.canLoadMore) return;
+      if (this.loading) return; // allow loading even if rows.length == total
       this.loading = true;
 
-      const res = await fetch(
-        `${API}/products?page=${this.page}&limit=${this.limit}`
-      );
-      const data = await res.json();
+      try {
+        const res = await fetch(`${API}/products?page=${this.page}&limit=${this.limit}`);
+        const data = await res.json();
 
-      this.rows.push(...data.items);
-      this.total = data.total_records;
-      this.page++;
-
-      this.loading = false;
+        // push items if any
+        if (data.items && data.items.length > 0) {
+          this.rows.push(...data.items);
+        }
+        this.total = data.total_records;
+        this.page++;
+      } catch (err) {
+        console.error("Error loading products:", err);
+      } finally {
+        this.loading = false;
+      }
     },
 
     handleScroll() {
