@@ -38,30 +38,41 @@
       overflow: hidden;
     }
 
-    /* Continuous wave */
+    /* Ocean wave using pseudo element */
     a::before {
       content: "";
       position: absolute;
-      top: 0;
-      left: -100%;
-      width: 50%;
+      bottom: 0;
+      left: 0;
+      width: 200%;
       height: 100%;
-      background: rgba(255,255,255,0.15);
-      transform: skewX(-25deg);
-      animation: wave 2s linear infinite;
+      background: rgba(255,255,255,0.2);
+      border-radius: 100%;
+      animation: wave 4s linear infinite;
+      transform: translateY(0);
+      z-index: 0;
     }
 
+    /* Move the wave up/down with sine-like motion */
     @keyframes wave {
-      0% { left: -100%; }
-      100% { left: 100%; }
+      0%   { transform: translateX(-50%) translateY(0); }
+      25%  { transform: translateX(-25%) translateY(-5px); }
+      50%  { transform: translateX(0%) translateY(0); }
+      75%  { transform: translateX(25%) translateY(5px); }
+      100% { transform: translateX(50%) translateY(0); }
     }
 
-    /* Hover color change */
+    /* Keep text above the wave */
+    a span {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Hover changes color */
     a:hover {
       background: #34495e;
     }
 
-    /* Back button style */
     .back {
       background: #7f8c8d;
     }
@@ -77,10 +88,10 @@
 <h2>📦 Product Management</h2>
 
 <div class="menu">
-  <a href="scanner.html">📷 Product Scanner</a>
-  <a href="products.html">📦 View All Products</a>
-  <a href="monitoring.html">📝 Monitoring Log</a>
-  <a href="index.html" class="back">⬅️ Back to Dashboard</a>
+  <a href="scanner.html"><span>📷 Product Scanner</span></a>
+  <a href="products.html"><span>📦 View All Products</span></a>
+  <a href="monitoring.html"><span>📝 Monitoring Log</span></a>
+  <a href="index.html" class="back"><span>⬅️ Back to Dashboard</span></a>
 </div>
 
 </body>
