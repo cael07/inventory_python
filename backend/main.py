@@ -97,7 +97,7 @@ def get_products(
 ):
     offset = (page - 1) * limit
 
-    items = (
+    rows = (
         db.query(Product)
         .order_by(Product.id.desc())
         .offset(offset)
@@ -106,6 +106,18 @@ def get_products(
     )
 
     total = db.query(Product).count()
+
+    # convert SQLAlchemy objects to plain dicts
+    items = [
+        {
+            "id": r.id,
+            "barcode": r.barcode,
+            "name": r.name,
+            "price": r.price,
+            "quantity": r.quantity
+        }
+        for r in rows
+    ]
 
     return {
         "page": page,
