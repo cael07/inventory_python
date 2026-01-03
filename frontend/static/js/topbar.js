@@ -1,11 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const bar = document.createElement("div");
-  bar.innerHTML = `
-    <div class="topbar">
-      <a href="index.html">
-        <img src="/static/img/cael.ico" alt="Logo">
-      </a>
-    </div>
+  const topbar = document.createElement("div");
+  topbar.className = "topbar";
+  topbar.innerHTML = `
+    <a href="index.html" class="topbar-logo">
+      <img src="/static/img/cael.ico" alt="Logo">
+    </a>
   `;
-  document.body.prepend(bar);
+  document.body.prepend(topbar);
 });
