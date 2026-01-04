@@ -12,170 +12,27 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f5f6fa;
-    }
-
-    .page {
-      padding: 20px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    h3 {
-      margin-top: 30px;
-    }
-
-    canvas {
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-
-    .chart-box {
-      display: none;
-      margin-top: 20px;
-    }
-
-    .chart-box.active {
-      display: block;
-    }
-
-    .filters {
-      margin: 20px 0;
-    }
-
-    .filters label {
-      margin-right: 20px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    /* 🔔 ALERT BUTTON */
-    .alert-btn {
-      display: none;
-      color: white;
-      padding: 10px 16px;
-      border-radius: 6px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .alert-orange { background: #f39c12; }
-    .alert-red { background: #e74c3c; }
-
-    /* 🔢 BADGE */
-    .alert-badge {
-      background: white;
-      color: #e74c3c;
-      font-size: 12px;
-      font-weight: bold;
-      padding: 4px 8px;
-      border-radius: 12px;
-      min-width: 22px;
-      text-align: center;
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.15); opacity: 0.8; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    /* 🧾 INCOME SUMMARY BAR */
-    .summary-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .summary-item {
-      background: white;
-      flex: 1 1 150px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    .summary-item span {
-      color: #333;
-      font-weight: normal;
-      font-size: 16px;
-    }
-
-    /* 🪟 MODAL */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-
-    .modal-overlay.show {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    .modal {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
-      transform: scale(0.8);
-      opacity: 0;
-      transition: transform 0.3s ease, opacity 0.3s ease;
-    }
-
-    .modal-overlay.show .modal {
-      transform: scale(1);
-      opacity: 1;
-    }
-
-    .modal ul {
-      padding-left: 18px;
-    }
-
-    .modal li {
-      margin-bottom: 6px;
-    }
-
-    .close-btn {
-      margin-top: 15px;
-      padding: 8px 14px;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
+    body { font-family: sans-serif; margin:0; padding:0; background:#f5f6fa; }
+    .page { padding:20px; max-width:900px; margin:0 auto; }
+    h3 { margin-top:30px; }
+    canvas { background:white; padding:10px; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.15);}
+    .filters { margin:20px 0; }
+    .filters label { margin-right:20px; font-weight:bold; cursor:pointer; }
+    .alert-btn { display:none; color:white; padding:10px 16px; border-radius:6px; border:none; font-weight:bold; cursor:pointer; margin-bottom:15px; display:flex; align-items:center; gap:10px;}
+    .alert-orange { background:#f39c12; }
+    .alert-red { background:#e74c3c; }
+    .alert-badge { background:white; color:#e74c3c; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:12px; min-width:22px; text-align:center; animation:pulse 1.5s infinite;}
+    @keyframes pulse { 0%{transform:scale(1);opacity:1;}50%{transform:scale(1.15);opacity:0.8;}100%{transform:scale(1);opacity:1;} }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000; opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
+    .modal-overlay.show { opacity:1; pointer-events:all; }
+    .modal { background:white; padding:20px; border-radius:10px; width:90%; max-width:400px; transform:scale(0.8); opacity:0; transition:transform 0.3s ease, opacity 0.3s ease; }
+    .modal-overlay.show .modal { transform:scale(1); opacity:1; }
+    .modal ul { padding-left:18px; }
+    .modal li { margin-bottom:6px; }
+    .close-btn { margin-top:15px; padding:8px 14px; background:#333; color:white; border:none; border-radius:5px; cursor:pointer; }
   </style>
 </head>
 <body>
-
-<!-- Topbar injected by topbar.js -->
 
 <div class="page">
 
@@ -185,48 +42,25 @@
     <span id="alertBadge" class="alert-badge">0</span>
   </button>
 
-  <!-- 🧾 SUMMARY BAR -->
-  <div class="summary-bar">
-    <div class="summary-item">
-      Low Stock Products <span id="summaryLowStock">0</span>
-    </div>
-    <div class="summary-item">
-      Today Income <span id="summaryToday">₱0</span>
-    </div>
-    <div class="summary-item">
-      This Month <span id="summaryMonth">₱0</span>
-    </div>
-    <div class="summary-item">
-      This Year <span id="summaryYear">₱0</span>
-    </div>
-  </div>
-
   <!-- 📅 PURCHASE FILTER -->
-  <div class="filters">
+  <div class="filters" id="chartFilters">
     <label><input type="radio" name="chartType" value="daily" checked> Daily</label>
     <label><input type="radio" name="chartType" value="monthly"> Monthly</label>
+    <label><input type="radio" name="chartType" value="yearly"> Yearly</label>
   </div>
 
-  <!-- 📊 DAILY -->
-  <div id="dailyBox" class="chart-box active">
-    <h3>📊 Daily Purchases</h3>
-    <canvas id="dailyChart" height="120"></canvas>
-  </div>
-
-  <!-- 📈 MONTHLY -->
-  <div id="monthlyBox" class="chart-box">
-    <h3>📈 Monthly Purchases</h3>
-    <canvas id="monthlyChart" height="120"></canvas>
+  <!-- 📊 SINGLE CHART -->
+  <div>
+    <h3>📊 Purchases</h3>
+    <canvas id="purchaseChart" height="120"></canvas>
   </div>
 
   <!-- 🏆 TOP PRODUCTS -->
   <h3>🏆 Top 10 Product Sales</h3>
-
   <div class="filters">
     <label><input type="radio" name="topType" value="daily" checked> Daily</label>
     <label><input type="radio" name="topType" value="monthly"> Monthly</label>
   </div>
-
   <canvas id="topProductChart" height="180"></canvas>
 
 </div>
@@ -242,55 +76,27 @@
 
 <script>
 const API = "https://inventory-python.onrender.com";
-let dailyChart, monthlyChart, topChart;
+let purchaseChart, topChart;
 let lowStockProducts = [];
 
 /* ---------------- LOW STOCK ---------------- */
 async function checkLowStock() {
   const res = await fetch(`${API}/products?page=1&limit=1000`);
   const data = await res.json();
-
   lowStockProducts = data.items.filter(p => p.quantity < 5);
-  const lowStockCount = lowStockProducts.length;
-
-  document.getElementById("summaryLowStock").textContent = lowStockCount;
-
-  if (!lowStockCount) return;
+  if (!lowStockProducts.length) return;
 
   const btn = document.getElementById("alertBtn");
   const badge = document.getElementById("alertBadge");
   const critical = lowStockProducts.some(p => p.quantity < 2);
 
   btn.classList.add(critical ? "alert-red" : "alert-orange");
-  badge.textContent = lowStockCount;
+  badge.textContent = lowStockProducts.length;
   btn.style.display = "flex";
 }
 
-/* ---------------- PURCHASE SUMMARY ---------------- */
-async function loadIncomeSummary() {
-  const res = await fetch(`${API}/stats/purchases/daily`);
-  const daily = await res.json();
-  const todayTotal = daily.reduce((acc, d) => acc + d.total, 0);
-  document.getElementById("summaryToday").textContent = `₱${todayTotal}`;
-
-  const resMonth = await fetch(`${API}/stats/purchases/monthly`);
-  const monthly = await resMonth.json();
-  const thisMonth = monthly.reduce((acc, m) => acc + m.total, 0);
-  document.getElementById("summaryMonth").textContent = `₱${thisMonth}`;
-
-  const resYear = await fetch(`${API}/stats/purchases/yearly`);
-  const yearly = await resYear.json();
-  const thisYear = yearly.reduce((acc, y) => acc + y.total, 0);
-  document.getElementById("summaryYear").textContent = `₱${thisYear}`;
-}
-
-/* ---------------- MODAL ---------------- */
-function openModal() {
-  document.getElementById("modalOverlay").classList.add("show");
-}
-function closeModal() {
-  document.getElementById("modalOverlay").classList.remove("show");
-}
+function openModal() { document.getElementById("modalOverlay").classList.add("show"); }
+function closeModal() { document.getElementById("modalOverlay").classList.remove("show"); }
 
 document.getElementById("alertBtn").onclick = () => {
   const list = document.getElementById("lowStockList");
@@ -304,23 +110,26 @@ document.getElementById("alertBtn").onclick = () => {
 };
 
 document.getElementById("modalOverlay").addEventListener("click", e => {
-  if (e.target.id === "modalOverlay") closeModal();
+  if(e.target.id==="modalOverlay") closeModal();
 });
 
-/* ---------------- CHARTS ---------------- */
-async function loadDailyChart() {
-  const res = await fetch(`${API}/stats/purchases/daily`);
+/* ---------------- PURCHASE CHART ---------------- */
+async function loadPurchaseChart(type="daily") {
+  let endpoint = type;
+  const res = await fetch(`${API}/stats/purchases/${endpoint}`);
   const data = await res.json();
 
-  dailyChart = new Chart(document.getElementById("dailyChart"), {
+  if (purchaseChart) purchaseChart.destroy();
+
+  purchaseChart = new Chart(document.getElementById("purchaseChart"), {
     type: "line",
     data: {
-      labels: data.map(d => d.date),
+      labels: data.map(d => d.date || d.month || d.year),
       datasets: [{
-        label: "Daily Purchase Total (₱)",
+        label: type==="daily"?"Daily Purchase Total (₱)": type==="monthly"?"Monthly Purchase Total (₱)":"Yearly Purchase Total (₱)",
         data: data.map(d => d.total),
-        tension: 0.35,
         fill: true,
+        tension: 0.35,
         pointRadius: 5
       }]
     },
@@ -328,63 +137,36 @@ async function loadDailyChart() {
   });
 }
 
-async function loadMonthlyChart() {
-  const res = await fetch(`${API}/stats/purchases/monthly`);
-  const data = await res.json();
-
-  monthlyChart = new Chart(document.getElementById("monthlyChart"), {
-    type: "line",
-    data: {
-      labels: data.map(d => d.month),
-      datasets: [{
-        label: "Monthly Purchase Total (₱)",
-        data: data.map(d => d.total),
-        tension: 0.35,
-        fill: true,
-        pointRadius: 5
-      }]
-    },
-    options: { scales: { y: { beginAtZero: true } } }
-  });
-}
-
-async function loadTopProducts(type = "daily") {
+/* ---------------- TOP PRODUCTS ---------------- */
+async function loadTopProducts(type="daily") {
   const res = await fetch(`${API}/stats/products/top/${type}`);
   const data = await res.json();
 
-  if (topChart) topChart.destroy();
+  if(topChart) topChart.destroy();
 
   topChart = new Chart(document.getElementById("topProductChart"), {
-    type: "bar",
-    data: {
-      labels: data.map(d => d.name),
-      datasets: [{
-        label: "Total Quantity Sold",
-        data: data.map(d => d.quantity)
-      }]
-    },
-    options: { indexAxis: "y", scales: { x: { beginAtZero: true } } }
+    type:"bar",
+    data:{ labels:data.map(d=>d.name), datasets:[{ label:"Total Quantity Sold", data:data.map(d=>d.quantity) }] },
+    options:{ indexAxis:"y", scales:{ x:{ beginAtZero:true } } }
   });
 }
 
 /* ---------------- TOGGLES ---------------- */
-document.querySelectorAll('input[name="chartType"]').forEach(r => {
-  r.addEventListener("change", e => {
-    dailyBox.classList.remove("active");
-    monthlyBox.classList.remove("active");
-    document.getElementById(e.target.value + "Box").classList.add("active");
+document.querySelectorAll('input[name="chartType"]').forEach(r=>{
+  r.addEventListener("change", e=>{
+    loadPurchaseChart(e.target.value);
   });
 });
 
-document.querySelectorAll('input[name="topType"]').forEach(r => {
-  r.addEventListener("change", e => loadTopProducts(e.target.value));
+document.querySelectorAll('input[name="topType"]').forEach(r=>{
+  r.addEventListener("change", e=>{
+    loadTopProducts(e.target.value);
+  });
 });
 
 /* ---------------- LOAD ---------------- */
 checkLowStock();
-loadIncomeSummary();
-loadDailyChart();
-loadMonthlyChart();
+loadPurchaseChart();
 loadTopProducts("daily");
 </script>
 
