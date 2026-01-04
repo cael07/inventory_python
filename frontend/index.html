@@ -48,7 +48,6 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
 
-    /* 🔘 Radio buttons */
     .chart-filter {
       margin: 20px 0;
       background: white;
@@ -73,13 +72,12 @@
 <div class="page">
   <h2>📊 Dashboard</h2>
 
-  <!-- Menu -->
   <a href="scanner.html" class="menu-link">📷 Scanner</a>
   <a href="products.html" class="menu-link">📦 All Products</a>
   <a href="monitoring.html" class="menu-link">📝 Monitoring</a>
   <a href="product_management.html" class="menu-link">⚙️ Product Management</a>
 
-  <!-- 🔘 Chart Filter -->
+  <!-- 🔘 Filter -->
   <div class="chart-filter">
     <label>
       <input type="radio" name="chartType" value="daily" checked>
@@ -107,9 +105,7 @@
 <script>
 const API = "https://inventory-python.onrender.com";
 
-let dailyChart, monthlyChart;
-
-// 🔁 Toggle charts
+// Toggle charts
 document.querySelectorAll("input[name='chartType']").forEach(radio => {
   radio.addEventListener("change", e => {
     document.getElementById("dailyBox").classList.remove("active");
@@ -123,19 +119,19 @@ document.querySelectorAll("input[name='chartType']").forEach(radio => {
   });
 });
 
-// 📊 Daily chart
+// 📊 DAILY LINE
 async function loadDailyChart() {
   const res = await fetch(`${API}/stats/purchases/daily`);
   const data = await res.json();
 
-  dailyChart = new Chart(document.getElementById("dailyChart"), {
+  new Chart(document.getElementById("dailyChart"), {
     type: "line",
     data: {
       labels: data.map(d => d.date),
       datasets: [{
         label: "Daily Purchase Total (₱)",
         data: data.map(d => d.total),
-        tension: 0.3,
+        tension: 0.35,
         fill: true
       }]
     },
@@ -148,18 +144,20 @@ async function loadDailyChart() {
   });
 }
 
-// 📈 Monthly chart
+// 📈 MONTHLY LINE
 async function loadMonthlyChart() {
   const res = await fetch(`${API}/stats/purchases/monthly`);
   const data = await res.json();
 
-  monthlyChart = new Chart(document.getElementById("monthlyChart"), {
-    type: "bar",
+  new Chart(document.getElementById("monthlyChart"), {
+    type: "line",
     data: {
       labels: data.map(d => d.month),
       datasets: [{
         label: "Monthly Purchase Total (₱)",
-        data: data.map(d => d.total)
+        data: data.map(d => d.total),
+        tension: 0.35,
+        fill: true
       }]
     },
     options: {
@@ -171,7 +169,6 @@ async function loadMonthlyChart() {
   });
 }
 
-// Load once
 loadDailyChart();
 loadMonthlyChart();
 </script>
