@@ -54,6 +54,64 @@
       font-weight: bold;
       cursor: pointer;
     }
+
+    /* 🔔 ALERT BUTTON */
+    .alert-btn {
+      background: #e74c3c;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+      margin-bottom: 15px;
+    }
+
+    .alert-btn:hover {
+      background: #c0392b;
+    }
+
+    /* 🪟 MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .modal h3 {
+      margin-top: 0;
+    }
+
+    .modal ul {
+      padding-left: 18px;
+    }
+
+    .modal li {
+      margin-bottom: 6px;
+    }
+
+    .close-btn {
+      margin-top: 15px;
+      padding: 8px 14px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -61,6 +119,11 @@
 <!-- Topbar injected by topbar.js -->
 
 <div class="page">
+
+  <!-- 🔔 LOW STOCK ALERT -->
+  <button id="alertBtn" class="alert-btn">
+    ⚠️ Low Stock Alert
+  </button>
 
   <!-- 📅 PURCHASE FILTER -->
   <div class="filters">
@@ -104,17 +167,60 @@
 
 </div>
 
+<!-- 🪟 MODAL -->
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal">
+    <h3>⚠️ Low Stock Products</h3>
+    <ul id="lowStockList"></ul>
+    <button class="close-btn" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
 <script>
 const API = "https://inventory-python.onrender.com";
 
 let dailyChart, monthlyChart, topChart;
+let lowStockProducts = [];
+
+/* ---------------- LOW STOCK CHECK ---------------- */
+async function checkLowStock() {
+  const res = await fetch(`${API}/products?page=1&limit=1000`);
+  const data = await res.json();
+
+  lowStockProducts = data.items.filter(p => p.quantity < 5);
+
+  if (lowStockProducts.length > 0) {
+    document.getElementById("alertBtn").style.display = "inline-block";
+  }
+}
+
+document.getElementById("alertBtn").onclick = () => {
+  const list = document.getElementById("lowStockList");
+  list.innerHTML = "";
+
+  lowStockProducts.forEach(p => {
+    const li = document.createElement("li");
+    li.textContent = `${p.name} — ${p.quantity} left`;
+    list.appendChild(li);
+  });
+
+  document.getElementById("modalOverlay").style.display = "flex";
+};
+
+function closeModal() {
+  document.getElementById("modalOverlay").style.display = "none";
+}
+
+document.getElementById("modalOverlay").addEventListener("click", e => {
+  if (e.target.id === "modalOverlay") closeModal();
+});
 
 /* ---------------- DAILY LINE ---------------- */
 async function loadDailyChart() {
   const res = await fetch(`${API}/stats/purchases/daily`);
   const data = await res.json();
 
-  dailyChart = new Chart(dailyChart ?? document.getElementById("dailyChart"), {
+  dailyChart = new Chart(document.getElementById("dailyChart"), {
     type: "line",
     data: {
       labels: data.map(d => d.date),
@@ -127,9 +233,7 @@ async function loadDailyChart() {
       }]
     },
     options: {
-      scales: {
-        y: { beginAtZero: true }
-      }
+      scales: { y: { beginAtZero: true } }
     }
   });
 }
@@ -139,7 +243,7 @@ async function loadMonthlyChart() {
   const res = await fetch(`${API}/stats/purchases/monthly`);
   const data = await res.json();
 
-  monthlyChart = new Chart(monthlyChart ?? document.getElementById("monthlyChart"), {
+  monthlyChart = new Chart(document.getElementById("monthlyChart"), {
     type: "line",
     data: {
       labels: data.map(d => d.month),
@@ -152,9 +256,7 @@ async function loadMonthlyChart() {
       }]
     },
     options: {
-      scales: {
-        y: { beginAtZero: true }
-      }
+      scales: { y: { beginAtZero: true } }
     }
   });
 }
@@ -177,9 +279,7 @@ async function loadTopProducts(type = "daily") {
     },
     options: {
       indexAxis: "y",
-      scales: {
-        x: { beginAtZero: true }
-      }
+      scales: { x: { beginAtZero: true } }
     }
   });
 }
@@ -198,6 +298,7 @@ document.querySelectorAll('input[name="topType"]').forEach(r => {
 });
 
 /* ---------------- LOAD ---------------- */
+checkLowStock();
 loadDailyChart();
 loadMonthlyChart();
 loadTopProducts("daily");
