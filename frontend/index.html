@@ -97,10 +97,18 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.5);
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: all;
     }
 
     .modal {
@@ -109,6 +117,14 @@
       border-radius: 10px;
       width: 90%;
       max-width: 400px;
+      transform: scale(0.8);
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .modal-overlay.show .modal {
+      transform: scale(1);
+      opacity: 1;
     }
 
     .modal ul {
@@ -205,6 +221,15 @@ async function checkLowStock() {
   btn.style.display = "flex";
 }
 
+function openModal() {
+  document.getElementById("modalOverlay").classList.add("show");
+}
+
+function closeModal() {
+  document.getElementById("modalOverlay").classList.remove("show");
+}
+
+/* LOW STOCK BUTTON */
 document.getElementById("alertBtn").onclick = () => {
   const list = document.getElementById("lowStockList");
   list.innerHTML = "";
@@ -213,13 +238,10 @@ document.getElementById("alertBtn").onclick = () => {
     li.textContent = `${p.name} — ${p.quantity} left`;
     list.appendChild(li);
   });
-  document.getElementById("modalOverlay").style.display = "flex";
+  openModal();
 };
 
-function closeModal() {
-  document.getElementById("modalOverlay").style.display = "none";
-}
-
+/* CLOSE WHEN CLICK OUTSIDE */
 document.getElementById("modalOverlay").addEventListener("click", e => {
   if (e.target.id === "modalOverlay") closeModal();
 });
