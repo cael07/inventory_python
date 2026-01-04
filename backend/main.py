@@ -4,7 +4,9 @@ import pandas as pd
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast
+from datetime import date, timedelta
+from sqlalchemy.types import Date
 
 from backend.database import SessionLocal, engine
 from backend.models import User, Product, ProductMonitoring, Purchase
@@ -388,14 +390,18 @@ def export_pos_report(
     )
 
 
-# ---------------- 📊 PURCHASE STATS ----------------
+# ---------------- 📊 PURCHASE STATS (DAILY - LAST 7 DAYS) ----------------
 @app.get("/stats/purchases/daily")
 def purchase_stats_daily(db: Session = Depends(get_db)):
+    today = date.today()
+    start_date = today - timedelta(days=6)
+
     rows = (
         db.query(
             cast(Purchase.date, Date).label("date"),
             func.sum(Purchase.total_price).label("total")
         )
+        .filter(cast(Purchase.date, Date) >= start_date)
         .group_by(cast(Purchase.date, Date))
         .order_by(cast(Purchase.date, Date))
         .all()
@@ -406,13 +412,17 @@ def purchase_stats_daily(db: Session = Depends(get_db)):
         for r in rows
     ]
 
+# ---------------- 📊 PURCHASE STATS (MONTHLY - CURRENT YEAR) ----------------
 @app.get("/stats/purchases/monthly")
 def purchase_stats_monthly(db: Session = Depends(get_db)):
+    current_year = date.today().year
+
     rows = (
         db.query(
             func.to_char(Purchase.date, "YYYY-MM").label("month"),
             func.sum(Purchase.total_price).label("total")
         )
+        .filter(func.extract("year", Purchase.date) == current_year)
         .group_by(func.to_char(Purchase.date, "YYYY-MM"))
         .order_by(func.to_char(Purchase.date, "YYYY-MM"))
         .all()
@@ -422,14 +432,19 @@ def purchase_stats_monthly(db: Session = Depends(get_db)):
         {"month": r.month, "total": float(r.total or 0)}
         for r in rows
     ]
-# ---------------- 📊 PURCHASE STATS (YEARLY) ----------------
+
+# ---------------- 📊 PURCHASE STATS (YEARLY - LAST 7 YEARS) ----------------
 @app.get("/stats/purchases/yearly")
 def purchase_stats_yearly(db: Session = Depends(get_db)):
+    current_year = date.today().year
+    start_year = current_year - 6
+
     rows = (
         db.query(
             func.to_char(Purchase.date, "YYYY").label("year"),
             func.sum(Purchase.total_price).label("total")
         )
+        .filter(func.extract("year", Purchase.date) >= start_year)
         .group_by(func.to_char(Purchase.date, "YYYY"))
         .order_by(func.to_char(Purchase.date, "YYYY"))
         .all()
@@ -439,6 +454,7 @@ def purchase_stats_yearly(db: Session = Depends(get_db)):
         {"year": r.year, "total": float(r.total or 0)}
         for r in rows
     ]
+
 
 # ---------------- 🏆 TOP PRODUCT SALES ----------------
 @app.get("/stats/products/top/daily")
