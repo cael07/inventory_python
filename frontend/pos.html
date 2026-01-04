@@ -54,13 +54,38 @@
       width:300px;
       text-align:center;
     }
+
+    .header-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.back-btn {
+  border: none;
+  background: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.back-btn:hover {
+  background: rgba(0,0,0,0.08);
+}
+
   </style>
 </head>
 
 <body>
 <div id="app">
 
-  <h2>🧾 POS</h2>
+<div class="header-bar">
+  <button class="back-btn" onclick="history.back()">👋</button>
+  <h2 style="margin:0;">🧾 POS</h2>
+</div>
+
 
   <!-- CONTROL BUTTONS -->
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
