@@ -128,13 +128,6 @@
       border-radius: 5px;
       cursor: pointer;
     }
-
-    /* Dropdown for top products */
-    #topFilterSelect {
-      margin-left: 20px;
-      padding: 4px 8px;
-      font-size: 14px;
-    }
   </style>
 </head>
 <body>
@@ -173,8 +166,6 @@
   <div class="filters">
     <label><input type="radio" name="topType" value="daily" checked> Daily</label>
     <label><input type="radio" name="topType" value="monthly"> Monthly</label>
-    <!-- INLINE DROPDOWN -->
-    <select id="topFilterSelect"></select>
   </div>
 
   <canvas id="topProductChart" height="180"></canvas>
@@ -194,7 +185,6 @@
 const API = "https://inventory-python.onrender.com";
 let dailyChart, monthlyChart, topChart;
 let lowStockProducts = [];
-let topType = "daily";
 
 /* ---------------- LOW STOCK ---------------- */
 async function checkLowStock() {
@@ -209,7 +199,6 @@ async function checkLowStock() {
 
   const critical = lowStockProducts.some(p => p.quantity < 2);
 
-  btn.classList.remove("alert-orange","alert-red");
   btn.classList.add(critical ? "alert-red" : "alert-orange");
   badge.textContent = lowStockProducts.length;
 
@@ -281,36 +270,9 @@ async function loadMonthlyChart() {
   });
 }
 
-/* ---------------- TOP PRODUCTS WITH DROPDOWN ---------------- */
-const topFilterSelect = document.getElementById("topFilterSelect");
-
-function populateTopDropdown() {
-  topFilterSelect.innerHTML = "";
-  const today = new Date();
-  if (topType === "daily") {
-    for (let i = 1; i <= 7; i++) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      const option = document.createElement("option");
-      option.value = date.toISOString().slice(0,10);
-      option.textContent = i === 1 ? "Yesterday" : `${i} days ago`;
-      topFilterSelect.appendChild(option);
-    }
-  } else {
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const option = document.createElement("option");
-      const month = date.toLocaleString("default",{month:"short"});
-      option.value = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}`;
-      option.textContent = `${month} ${date.getFullYear()}`;
-      topFilterSelect.appendChild(option);
-    }
-  }
-}
-
-async function loadTopProductsFiltered() {
-  const filter = topFilterSelect.value;
-  const res = await fetch(`${API}/stats/products/top/${topType}?filter=${filter}`);
+/* ---------------- TOP PRODUCTS ---------------- */
+async function loadTopProducts(type = "daily") {
+  const res = await fetch(`${API}/stats/products/top/${type}`);
   const data = await res.json();
 
   if (topChart) topChart.destroy();
@@ -341,23 +303,14 @@ document.querySelectorAll('input[name="chartType"]').forEach(r => {
 });
 
 document.querySelectorAll('input[name="topType"]').forEach(r => {
-  r.addEventListener("change", e => {
-    topType = e.target.value;
-    populateTopDropdown();
-    loadTopProductsFiltered();
-  });
+  r.addEventListener("change", e => loadTopProducts(e.target.value));
 });
-
-/* ---------------- DROPDOWN CHANGE ---------------- */
-topFilterSelect.addEventListener("change", loadTopProductsFiltered);
 
 /* ---------------- LOAD ---------------- */
 checkLowStock();
 loadDailyChart();
 loadMonthlyChart();
-populateTopDropdown();
-loadTopProductsFiltered();
-
+loadTopProducts("daily");
 </script>
 
 </body>
