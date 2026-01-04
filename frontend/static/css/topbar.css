@@ -67,3 +67,9 @@
   transition: background 0.2s;
 }
 .topbar-dropdown a:hover { background: #2c5a8f; }
+
+.dropdown-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 6px 0;
+}
