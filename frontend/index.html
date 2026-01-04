@@ -57,19 +57,39 @@
 
     /* 🔔 ALERT BUTTON */
     .alert-btn {
-      background: #e74c3c;
+      display: none;
       color: white;
       padding: 10px 16px;
       border-radius: 6px;
       border: none;
       font-weight: bold;
       cursor: pointer;
-      display: none;
       margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    .alert-btn:hover {
-      background: #c0392b;
+    .alert-orange { background: #f39c12; }
+    .alert-red { background: #e74c3c; }
+
+    /* 🔢 BADGE */
+    .alert-badge {
+      background: white;
+      color: #e74c3c;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 12px;
+      min-width: 22px;
+      text-align: center;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
     /* 🪟 MODAL */
@@ -89,10 +109,6 @@
       border-radius: 10px;
       width: 90%;
       max-width: 400px;
-    }
-
-    .modal h3 {
-      margin-top: 0;
     }
 
     .modal ul {
@@ -123,18 +139,13 @@
   <!-- 🔔 LOW STOCK ALERT -->
   <button id="alertBtn" class="alert-btn">
     ⚠️ Low Stock Alert
+    <span id="alertBadge" class="alert-badge">0</span>
   </button>
 
   <!-- 📅 PURCHASE FILTER -->
   <div class="filters">
-    <label>
-      <input type="radio" name="chartType" value="daily" checked>
-      Daily
-    </label>
-    <label>
-      <input type="radio" name="chartType" value="monthly">
-      Monthly
-    </label>
+    <label><input type="radio" name="chartType" value="daily" checked> Daily</label>
+    <label><input type="radio" name="chartType" value="monthly"> Monthly</label>
   </div>
 
   <!-- 📊 DAILY -->
@@ -153,14 +164,8 @@
   <h3>🏆 Top 10 Product Sales</h3>
 
   <div class="filters">
-    <label>
-      <input type="radio" name="topType" value="daily" checked>
-      Daily
-    </label>
-    <label>
-      <input type="radio" name="topType" value="monthly">
-      Monthly
-    </label>
+    <label><input type="radio" name="topType" value="daily" checked> Daily</label>
+    <label><input type="radio" name="topType" value="monthly"> Monthly</label>
   </div>
 
   <canvas id="topProductChart" height="180"></canvas>
@@ -178,32 +183,36 @@
 
 <script>
 const API = "https://inventory-python.onrender.com";
-
 let dailyChart, monthlyChart, topChart;
 let lowStockProducts = [];
 
-/* ---------------- LOW STOCK CHECK ---------------- */
+/* ---------------- LOW STOCK ---------------- */
 async function checkLowStock() {
   const res = await fetch(`${API}/products?page=1&limit=1000`);
   const data = await res.json();
 
   lowStockProducts = data.items.filter(p => p.quantity < 5);
+  if (!lowStockProducts.length) return;
 
-  if (lowStockProducts.length > 0) {
-    document.getElementById("alertBtn").style.display = "inline-block";
-  }
+  const btn = document.getElementById("alertBtn");
+  const badge = document.getElementById("alertBadge");
+
+  const critical = lowStockProducts.some(p => p.quantity < 2);
+
+  btn.classList.add(critical ? "alert-red" : "alert-orange");
+  badge.textContent = lowStockProducts.length;
+
+  btn.style.display = "flex";
 }
 
 document.getElementById("alertBtn").onclick = () => {
   const list = document.getElementById("lowStockList");
   list.innerHTML = "";
-
   lowStockProducts.forEach(p => {
     const li = document.createElement("li");
     li.textContent = `${p.name} — ${p.quantity} left`;
     list.appendChild(li);
   });
-
   document.getElementById("modalOverlay").style.display = "flex";
 };
 
