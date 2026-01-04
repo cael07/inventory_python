@@ -21,7 +21,7 @@
 
     .page {
       padding: 20px;
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
@@ -33,7 +33,7 @@
       background: #333;
       padding: 12px 16px;
       border-radius: 6px;
-      width: 200px;
+      width: 220px;
       text-align: center;
     }
 
@@ -48,37 +48,41 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
 
-    .chart-filter {
-      margin: 20px 0;
-      background: white;
-      padding: 12px;
-      border-radius: 8px;
-      display: inline-flex;
-      gap: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
     .chart-box {
       display: none;
+      margin-top: 20px;
     }
 
     .chart-box.active {
       display: block;
     }
+
+    .filters {
+      margin: 20px 0;
+    }
+
+    .filters label {
+      margin-right: 20px;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
+<!-- Topbar injected by topbar.js -->
+
 <div class="page">
   <h2>📊 Dashboard</h2>
 
+  <!-- Menu links -->
   <a href="scanner.html" class="menu-link">📷 Scanner</a>
   <a href="products.html" class="menu-link">📦 All Products</a>
   <a href="monitoring.html" class="menu-link">📝 Monitoring</a>
   <a href="product_management.html" class="menu-link">⚙️ Product Management</a>
 
-  <!-- 🔘 Filter -->
-  <div class="chart-filter">
+  <!-- 📅 FILTER -->
+  <div class="filters">
     <label>
       <input type="radio" name="chartType" value="daily" checked>
       Daily
@@ -105,8 +109,96 @@
 <script>
 const API = "https://inventory-python.onrender.com";
 
-// Toggle charts
-document.querySelectorAll("input[name='chartType']").forEach(radio => {
+let dailyChart, monthlyChart;
+
+/* ---------------- DAILY LINE CHART ---------------- */
+async function loadDailyChart() {
+  const res = await fetch(`${API}/stats/purchases/daily`);
+  const data = await res.json();
+
+  dailyChart = new Chart(document.getElementById("dailyChart"), {
+    type: "line",
+    data: {
+      labels: data.map(d => d.date),
+      datasets: [{
+        label: "Daily Purchase Total (₱)",
+        data: data.map(d => d.total),
+        tension: 0.35,
+        fill: true,
+        pointRadius: 5,
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: {
+        mode: "nearest",
+        intersect: true
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => `₱ ${ctx.parsed.y.toLocaleString()}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => `₱ ${value.toLocaleString()}`
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ---------------- MONTHLY LINE CHART ---------------- */
+async function loadMonthlyChart() {
+  const res = await fetch(`${API}/stats/purchases/monthly`);
+  const data = await res.json();
+
+  monthlyChart = new Chart(document.getElementById("monthlyChart"), {
+    type: "line",
+    data: {
+      labels: data.map(d => d.month),
+      datasets: [{
+        label: "Monthly Purchase Total (₱)",
+        data: data.map(d => d.total),
+        tension: 0.35,
+        fill: true,
+        pointRadius: 5,
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: {
+        mode: "nearest",
+        intersect: true
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => `₱ ${ctx.parsed.y.toLocaleString()}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => `₱ ${value.toLocaleString()}`
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ---------------- RADIO TOGGLE ---------------- */
+document.querySelectorAll('input[name="chartType"]').forEach(radio => {
   radio.addEventListener("change", e => {
     document.getElementById("dailyBox").classList.remove("active");
     document.getElementById("monthlyBox").classList.remove("active");
@@ -119,56 +211,7 @@ document.querySelectorAll("input[name='chartType']").forEach(radio => {
   });
 });
 
-// 📊 DAILY LINE
-async function loadDailyChart() {
-  const res = await fetch(`${API}/stats/purchases/daily`);
-  const data = await res.json();
-
-  new Chart(document.getElementById("dailyChart"), {
-    type: "line",
-    data: {
-      labels: data.map(d => d.date),
-      datasets: [{
-        label: "Daily Purchase Total (₱)",
-        data: data.map(d => d.total),
-        tension: 0.35,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
-  });
-}
-
-// 📈 MONTHLY LINE
-async function loadMonthlyChart() {
-  const res = await fetch(`${API}/stats/purchases/monthly`);
-  const data = await res.json();
-
-  new Chart(document.getElementById("monthlyChart"), {
-    type: "line",
-    data: {
-      labels: data.map(d => d.month),
-      datasets: [{
-        label: "Monthly Purchase Total (₱)",
-        data: data.map(d => d.total),
-        tension: 0.35,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
-  });
-}
-
+/* LOAD CHARTS */
 loadDailyChart();
 loadMonthlyChart();
 </script>
