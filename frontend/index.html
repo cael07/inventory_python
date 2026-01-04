@@ -25,18 +25,6 @@
       margin: 0 auto;
     }
 
-    .menu-link {
-      display: block;
-      margin: 10px 0;
-      text-decoration: none;
-      color: white;
-      background: #333;
-      padding: 12px 16px;
-      border-radius: 6px;
-      width: 220px;
-      text-align: center;
-    }
-
     h3 {
       margin-top: 30px;
     }
@@ -73,7 +61,8 @@
 <!-- Topbar injected by topbar.js -->
 
 <div class="page">
-  <!-- 📅 FILTER -->
+
+  <!-- 📅 PURCHASE FILTER -->
   <div class="filters">
     <label>
       <input type="radio" name="chartType" value="daily" checked>
@@ -96,33 +85,36 @@
     <h3>📈 Monthly Purchases</h3>
     <canvas id="monthlyChart" height="120"></canvas>
   </div>
-</div>
-<h3>🏆 Top 10 Product Sales</h3>
 
-<div class="filters">
-  <label>
-    <input type="radio" name="topType" value="daily" checked>
-    Daily
-  </label>
-  <label>
-    <input type="radio" name="topType" value="monthly">
-    Monthly
-  </label>
-</div>
+  <!-- 🏆 TOP PRODUCTS -->
+  <h3>🏆 Top 10 Product Sales</h3>
 
-<canvas id="topProductChart" height="180"></canvas>
+  <div class="filters">
+    <label>
+      <input type="radio" name="topType" value="daily" checked>
+      Daily
+    </label>
+    <label>
+      <input type="radio" name="topType" value="monthly">
+      Monthly
+    </label>
+  </div>
+
+  <canvas id="topProductChart" height="180"></canvas>
+
+</div>
 
 <script>
 const API = "https://inventory-python.onrender.com";
 
 let dailyChart, monthlyChart, topChart;
 
-/* ---------------- DAILY LINE CHART ---------------- */
+/* ---------------- DAILY LINE ---------------- */
 async function loadDailyChart() {
   const res = await fetch(`${API}/stats/purchases/daily`);
   const data = await res.json();
 
-  dailyChart = new Chart(document.getElementById("dailyChart"), {
+  dailyChart = new Chart(dailyChart ?? document.getElementById("dailyChart"), {
     type: "line",
     data: {
       labels: data.map(d => d.date),
@@ -131,41 +123,23 @@ async function loadDailyChart() {
         data: data.map(d => d.total),
         tension: 0.35,
         fill: true,
-        pointRadius: 5,
-        pointHoverRadius: 7
+        pointRadius: 5
       }]
     },
     options: {
-      responsive: true,
-      interaction: {
-        mode: "nearest",
-        intersect: true
-      },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: ctx => `₱ ${ctx.parsed.y.toLocaleString()}`
-          }
-        }
-      },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: value => `₱ ${value.toLocaleString()}`
-          }
-        }
+        y: { beginAtZero: true }
       }
     }
   });
 }
 
-/* ---------------- MONTHLY LINE CHART ---------------- */
+/* ---------------- MONTHLY LINE ---------------- */
 async function loadMonthlyChart() {
   const res = await fetch(`${API}/stats/purchases/monthly`);
   const data = await res.json();
 
-  monthlyChart = new Chart(document.getElementById("monthlyChart"), {
+  monthlyChart = new Chart(monthlyChart ?? document.getElementById("monthlyChart"), {
     type: "line",
     data: {
       labels: data.map(d => d.month),
@@ -174,49 +148,18 @@ async function loadMonthlyChart() {
         data: data.map(d => d.total),
         tension: 0.35,
         fill: true,
-        pointRadius: 5,
-        pointHoverRadius: 7
+        pointRadius: 5
       }]
     },
     options: {
-      responsive: true,
-      interaction: {
-        mode: "nearest",
-        intersect: true
-      },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: ctx => `₱ ${ctx.parsed.y.toLocaleString()}`
-          }
-        }
-      },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: value => `₱ ${value.toLocaleString()}`
-          }
-        }
+        y: { beginAtZero: true }
       }
     }
   });
 }
 
-/* ---------------- RADIO TOGGLE ---------------- */
-document.querySelectorAll('input[name="chartType"]').forEach(radio => {
-  radio.addEventListener("change", e => {
-    document.getElementById("dailyBox").classList.remove("active");
-    document.getElementById("monthlyBox").classList.remove("active");
-
-    if (e.target.value === "daily") {
-      document.getElementById("dailyBox").classList.add("active");
-    } else {
-      document.getElementById("monthlyBox").classList.add("active");
-    }
-  });
-});
-
+/* ---------------- TOP PRODUCTS ---------------- */
 async function loadTopProducts(type = "daily") {
   const res = await fetch(`${API}/stats/products/top/${type}`);
   const data = await res.json();
@@ -229,41 +172,32 @@ async function loadTopProducts(type = "daily") {
       labels: data.map(d => d.name),
       datasets: [{
         label: "Total Quantity Sold",
-        data: data.map(d => d.quantity),
-        borderWidth: 1
+        data: data.map(d => d.quantity)
       }]
     },
     options: {
-      indexAxis: "y",   // 🔥 horizontal bar
-      responsive: true,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.parsed.x} pcs sold`
-          }
-        }
-      },
+      indexAxis: "y",
       scales: {
-        x: {
-          beginAtZero: true,
-          ticks: {
-            stepSize: 1
-          }
-        }
+        x: { beginAtZero: true }
       }
     }
   });
 }
 
-/* RADIO SWITCH */
-document.querySelectorAll('input[name="topType"]').forEach(radio => {
-  radio.addEventListener("change", e => {
-    loadTopProducts(e.target.value);
+/* ---------------- TOGGLES ---------------- */
+document.querySelectorAll('input[name="chartType"]').forEach(r => {
+  r.addEventListener("change", e => {
+    dailyBox.classList.remove("active");
+    monthlyBox.classList.remove("active");
+    document.getElementById(e.target.value + "Box").classList.add("active");
   });
 });
 
+document.querySelectorAll('input[name="topType"]').forEach(r => {
+  r.addEventListener("change", e => loadTopProducts(e.target.value));
+});
 
-/* LOAD CHARTS */
+/* ---------------- LOAD ---------------- */
 loadDailyChart();
 loadMonthlyChart();
 loadTopProducts("daily");
