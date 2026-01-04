@@ -422,6 +422,23 @@ def purchase_stats_monthly(db: Session = Depends(get_db)):
         {"month": r.month, "total": float(r.total or 0)}
         for r in rows
     ]
+# ---------------- 📊 PURCHASE STATS (YEARLY) ----------------
+@app.get("/stats/purchases/yearly")
+def purchase_stats_yearly(db: Session = Depends(get_db)):
+    rows = (
+        db.query(
+            func.to_char(Purchase.date, "YYYY").label("year"),
+            func.sum(Purchase.total_price).label("total")
+        )
+        .group_by(func.to_char(Purchase.date, "YYYY"))
+        .order_by(func.to_char(Purchase.date, "YYYY"))
+        .all()
+    )
+
+    return [
+        {"year": r.year, "total": float(r.total or 0)}
+        for r in rows
+    ]
 
 # ---------------- 🏆 TOP PRODUCT SALES ----------------
 @app.get("/stats/products/top/daily")

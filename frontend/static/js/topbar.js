@@ -17,10 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
 <!-- Dropdown Menu -->
 <div class="topbar-dropdown" id="dropdown-menu">
   <a href="pos.html">🧾 POS</a>
-  <a href="product_management.html">📦 Product Management</a>
+  <a href="product_management.html">📦 Products</a>
   <a href="report.html">📊 Reports</a>
-  <a href="#">👤 SUKI</a>
   <a href="#">⚙️ Settings</a>
+  
+  <div class="dropdown-divider"></div>
+
+  <a href="#">👨‍👩‍👧‍👦 SUKI</a>
+  <a href="#">🧑‍🤝‍🧑 Employees</a>
 
   <div class="dropdown-divider"></div>
 
