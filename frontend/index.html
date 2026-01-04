@@ -92,6 +92,33 @@
       100% { transform: scale(1); opacity: 1; }
     }
 
+    /* 🧾 INCOME SUMMARY BAR */
+    .summary-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-item {
+      background: white;
+      flex: 1 1 150px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .summary-item span {
+      color: #333;
+      font-weight: normal;
+      font-size: 16px;
+    }
+
     /* 🪟 MODAL */
     .modal-overlay {
       position: fixed;
@@ -158,6 +185,22 @@
     <span id="alertBadge" class="alert-badge">0</span>
   </button>
 
+  <!-- 🧾 SUMMARY BAR -->
+  <div class="summary-bar">
+    <div class="summary-item">
+      Low Stock Products <span id="summaryLowStock">0</span>
+    </div>
+    <div class="summary-item">
+      Today Income <span id="summaryToday">₱0</span>
+    </div>
+    <div class="summary-item">
+      This Month <span id="summaryMonth">₱0</span>
+    </div>
+    <div class="summary-item">
+      This Year <span id="summaryYear">₱0</span>
+    </div>
+  </div>
+
   <!-- 📅 PURCHASE FILTER -->
   <div class="filters">
     <label><input type="radio" name="chartType" value="daily" checked> Daily</label>
@@ -208,28 +251,47 @@ async function checkLowStock() {
   const data = await res.json();
 
   lowStockProducts = data.items.filter(p => p.quantity < 5);
-  if (!lowStockProducts.length) return;
+  const lowStockCount = lowStockProducts.length;
+
+  document.getElementById("summaryLowStock").textContent = lowStockCount;
+
+  if (!lowStockCount) return;
 
   const btn = document.getElementById("alertBtn");
   const badge = document.getElementById("alertBadge");
-
   const critical = lowStockProducts.some(p => p.quantity < 2);
 
   btn.classList.add(critical ? "alert-red" : "alert-orange");
-  badge.textContent = lowStockProducts.length;
-
+  badge.textContent = lowStockCount;
   btn.style.display = "flex";
 }
 
+/* ---------------- PURCHASE SUMMARY ---------------- */
+async function loadIncomeSummary() {
+  const res = await fetch(`${API}/stats/purchases/daily`);
+  const daily = await res.json();
+  const todayTotal = daily.reduce((acc, d) => acc + d.total, 0);
+  document.getElementById("summaryToday").textContent = `₱${todayTotal}`;
+
+  const resMonth = await fetch(`${API}/stats/purchases/monthly`);
+  const monthly = await resMonth.json();
+  const thisMonth = monthly.reduce((acc, m) => acc + m.total, 0);
+  document.getElementById("summaryMonth").textContent = `₱${thisMonth}`;
+
+  const resYear = await fetch(`${API}/stats/purchases/yearly`);
+  const yearly = await resYear.json();
+  const thisYear = yearly.reduce((acc, y) => acc + y.total, 0);
+  document.getElementById("summaryYear").textContent = `₱${thisYear}`;
+}
+
+/* ---------------- MODAL ---------------- */
 function openModal() {
   document.getElementById("modalOverlay").classList.add("show");
 }
-
 function closeModal() {
   document.getElementById("modalOverlay").classList.remove("show");
 }
 
-/* LOW STOCK BUTTON */
 document.getElementById("alertBtn").onclick = () => {
   const list = document.getElementById("lowStockList");
   list.innerHTML = "";
@@ -241,12 +303,11 @@ document.getElementById("alertBtn").onclick = () => {
   openModal();
 };
 
-/* CLOSE WHEN CLICK OUTSIDE */
 document.getElementById("modalOverlay").addEventListener("click", e => {
   if (e.target.id === "modalOverlay") closeModal();
 });
 
-/* ---------------- DAILY LINE ---------------- */
+/* ---------------- CHARTS ---------------- */
 async function loadDailyChart() {
   const res = await fetch(`${API}/stats/purchases/daily`);
   const data = await res.json();
@@ -263,13 +324,10 @@ async function loadDailyChart() {
         pointRadius: 5
       }]
     },
-    options: {
-      scales: { y: { beginAtZero: true } }
-    }
+    options: { scales: { y: { beginAtZero: true } } }
   });
 }
 
-/* ---------------- MONTHLY LINE ---------------- */
 async function loadMonthlyChart() {
   const res = await fetch(`${API}/stats/purchases/monthly`);
   const data = await res.json();
@@ -286,13 +344,10 @@ async function loadMonthlyChart() {
         pointRadius: 5
       }]
     },
-    options: {
-      scales: { y: { beginAtZero: true } }
-    }
+    options: { scales: { y: { beginAtZero: true } } }
   });
 }
 
-/* ---------------- TOP PRODUCTS ---------------- */
 async function loadTopProducts(type = "daily") {
   const res = await fetch(`${API}/stats/products/top/${type}`);
   const data = await res.json();
@@ -308,10 +363,7 @@ async function loadTopProducts(type = "daily") {
         data: data.map(d => d.quantity)
       }]
     },
-    options: {
-      indexAxis: "y",
-      scales: { x: { beginAtZero: true } }
-    }
+    options: { indexAxis: "y", scales: { x: { beginAtZero: true } } }
   });
 }
 
@@ -330,6 +382,7 @@ document.querySelectorAll('input[name="topType"]').forEach(r => {
 
 /* ---------------- LOAD ---------------- */
 checkLowStock();
+loadIncomeSummary();
 loadDailyChart();
 loadMonthlyChart();
 loadTopProducts("daily");
