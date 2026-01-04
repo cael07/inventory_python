@@ -12,7 +12,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    /* Reset body padding/margin for topbar */
     body {
       font-family: sans-serif;
       margin: 0;
@@ -20,14 +19,12 @@
       background: #f5f6fa;
     }
 
-    /* Page content wrapper */
     .page {
       padding: 20px;
       max-width: 800px;
       margin: 0 auto;
     }
 
-    /* Dashboard menu links */
     .menu-link {
       display: block;
       margin: 10px 0;
@@ -38,12 +35,6 @@
       border-radius: 6px;
       width: 200px;
       text-align: center;
-      transition: background 0.2s, transform 0.2s;
-    }
-
-    .menu-link:hover {
-      background: #555;
-      transform: translateY(-2px);
     }
 
     h3 {
@@ -56,44 +47,96 @@
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
+
+    /* 🔘 Radio buttons */
+    .chart-filter {
+      margin: 20px 0;
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      display: inline-flex;
+      gap: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .chart-box {
+      display: none;
+    }
+
+    .chart-box.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
 
-<!-- Topbar injected by topbar.js -->
-
 <div class="page">
   <h2>📊 Dashboard</h2>
 
-  <!-- Menu links -->
+  <!-- Menu -->
   <a href="scanner.html" class="menu-link">📷 Scanner</a>
   <a href="products.html" class="menu-link">📦 All Products</a>
   <a href="monitoring.html" class="menu-link">📝 Monitoring</a>
   <a href="product_management.html" class="menu-link">⚙️ Product Management</a>
 
-  <!-- 📊 GRAPHS -->
-  <h3>📊 Daily Purchases</h3>
-  <canvas id="dailyChart" height="120"></canvas>
+  <!-- 🔘 Chart Filter -->
+  <div class="chart-filter">
+    <label>
+      <input type="radio" name="chartType" value="daily" checked>
+      Daily
+    </label>
+    <label>
+      <input type="radio" name="chartType" value="monthly">
+      Monthly
+    </label>
+  </div>
 
-  <h3>📈 Monthly Purchases</h3>
-  <canvas id="monthlyChart" height="120"></canvas>
+  <!-- 📊 DAILY -->
+  <div id="dailyBox" class="chart-box active">
+    <h3>📊 Daily Purchases</h3>
+    <canvas id="dailyChart" height="120"></canvas>
+  </div>
+
+  <!-- 📈 MONTHLY -->
+  <div id="monthlyBox" class="chart-box">
+    <h3>📈 Monthly Purchases</h3>
+    <canvas id="monthlyChart" height="120"></canvas>
+  </div>
 </div>
 
 <script>
-const API = "https://inventory-python.onrender.com"; // or http://localhost:8000
+const API = "https://inventory-python.onrender.com";
 
+let dailyChart, monthlyChart;
+
+// 🔁 Toggle charts
+document.querySelectorAll("input[name='chartType']").forEach(radio => {
+  radio.addEventListener("change", e => {
+    document.getElementById("dailyBox").classList.remove("active");
+    document.getElementById("monthlyBox").classList.remove("active");
+
+    if (e.target.value === "daily") {
+      document.getElementById("dailyBox").classList.add("active");
+    } else {
+      document.getElementById("monthlyBox").classList.add("active");
+    }
+  });
+});
+
+// 📊 Daily chart
 async function loadDailyChart() {
   const res = await fetch(`${API}/stats/purchases/daily`);
   const data = await res.json();
 
-  new Chart(document.getElementById("dailyChart"), {
-    type: "bar",
+  dailyChart = new Chart(document.getElementById("dailyChart"), {
+    type: "line",
     data: {
       labels: data.map(d => d.date),
       datasets: [{
         label: "Daily Purchase Total (₱)",
         data: data.map(d => d.total),
-        borderWidth: 1
+        tension: 0.3,
+        fill: true
       }]
     },
     options: {
@@ -105,18 +148,18 @@ async function loadDailyChart() {
   });
 }
 
+// 📈 Monthly chart
 async function loadMonthlyChart() {
   const res = await fetch(`${API}/stats/purchases/monthly`);
   const data = await res.json();
 
-  new Chart(document.getElementById("monthlyChart"), {
-    type: "line",
+  monthlyChart = new Chart(document.getElementById("monthlyChart"), {
+    type: "bar",
     data: {
       labels: data.map(d => d.month),
       datasets: [{
         label: "Monthly Purchase Total (₱)",
-        data: data.map(d => d.total),
-        tension: 0.35
+        data: data.map(d => d.total)
       }]
     },
     options: {
@@ -128,6 +171,7 @@ async function loadMonthlyChart() {
   });
 }
 
+// Load once
 loadDailyChart();
 loadMonthlyChart();
 </script>
