@@ -73,14 +73,6 @@
 <!-- Topbar injected by topbar.js -->
 
 <div class="page">
-  <h2>📊 Dashboard</h2>
-
-  <!-- Menu links -->
-  <a href="scanner.html" class="menu-link">📷 Scanner</a>
-  <a href="products.html" class="menu-link">📦 All Products</a>
-  <a href="monitoring.html" class="menu-link">📝 Monitoring</a>
-  <a href="product_management.html" class="menu-link">⚙️ Product Management</a>
-
   <!-- 📅 FILTER -->
   <div class="filters">
     <label>
@@ -105,11 +97,25 @@
     <canvas id="monthlyChart" height="120"></canvas>
   </div>
 </div>
+<h3>🏆 Top 10 Product Sales</h3>
+
+<div class="filters">
+  <label>
+    <input type="radio" name="topType" value="daily" checked>
+    Daily
+  </label>
+  <label>
+    <input type="radio" name="topType" value="monthly">
+    Monthly
+  </label>
+</div>
+
+<canvas id="topProductChart" height="180"></canvas>
 
 <script>
 const API = "https://inventory-python.onrender.com";
 
-let dailyChart, monthlyChart;
+let dailyChart, monthlyChart, topChart;
 
 /* ---------------- DAILY LINE CHART ---------------- */
 async function loadDailyChart() {
@@ -211,9 +217,56 @@ document.querySelectorAll('input[name="chartType"]').forEach(radio => {
   });
 });
 
+async function loadTopProducts(type = "daily") {
+  const res = await fetch(`${API}/stats/products/top/${type}`);
+  const data = await res.json();
+
+  if (topChart) topChart.destroy();
+
+  topChart = new Chart(document.getElementById("topProductChart"), {
+    type: "bar",
+    data: {
+      labels: data.map(d => d.name),
+      datasets: [{
+        label: "Total Quantity Sold",
+        data: data.map(d => d.quantity),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      indexAxis: "y",   // 🔥 horizontal bar
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.parsed.x} pcs sold`
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+}
+
+/* RADIO SWITCH */
+document.querySelectorAll('input[name="topType"]').forEach(radio => {
+  radio.addEventListener("change", e => {
+    loadTopProducts(e.target.value);
+  });
+});
+
+
 /* LOAD CHARTS */
 loadDailyChart();
 loadMonthlyChart();
+loadTopProducts("daily");
 </script>
 
 </body>

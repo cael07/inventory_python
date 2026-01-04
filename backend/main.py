@@ -422,3 +422,45 @@ def purchase_stats_monthly(db: Session = Depends(get_db)):
         {"month": r.month, "total": float(r.total or 0)}
         for r in rows
     ]
+
+# ---------------- 🏆 TOP PRODUCT SALES ----------------
+@app.get("/stats/products/top/daily")
+def top_products_daily(db: Session = Depends(get_db)):
+    rows = (
+        db.query(
+            Purchase.name.label("name"),
+            func.sum(Purchase.quantity).label("qty")
+        )
+        .filter(cast(Purchase.date, Date) == cast(func.now(), Date))
+        .group_by(Purchase.name)
+        .order_by(func.sum(Purchase.quantity).desc())
+        .limit(10)
+        .all()
+    )
+
+    return [
+        {"name": r.name, "quantity": int(r.qty or 0)}
+        for r in rows
+    ]
+
+
+@app.get("/stats/products/top/monthly")
+def top_products_monthly(db: Session = Depends(get_db)):
+    current_month = func.to_char(func.now(), "YYYY-MM")
+
+    rows = (
+        db.query(
+            Purchase.name.label("name"),
+            func.sum(Purchase.quantity).label("qty")
+        )
+        .filter(func.to_char(Purchase.date, "YYYY-MM") == current_month)
+        .group_by(Purchase.name)
+        .order_by(func.sum(Purchase.quantity).desc())
+        .limit(10)
+        .all()
+    )
+
+    return [
+        {"name": r.name, "quantity": int(r.qty or 0)}
+        for r in rows
+    ]
