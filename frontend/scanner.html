@@ -9,9 +9,7 @@
 body { font-family: Arial; padding: 0; margin: 0; background: #f5f6fa; }
 
 /* 🔷 Top bar placeholder */
-.page {
-  padding: 20px;
-}
+.page { padding: 20px; }
 
 /* 🔹 Inline header with wave back button */
 .header {
@@ -21,10 +19,7 @@ body { font-family: Arial; padding: 0; margin: 0; background: #f5f6fa; }
   margin-bottom: 15px;
 }
 
-.header h2 {
-  margin: 0;
-  font-size: 22px;
-}
+.header h2 { margin: 0; font-size: 22px; }
 
 /* 🌊 Wave Back Button */
 .wave-btn {
@@ -40,10 +35,7 @@ body { font-family: Arial; padding: 0; margin: 0; background: #f5f6fa; }
   white-space: nowrap;
 }
 
-.wave-btn span {
-  position: relative;
-  z-index: 1;
-}
+.wave-btn span { position: relative; z-index: 1; }
 
 .wave-btn svg {
   position: absolute;
@@ -64,23 +56,57 @@ body { font-family: Arial; padding: 0; margin: 0; background: #f5f6fa; }
   100% { d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"); }
 }
 
-/* Scanner video & buttons */
+/* Scanner */
 video { width: 100%; max-width: 400px; border: 2px solid #333; margin-top: 10px; }
 button { padding: 12px 18px; font-size: 16px; margin: 5px 5px 5px 0; }
 
 /* Modal */
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
-.modal-box { background: #fff; padding: 20px; width: 300px; border-radius: 6px; }
-input { width: 100%; padding: 6px; margin-bottom: 10px; }
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-box {
+  background: #fff;
+  padding: 20px;
+  width: 300px;
+  border-radius: 6px;
+}
+
+label {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 10px;
+}
 
 /* Recent products */
-.recent { margin-top: 20px; background: #ededed; padding: 10px; border-radius: 6px; }
+.recent {
+  margin-top: 20px;
+  background: #ededed;
+  padding: 10px;
+  border-radius: 6px;
+}
+
 .recent h3 { margin-top: 0; }
-.recent-item { font-size: 14px; padding: 6px 0; border-bottom: 1px solid #ddd; }
+
+.recent-item {
+  font-size: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid #ddd;
+}
+
 .recent-item:last-child { border-bottom: none; }
 
-
-/* Scan Barcode button professional style */
+/* Scan button */
 #scan-btn {
   padding: 14px 24px;
   font-size: 18px;
@@ -104,7 +130,6 @@ input { width: 100%; padding: 6px; margin-bottom: 10px; }
 
 <div class="page">
 
-  <!-- 🔹 Header with wave back button inline -->
   <div class="header">
     <a href="product_management.html" class="wave-btn">
       <span>⬅️ Back</span>
@@ -117,18 +142,26 @@ input { width: 100%; padding: 6px; margin-bottom: 10px; }
 
   <div id="app">
     <button id="scan-btn" @click="startScan">Scan Barcode</button>
-    <!-- <p>Status: {{ status }}</p> -->
     <video id="video"></video>
 
     <!-- ADD PRODUCT -->
     <div v-if="showModal" class="modal">
       <div class="modal-box">
         <h3>New Product</h3>
+
+        <label>Barcode</label>
         <input v-model="form.barcode" readonly />
-        <input v-model="form.name" placeholder="Product Name" />
-        <input v-model="form.price" type="number" placeholder="Price" />
-        <input v-model="form.quantity" type="number" placeholder="Quantity" />
-        <button @click="save">Save</button>
+
+        <label>Product Name</label>
+        <input v-model.trim="form.name" required />
+
+        <label>Price</label>
+        <input v-model.number="form.price" type="number" min="0.01" step="0.01" required />
+
+        <label>Quantity</label>
+        <input v-model.number="form.quantity" type="number" min="1" required />
+
+        <button @click="save" :disabled="!isFormValid">Save</button>
         <button @click="cancel">Close</button>
       </div>
     </div>
@@ -137,17 +170,28 @@ input { width: 100%; padding: 6px; margin-bottom: 10px; }
     <div v-if="showUpdateModal" class="modal">
       <div class="modal-box">
         <h3>Update Product</h3>
+
+        <label>Barcode</label>
         <input v-model="updateForm.barcode" readonly />
+
+        <label>Name</label>
         <input v-model="updateForm.name" readonly />
-        <input v-model="updateForm.price" type="number" placeholder="Price" />
-        <input v-model="updateForm.quantity" type="number" placeholder="Add Quantity" />
-        <input v-model="updateForm.remark" placeholder="Remark" />
-        <button @click="updateProduct">Save</button>
+
+        <label>Price</label>
+        <input v-model.number="updateForm.price" type="number" min="0.01" step="0.01" required />
+
+        <label>Add Quantity</label>
+        <input v-model.number="updateForm.quantity" type="number" min="1" required />
+
+        <label>Remark</label>
+        <input v-model="updateForm.remark" />
+
+        <button @click="updateProduct" :disabled="!isUpdateValid">Save</button>
         <button @click="cancelUpdate">Close</button>
       </div>
     </div>
 
-    <!-- LAST 5 FROM MONITORING -->
+    <!-- LAST 5 -->
     <div class="recent">
       <h3>🧾 Latest 5 Products</h3>
       <div v-if="recentProducts.length === 0">No products yet</div>
@@ -157,7 +201,6 @@ input { width: 100%; padding: 6px; margin-bottom: 10px; }
       </div>
     </div>
   </div>
-
 </div>
 
 <script>
@@ -166,13 +209,21 @@ const API = "https://inventory-python.onrender.com";
 Vue.createApp({
   data() {
     return {
-      status: "Press Scan Barcode to start scanning.",
       reader: null,
       showModal: false,
       showUpdateModal: false,
-      form: { barcode: "", name: "", price: 0, quantity: 0 },
-      updateForm: { barcode: "", name: "", price: 0, quantity: 0, remark: "" },
+      form: { barcode: "", name: "", price: "", quantity: "" },
+      updateForm: { barcode: "", name: "", price: "", quantity: "", remark: "" },
       recentProducts: []
+    }
+  },
+
+  computed: {
+    isFormValid() {
+      return this.form.name && this.form.price > 0 && this.form.quantity > 0;
+    },
+    isUpdateValid() {
+      return this.updateForm.price > 0 && this.updateForm.quantity > 0;
     }
   },
 
@@ -182,7 +233,6 @@ Vue.createApp({
 
   methods: {
     startScan() {
-      this.status = "Scanning...";
       this.reader = new ZXing.BrowserMultiFormatReader();
       this.reader.decodeFromVideoDevice(null, "video", async (result) => {
         if (result) {
@@ -194,14 +244,20 @@ Vue.createApp({
             const data = await res.json();
 
             if (data?.barcode) {
-              this.updateForm = { barcode: data.barcode, name: data.name, price: data.price, quantity: 0, remark: "" };
+              this.updateForm = {
+                barcode: data.barcode,
+                name: data.name,
+                price: data.price,
+                quantity: "",
+                remark: ""
+              };
               this.showUpdateModal = true;
             } else {
-              this.form = { barcode, name: "", price: 0, quantity: 0 };
+              this.form = { barcode, name: "", price: "", quantity: "" };
               this.showModal = true;
             }
           } catch {
-            this.form = { barcode, name: "", price: 0, quantity: 0 };
+            this.form = { barcode, name: "", price: "", quantity: "" };
             this.showModal = true;
           }
         }
@@ -209,36 +265,44 @@ Vue.createApp({
     },
 
     async save() {
+      if (!this.isFormValid) return alert("Please fill all required fields");
+
       await fetch(`${API}/update_product/${this.form.barcode}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...this.form, total_price: this.form.price * this.form.quantity, remark: "New" })
+        body: JSON.stringify({
+          ...this.form,
+          total_price: this.form.price * this.form.quantity,
+          remark: "New"
+        })
       });
+
       this.cancel();
       await this.loadRecent();
       alert("Product saved");
     },
 
     async updateProduct() {
+      if (!this.isUpdateValid) return alert("Invalid input");
+
       await fetch(`${API}/update_product/${this.updateForm.barcode}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...this.updateForm, total_price: this.updateForm.price * this.updateForm.quantity })
+        body: JSON.stringify({
+          ...this.updateForm,
+          total_price: this.updateForm.price * this.updateForm.quantity
+        })
       });
+
       this.cancelUpdate();
       await this.loadRecent();
       alert("Product updated");
     },
 
     async loadRecent() {
-      try {
-        const res = await fetch(`${API}/monitoring?page=1&limit=5`);
-        const data = await res.json();
-        this.recentProducts = data.items || [];
-      } catch (err) {
-        console.error("Error loading recent products:", err);
-        this.recentProducts = [];
-      }
+      const res = await fetch(`${API}/monitoring?page=1&limit=5`);
+      const data = await res.json();
+      this.recentProducts = data.items || [];
     },
 
     cancel() { this.showModal = false; },
