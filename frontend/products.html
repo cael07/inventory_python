@@ -19,31 +19,22 @@
       padding: 0;
     }
 
+    /* Page padding */
     .page {
       padding: 20px;
     }
 
+    /* Header row */
     .header {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
 
     h2 {
       margin: 0;
       font-size: 22px;
-    }
-
-    /* Search */
-    .search-box {
-      margin-bottom: 10px;
-    }
-
-    .search-box input {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
     }
 
     table {
@@ -90,6 +81,16 @@
       height: 18px;
       fill: #3498db;
     }
+
+    .wave-btn svg path {
+      animation: waveOscillate 2.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes waveOscillate {
+      0%   { d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"); }
+      50%  { d: path("M0,8 C30,0 60,20 120,8 L120,40 L0,40 Z"); }
+      100% { d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"); }
+    }
   </style>
 </head>
 
@@ -97,6 +98,7 @@
 
 <div class="page">
 
+  <!-- 🔹 Inline Header -->
   <div class="header">
     <a href="product_management.html" class="wave-btn">
       <span>⬅️ Back</span>
@@ -104,20 +106,12 @@
         <path d="M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"></path>
       </svg>
     </a>
+
     <h2>📦 All Products</h2>
   </div>
 
   <div id="app">
-
-    <!-- 🔍 SEARCH (FRONTEND ONLY, SAFE) -->
-    <div class="search-box">
-      <input
-        v-model="searchQuery"
-        placeholder="Search by barcode or product name..."
-      />
-    </div>
-
-    <table v-if="filteredRows.length">
+    <table v-if="rows.length">
       <tr>
         <th>#</th>
         <th>Barcode</th>
@@ -126,7 +120,7 @@
         <th>Qty</th>
       </tr>
 
-      <tr v-for="(p, i) in filteredRows" :key="p.id">
+      <tr v-for="(p, i) in rows" :key="p.id">
         <td>{{ i + 1 }}</td>
         <td>{{ p.barcode }}</td>
         <td>{{ p.name }}</td>
@@ -136,14 +130,12 @@
     </table>
 
     <div class="loader" v-if="loading">Loading...</div>
-    <div class="loader" v-if="!loading && filteredRows.length === 0">
-      No records found
-    </div>
+    <div class="loader" v-if="!loading && rows.length === 0">No records found</div>
     <div class="loader" v-if="rows.length > 0 && !canLoadMore && !loading">
       End of list
     </div>
-
   </div>
+
 </div>
 
 <script>
@@ -156,26 +148,13 @@ Vue.createApp({
       page: 1,
       limit: 25,
       total: 0,
-      loading: false,
-      searchQuery: ""
+      loading: false
     }
   },
 
   computed: {
     canLoadMore() {
       return this.rows.length < this.total;
-    },
-
-    // ✅ FILTER ONLY WHAT IS LOADED (NO EXTRA LOAD)
-    filteredRows() {
-      if (!this.searchQuery) return this.rows;
-
-      const q = this.searchQuery.toLowerCase();
-
-      return this.rows.filter(p =>
-        (p.barcode && p.barcode.toLowerCase().includes(q)) ||
-        (p.name && p.name.toLowerCase().includes(q))
-      );
     }
   },
 
