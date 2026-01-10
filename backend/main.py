@@ -4,7 +4,7 @@ import pandas as pd
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, cast
+from sqlalchemy import func, cast, or_
 from datetime import date, timedelta
 from sqlalchemy.types import Date
 
