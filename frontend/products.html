@@ -19,12 +19,10 @@
       padding: 0;
     }
 
-    /* Page padding */
     .page {
       padding: 20px;
     }
 
-    /* Header row */
     .header {
       display: flex;
       align-items: center;
@@ -91,6 +89,17 @@
       50%  { d: path("M0,8 C30,0 60,20 120,8 L120,40 L0,40 Z"); }
       100% { d: path("M0,14 C30,20 60,8 120,14 L120,40 L0,40 Z"); }
     }
+
+    /* Search */
+    .search-box {
+      margin-bottom: 10px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+    }
   </style>
 </head>
 
@@ -111,7 +120,16 @@
   </div>
 
   <div id="app">
-    <table v-if="rows.length">
+
+    <!-- 🔍 SEARCH -->
+    <div class="search-box">
+      <input
+        v-model="searchQuery"
+        placeholder="Search by barcode or product name..."
+      />
+    </div>
+
+    <table v-if="filteredRows.length">
       <tr>
         <th>#</th>
         <th>Barcode</th>
@@ -120,7 +138,7 @@
         <th>Qty</th>
       </tr>
 
-      <tr v-for="(p, i) in rows" :key="p.id">
+      <tr v-for="(p, i) in filteredRows" :key="p.id">
         <td>{{ i + 1 }}</td>
         <td>{{ p.barcode }}</td>
         <td>{{ p.name }}</td>
@@ -130,7 +148,9 @@
     </table>
 
     <div class="loader" v-if="loading">Loading...</div>
-    <div class="loader" v-if="!loading && rows.length === 0">No records found</div>
+    <div class="loader" v-if="!loading && filteredRows.length === 0">
+      No records found
+    </div>
     <div class="loader" v-if="rows.length > 0 && !canLoadMore && !loading">
       End of list
     </div>
@@ -148,13 +168,25 @@ Vue.createApp({
       page: 1,
       limit: 25,
       total: 0,
-      loading: false
+      loading: false,
+      searchQuery: ""
     }
   },
 
   computed: {
     canLoadMore() {
       return this.rows.length < this.total;
+    },
+
+    filteredRows() {
+      if (!this.searchQuery) return this.rows;
+
+      const q = this.searchQuery.toLowerCase();
+
+      return this.rows.filter(p =>
+        (p.barcode && p.barcode.toLowerCase().includes(q)) ||
+        (p.name && p.name.toLowerCase().includes(q))
+      );
     }
   },
 
