@@ -129,6 +129,37 @@ def get_products(
         "items": items
     }
 
+@app.get("/products_manual_search")
+def products_manual_search(
+    search: str,
+    db: Session = Depends(get_db)
+):
+    rows = (
+        db.query(Product)
+        .filter(
+            or_(
+                Product.barcode.ilike(f"%{search}%"),
+                Product.name.ilike(f"%{search}%")
+            )
+        )
+        .order_by(Product.name.asc())
+        .limit(50)
+        .all()
+    )
+
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "barcode": r.barcode,
+                "name": r.name,
+                "price": r.price,
+                "quantity": r.quantity
+            }
+            for r in rows
+        ]
+    }
+
 # ---------------- MONITORING ----------------
 @app.put("/update_product/{barcode}")
 def update_product_item(
