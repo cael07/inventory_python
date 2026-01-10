@@ -20,11 +20,34 @@
 
 <div id="app">
   <button @click="startScan">📷 Scan Barcode</button>
+  <button @click="openManual">➕ Add Product Manually</button>
   <button @click="loadProducts">📦 Show All Products</button>
   <button @click="loadMonitoring">📝 Show Monitoring Log</button>
   <p>Status: {{ status }}</p>
 
   <video id="video"></video>
+
+  <!-- MANUAL PRODUCT -->
+<div v-if="showManualModal" class="modal">
+  <div class="modal-box">
+    <h3>Manual Product Entry</h3>
+
+    <label>Barcode (optional)</label>
+    <input v-model="manual.barcode" placeholder="Leave empty to auto-generate" />
+
+    <label>Product Name</label>
+    <input v-model.trim="manual.name" required />
+
+    <label>Price</label>
+    <input v-model.number="manual.price" type="number" min="0.01" required />
+
+    <label>Quantity</label>
+    <input v-model.number="manual.quantity" type="number" min="1" required />
+
+    <button @click="saveManual" :disabled="!isManualValid">Save</button>
+    <button @click="closeManual">Close</button>
+  </div>
+</div>
 
 <!-- ADD / EDIT PRODUCT MODAL -->
 <div v-if="showModal" class="modal">
@@ -104,10 +127,56 @@ Vue.createApp({
       form: { barcode: "", name: "", price: "", quantity: 0 },
       updateForm: { barcode: "", name: "", price: 0, quantity: 0, remark: "" },
       products: [],
-      monitoring: []
+      monitoring: [],
+      showManualModal: false,
+      manual: {
+        barcode: "",
+        name: "",
+        price: "",
+        quantity: ""
+      },
     }
   },
+  computed: {
+    isManualValid() {
+  return this.manual.name && this.manual.price > 0 && this.manual.quantity > 0;
+}
+  },
   methods: {
+    openManual() {
+  this.manual = { barcode: "", name: "", price: "", quantity: "" };
+  this.showManualModal = true;
+},
+
+closeManual() {
+  this.showManualModal = false;
+},
+
+async saveManual() {
+  if (!this.isManualValid) {
+    alert("Please complete required fields");
+    return;
+  }
+
+  // Auto-generate barcode if empty
+  if (!this.manual.barcode) {
+    this.manual.barcode = "MAN-" + Date.now();
+  }
+
+  await fetch(`${API}/update_product/${this.manual.barcode}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...this.manual,
+      total_price: this.manual.price * this.manual.quantity,
+      remark: "Manual Entry"
+    })
+  });
+
+  this.closeManual();
+  await this.loadRecent();
+  alert("Product added manually");
+},
     startScan() {
       this.status = "starting camera";
       this.reader = new ZXing.BrowserMultiFormatReader();
