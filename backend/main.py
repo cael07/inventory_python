@@ -199,6 +199,40 @@ def update_product_item(
 
     return {"message": "Product updated and monitored"}
 
+@app.get("/monitoring_manual_search")
+def monitoring_manual_search(
+    search: str,
+    db: Session = Depends(get_db)
+):
+    rows = (
+        db.query(ProductMonitoring)
+        .filter(
+            or_(
+                ProductMonitoring.barcode.ilike(f"%{search}%"),
+                ProductMonitoring.name.ilike(f"%{search}%")
+            )
+        )
+        .order_by(ProductMonitoring.date.desc())
+        .limit(50)
+        .all()
+    )
+
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "barcode": r.barcode,
+                "name": r.name,
+                "price": r.price,
+                "quantity": r.quantity,
+                "total_price": r.total_price,
+                "remark": r.remark,
+                "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            for r in rows
+        ]
+    }
+
 
 @app.get("/monitoring")
 def get_monitoring(

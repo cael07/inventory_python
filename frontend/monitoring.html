@@ -129,6 +129,18 @@
   </div>
 
   <div id="app">
+<!-- 🔍 Manual Search -->
+<div style="margin-bottom: 10px; display: flex; gap: 5px;">
+  <input
+    v-model="searchQuery"
+    @keyup.enter="searchMonitoring"
+    placeholder="Search barcode or name..."
+    style="flex:1; padding:8px; font-size:16px;"
+  />
+  <button @click="searchMonitoring" style="padding:8px 14px;">
+    Search
+  </button>
+</div>
 
     <!-- ✅ Scroll-safe table -->
     <div class="table-wrap">
@@ -175,7 +187,9 @@ Vue.createApp({
       page: 1,
       limit: 25,
       total: 0,
-      loading: false
+      loading: false,
+      searchQuery: "",
+      isSearching: false
     }
   },
 
@@ -186,38 +200,65 @@ Vue.createApp({
   },
 
   methods: {
-    async loadMore() {
-      if (this.loading || (this.total && !this.canLoadMore)) return;
-      this.loading = true;
+  async searchMonitoring() {
+    if (!this.searchQuery) {
+      // reset to normal infinite scroll
+      this.rows = [];
+      this.page = 1;
+      this.total = 0;
+      this.isSearching = false;
+      this.loadMore();
+      return;
+    }
 
-      try {
-        const res = await fetch(`${API}/monitoring?page=${this.page}&limit=${this.limit}`);
-        const data = await res.json();
+    this.loading = true;
+    this.isSearching = true;
 
-        if (data.items && data.items.length) {
-          this.rows.push(...data.items);
-        }
-
-        this.total = data.total_records;
-        this.page++;
-      } catch (err) {
-        console.error("Error loading monitoring log:", err);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    handleScroll() {
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
-        this.loadMore();
-      }
-    },
-
-    formatDate(dt) {
-      if (!dt) return "";
-      return dt.replace("T", " ").split(".")[0];
+    try {
+      const res = await fetch(
+        `${API}/monitoring_manual_search?search=${encodeURIComponent(this.searchQuery)}`
+      );
+      const data = await res.json();
+      this.rows = data.items || [];
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      this.loading = false;
     }
   },
+
+  async loadMore() {
+    if (this.loading || (this.total && !this.canLoadMore)) return;
+    this.loading = true;
+
+    try {
+      const res = await fetch(`${API}/monitoring?page=${this.page}&limit=${this.limit}`);
+      const data = await res.json();
+
+      if (data.items && data.items.length) {
+        this.rows.push(...data.items);
+      }
+
+      this.total = data.total_records;
+      this.page++;
+    } catch (err) {
+      console.error("Error loading monitoring log:", err);
+    } finally {
+      this.loading = false;
+    }
+  },
+
+  handleScroll() {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
+      this.loadMore();
+    }
+  },
+
+  formatDate(dt) {
+    if (!dt) return "";
+    return dt.replace("T", " ").split(".")[0];
+  }
+},
 
   mounted() {
     this.loadMore();
