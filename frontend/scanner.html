@@ -138,11 +138,34 @@ input {
       </svg>
     </a>
     <h2>📷 Scanner</h2>
+    <button @click="openManual">➕ Add Product Manually</button>
+
   </div>
 
   <div id="app">
     <button id="scan-btn" @click="startScan">Scan Barcode</button>
     <video id="video"></video>
+<!-- MANUAL PRODUCT -->
+<div v-if="showManualModal" class="modal">
+  <div class="modal-box">
+    <h3>Manual Product Entry</h3>
+
+    <label>Barcode (optional)</label>
+    <input v-model="manual.barcode" placeholder="Leave empty to auto-generate" />
+
+    <label>Product Name</label>
+    <input v-model.trim="manual.name" required />
+
+    <label>Price</label>
+    <input v-model.number="manual.price" type="number" min="0.01" required />
+
+    <label>Quantity</label>
+    <input v-model.number="manual.quantity" type="number" min="1" required />
+
+    <button @click="saveManual" :disabled="!isManualValid">Save</button>
+    <button @click="closeManual">Close</button>
+  </div>
+</div>
 
     <!-- ADD PRODUCT -->
     <div v-if="showModal" class="modal">
@@ -214,7 +237,15 @@ Vue.createApp({
       showUpdateModal: false,
       form: { barcode: "", name: "", price: "", quantity: "" },
       updateForm: { barcode: "", name: "", price: "", quantity: "", remark: "" },
-      recentProducts: []
+      recentProducts: [],
+      showManualModal: false,
+manual: {
+  barcode: "",
+  name: "",
+  price: "",
+  quantity: ""
+},
+
     }
   },
 
@@ -224,7 +255,11 @@ Vue.createApp({
     },
     isUpdateValid() {
       return this.updateForm.price > 0 && this.updateForm.quantity > 0;
-    }
+    },
+    isManualValid() {
+  return this.manual.name && this.manual.price > 0 && this.manual.quantity > 0;
+}
+
   },
 
   mounted() {
@@ -232,6 +267,40 @@ Vue.createApp({
   },
 
   methods: {
+    openManual() {
+  this.manual = { barcode: "", name: "", price: "", quantity: "" };
+  this.showManualModal = true;
+},
+
+closeManual() {
+  this.showManualModal = false;
+},
+
+async saveManual() {
+  if (!this.isManualValid) {
+    alert("Please complete required fields");
+    return;
+  }
+
+  // Auto-generate barcode if empty
+  if (!this.manual.barcode) {
+    this.manual.barcode = "MAN-" + Date.now();
+  }
+
+  await fetch(`${API}/update_product/${this.manual.barcode}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...this.manual,
+      total_price: this.manual.price * this.manual.quantity,
+      remark: "Manual Entry"
+    })
+  });
+
+  this.closeManual();
+  await this.loadRecent();
+  alert("Product added manually");
+},
     startScan() {
       this.reader = new ZXing.BrowserMultiFormatReader();
       this.reader.decodeFromVideoDevice(null, "video", async (result) => {
