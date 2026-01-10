@@ -111,23 +111,6 @@
   </div>
 
   <div id="app">
-    <!-- 🔍 Manual Search -->
-<div style="display:flex; gap:6px; margin-bottom:10px;">
-  <input
-    v-model="search"
-    placeholder="Search barcode or name"
-    style="padding:6px; flex:1;"
-  >
-
-  <button @click="doSearch" style="padding:6px 12px;">
-    🔍 Search
-  </button>
-
-  <button @click="clearSearch" style="padding:6px 12px;">
-    ❌ Clear
-  </button>
-</div>
-
     <table v-if="rows.length">
       <tr>
         <th>#</th>
@@ -165,9 +148,7 @@ Vue.createApp({
       page: 1,
       limit: 25,
       total: 0,
-      loading: false,
-      search: "",        // 👈 NEW
-      searching: false   // 👈 NEW
+      loading: false
     }
   },
 
@@ -178,52 +159,26 @@ Vue.createApp({
   },
 
   methods: {
-async loadMore() {
-  if (this.loading || this.searching) return;
-  this.loading = true;
+    async loadMore() {
+      if (this.loading) return;
+      this.loading = true;
 
-  try {
-    const res = await fetch(`${API}/products?page=${this.page}&limit=${this.limit}`);
-    const data = await res.json();
+      try {
+        const res = await fetch(`${API}/products?page=${this.page}&limit=${this.limit}`);
+        const data = await res.json();
 
-    if (data.items && data.items.length) {
-      this.rows.push(...data.items);
-    }
+        if (data.items && data.items.length) {
+          this.rows.push(...data.items);
+        }
 
-    this.total = data.total_records;
-    this.page++;
-  } catch (e) {
-    console.error(e);
-  } finally {
-    this.loading = false;
-  }
-},
-async doSearch() {
-  if (!this.search) return;
-
-  this.searching = true;
-  this.loading = true;
-
-  try {
-    const res = await fetch(
-      `${API}/products_manual_search?search=${encodeURIComponent(this.search)}`
-    );
-    const data = await res.json();
-    this.rows = data.items || [];
-  } catch (e) {
-    console.error(e);
-  } finally {
-    this.loading = false;
-  }
-},
-
-clearSearch() {
-  this.search = "";
-  this.searching = false;
-  this.rows = [];
-  this.page = 1;
-  this.loadMore();
-},
+        this.total = data.total_records;
+        this.page++;
+      } catch (e) {
+        console.error(e);
+      } finally {
+        this.loading = false;
+      }
+    },
 
     handleScroll() {
       if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
