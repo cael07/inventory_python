@@ -138,12 +138,12 @@ input {
       </svg>
     </a>
     <h2>📷 Scanner</h2>
-    <button @click="openManual">➕ Add Product Manually</button>
 
   </div>
 
   <div id="app">
     <button id="scan-btn" @click="startScan">Scan Barcode</button>
+    <button @click="openManual">➕ Add Product Manually</button>
     <video id="video"></video>
 <!-- MANUAL PRODUCT -->
 <div v-if="showManualModal" class="modal">
