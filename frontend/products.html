@@ -122,12 +122,17 @@
   <div id="app">
 
     <!-- 🔍 SEARCH -->
-    <div class="search-box">
-      <input
-        v-model="searchQuery"
-        placeholder="Search by barcode or product name..."
-      />
-    </div>
+<div class="search-box" style="display:flex; gap:6px;">
+  <input
+    v-model="tempSearch"
+    @keyup.enter="applySearch"
+    placeholder="Search by barcode or product name..."
+  />
+  <button @click="applySearch" style="padding:10px;">
+    🔍 Search
+  </button>
+</div>
+
 
     <table v-if="filteredRows.length">
       <tr>
@@ -162,16 +167,17 @@
 const API = "https://inventory-python.onrender.com";
 
 Vue.createApp({
-  data() {
-    return {
-      rows: [],
-      page: 1,
-      limit: 25,
-      total: 0,
-      loading: false,
-      searchQuery: ""
-    }
-  },
+data() {
+  return {
+    rows: [],
+    page: 1,
+    limit: 25,
+    total: 0,
+    loading: false,
+    searchQuery: "",
+    tempSearch: ""
+  }
+},
 
   computed: {
     canLoadMore() {
@@ -211,7 +217,9 @@ Vue.createApp({
         this.loading = false;
       }
     },
-
+  applySearch() {
+    this.searchQuery = this.tempSearch.trim();
+  },
     handleScroll() {
       if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
         this.loadMore();
