@@ -140,6 +140,13 @@
   <button @click="searchMonitoring" style="padding:8px 14px;">
     Search
   </button>
+   <button
+    v-if="searchQuery"
+    @click="clearSearch"
+    style="padding:6px 10px; background:#e74c3c; color:white; border:none; border-radius:4px;"
+  >
+    ❌ Clear
+  </button>
 </div>
 
     <!-- ✅ Scroll-safe table -->
@@ -249,6 +256,8 @@ Vue.createApp({
   },
 
   handleScroll() {
+    if (this.isSearching) return;
+
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 50) {
       this.loadMore();
     }
@@ -267,7 +276,16 @@ Vue.createApp({
 
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
-  }
+  },
+  clearSearch() {
+  this.searchQuery = "";
+  this.rows = [];
+  this.page = 1;
+  this.total = 0;
+  this.isSearching = false;
+  this.loadMore();
+}
+
 }).mount("#app");
 </script>
 
