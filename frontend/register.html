@@ -26,8 +26,10 @@
   <input v-model="f.address" placeholder="Address">
   <input v-model="f.storename" placeholder="Store name">
   <input v-model="f.storelocation" placeholder="Store location">
+<button @click="register" :disabled="loading">
+  {{ loading ? "Registering..." : "Register" }}
+</button>
 
-  <button @click="register">Register</button>
 
   <p>{{ message }}</p>
 
@@ -54,18 +56,35 @@ Vue.createApp({
         storename:"",
         storelocation:""
       },
-      message:""
+      message:"",
+      loading:false
     }
   },
   methods:{
     async register() {
-      const r = await fetch(`${API}/register`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(this.f)
-      });
-      const d = await r.json();
-      this.message = d.message || "Registered!";
+      this.message = "";
+      this.loading = true;
+
+      try {
+        const r = await fetch(`${API}/register`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(this.f)
+        });
+
+        const d = await r.json();
+
+        if (!r.ok) {
+          this.message = d.detail || "Registration failed";
+          return;
+        }
+
+        this.message = d.message || "Registered! Check your email.";
+      } catch (e) {
+        this.message = "Server not responding";
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }).mount("#app");

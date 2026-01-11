@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/vue@3"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background:#f5f6fa;
+      padding:20px;
+    }
+    h2 { margin-bottom:10px; }
+
+    table {
+      width:100%;
+      border-collapse: collapse;
+      background:white;
+    }
+    th, td {
+      border:1px solid #ccc;
+      padding:8px;
+      font-size:14px;
+    }
+    th {
+      background:#1f3a5f;
+      color:white;
+    }
+    .yes { color:green; font-weight:bold; }
+    .no { color:red; font-weight:bold; }
+  </style>
+</head>
+
+<body>
+
+<h2>👤 Registered Users</h2>
+
+<div id="app">
+  <p v-if="loading">Loading users...</p>
+
+  <table v-if="users.length">
+    <tr>
+      <th>#</th>
+      <th>Username</th>
+      <th>Email</th>
+      <th>Name</th>
+      <th>Store</th>
+      <th>Verified</th>
+      <th>Date</th>
+    </tr>
+
+    <tr v-for="(u, i) in users" :key="u.id">
+      <td>{{ i + 1 }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.email }}</td>
+      <td>{{ u.firstname }} {{ u.middlename }} {{ u.lastname }}</td>
+      <td>
+        {{ u.storename }}<br>
+        <small>{{ u.storelocation }}</small>
+      </td>
+      <td>
+        <span :class="u.verified ? 'yes' : 'no'">
+          {{ u.verified ? 'YES' : 'NO' }}
+        </span>
+      </td>
+      <td>{{ u.date }}</td>
+    </tr>
+  </table>
+
+  <p v-if="!loading && !users.length">No users found</p>
+</div>
+
+<script>
+const API = "https://inventory-python.onrender.com";
+
+Vue.createApp({
+  data() {
+    return {
+      users: [],
+      loading: true
+    }
+  },
+  async mounted() {
+    try {
+      const res = await fetch(`${API}/users`);
+      const data = await res.json();
+      this.users = data.items || [];
+    } catch (e) {
+      alert("Failed to load users");
+    } finally {
+      this.loading = false;
+    }
+  }
+}).mount("#app");
+</script>
+
+</body>
+</html>

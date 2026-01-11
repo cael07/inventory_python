@@ -140,6 +140,32 @@ def hash_password(password):
 def verify_password(password, hashed):
     return pwd_context.verify(password, hashed)
 
+
+
+@app.get("/users")
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(User).order_by(User.id.desc()).all()
+
+    return {
+        "total": len(users),
+        "items": [
+            {
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "firstname": u.firstname,
+                "middlename": u.middlename,
+                "lastname": u.lastname,
+                "storename": u.storename,
+                "storelocation": u.storelocation,
+                "address": u.address,
+                "verified": u.verified,
+                "date": u.date.strftime("%Y-%m-%d %H:%M:%S") if u.date else None
+            }
+            for u in users
+        ]
+    }
+
 # ---------------- PRODUCTS ----------------
 @app.post("/product")
 def save_product(p: ProductCreate, db: Session = Depends(get_db)):
