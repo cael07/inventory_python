@@ -1,6 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
+class UserRegister(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    firstname: str
+    middlename: str | None = None
+    lastname: str
+    address: str
+    storename: str
+    storelocation: str
+    
 class UserCreate(BaseModel):
     username: str
     password: str

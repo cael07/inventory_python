@@ -1,19 +1,25 @@
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 import pandas as pd
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, cast, or_
 from datetime import date, timedelta, datetime
 from sqlalchemy.types import Date
-
+from email.message import EmailMessage
 from backend.database import SessionLocal, engine
 from backend.models import User, Product, ProductMonitoring, Purchase
 from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate
 from backend import auth
 
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 import uuid
+import secrets
+import smtplib
 
 # Create tables (safe: won't drop existing data)
 Product.__table__.create(bind=engine, checkfirst=True)
@@ -48,14 +54,92 @@ def root():
 
 # ---------------- AUTH ----------------
 @app.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter_by(username=user.username).first()
-    if db_user:
-        return {"status": "User already exists"}
-    new_user = User(username=user.username, password=auth.hash_password(user.password))
+def register(user: UserRegister, db: Session = Depends(get_db)):
+    if db.query(User).filter(
+        (User.username == user.username) |
+        (User.email == user.email)
+    ).first():
+        raise HTTPException(400, "Username or email already exists")
+
+    verification_code = secrets.token_hex(3)  # 6 chars
+
+    new_user = User(
+        username=user.username,
+        email=user.email,
+        password=auth.hash_password(user.password),
+
+        firstname=user.firstname,
+        middlename=user.middlename,
+        lastname=user.lastname,
+        address=user.address,
+        storename=user.storename,
+        storelocation=user.storelocation,
+
+        verified=False,
+        verification_code=verification_code
+    )
+
     db.add(new_user)
     db.commit()
-    return {"status": "user created"}
+
+    # 📧 SEND EMAIL HERE
+    send_verification_email(user.email, verification_code)
+
+    return {
+        "status": "registered",
+        "message": "Check your email for verification code"
+    }
+
+def send_verification_email(to_email, code):
+    msg = EmailMessage()
+    msg["Subject"] = "Verify your account"
+    msg["From"] = "your@email.com"
+    msg["To"] = to_email
+    msg.set_content(
+        f"Your verification code is: {code}"
+    )
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login("caesarliteratus@gmail.com", "tfxd ifpc zwco lmyf")
+        smtp.send_message(msg)
+
+@app.post("/verify-email")
+def verify_email(email: str, code: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(email=email).first()
+
+    if not user or user.verification_code != code:
+        raise HTTPException(400, "Invalid verification code")
+
+    user.verified = True
+    user.verification_code = None
+    db.commit()
+
+    return {"status": "verified"}
+
+@app.post("/login")
+def login(username: str, password: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(username=username).first()
+
+    if not user or not auth.verify_password(password, user.password):
+        raise HTTPException(401, "Invalid credentials")
+
+    if not user.verified:
+        raise HTTPException(403, "Email not verified")
+
+    return {
+        "status": "ok",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "storename": user.storename
+        }
+    }
+
+def hash_password(password):
+    return pwd_context.hash(password)
+
+def verify_password(password, hashed):
+    return pwd_context.verify(password, hashed)
 
 # ---------------- PRODUCTS ----------------
 @app.post("/product")

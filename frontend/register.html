@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/vue@3"></script>
+  <style>
+    body { font-family: Arial; background:#f4f4f4; }
+    .box { max-width:400px; margin:40px auto; background:white; padding:20px; border-radius:6px; }
+    input, button { width:100%; padding:8px; margin:6px 0; }
+    button { background:#1f3a5f; color:white; border:none; }
+  </style>
+</head>
+<body>
+
+<div id="app" class="box">
+  <h2>📝 Register</h2>
+
+  <input v-model="f.username" placeholder="Username">
+  <input v-model="f.email" placeholder="Email">
+  <input type="password" v-model="f.password" placeholder="Password">
+
+  <input v-model="f.firstname" placeholder="First name">
+  <input v-model="f.middlename" placeholder="Middle name (optional)">
+  <input v-model="f.lastname" placeholder="Last name">
+
+  <input v-model="f.address" placeholder="Address">
+  <input v-model="f.storename" placeholder="Store name">
+  <input v-model="f.storelocation" placeholder="Store location">
+
+  <button @click="register">Register</button>
+
+  <p>{{ message }}</p>
+
+  <p>
+    Already have an account?
+    <a href="login.html">Login</a>
+  </p>
+</div>
+
+<script>
+const API = "https://inventory-python.onrender.com";
+
+Vue.createApp({
+  data() {
+    return {
+      f: {
+        username:"",
+        email:"",
+        password:"",
+        firstname:"",
+        middlename:"",
+        lastname:"",
+        address:"",
+        storename:"",
+        storelocation:""
+      },
+      message:""
+    }
+  },
+  methods:{
+    async register() {
+      const r = await fetch(`${API}/register`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(this.f)
+      });
+      const d = await r.json();
+      this.message = d.message || "Registered!";
+    }
+  }
+}).mount("#app");
+</script>
+
+</body>
+</html>
