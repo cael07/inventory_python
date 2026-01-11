@@ -129,9 +129,7 @@
   </div>
 
   <div id="app">
-    <!-- ✅ Scroll-safe table -->
-    <div class="table-wrap">
-      <!-- 🔍 Manual Search -->
+<!-- 🔍 Manual Search -->
 <div style="margin-bottom: 10px; display: flex; gap: 5px;">
   <input
     v-model="searchQuery"
@@ -150,6 +148,9 @@
     ❌ Clear
   </button>
 </div>
+
+    <!-- ✅ Scroll-safe table -->
+    <div class="table-wrap">
       <table v-if="rows.length > 0">
         <tr>
           <th>#</th>
