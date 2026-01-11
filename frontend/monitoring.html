@@ -133,6 +133,18 @@
   border: none;
   border-radius: 4px;
 }
+.date-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.date-bar input {
+  flex: 1 1 48%;
+  padding: 6px;
+  font-size: 14px;
+}
 
   </style>
 </head>
@@ -163,7 +175,11 @@
     @keyup.enter="searchMonitoring"
     placeholder="Search barcode or name..."
   />
-
+<!-- 📅 Date Filters -->
+<div class="date-bar">
+  <input type="date" v-model="dateFrom" />
+  <input type="date" v-model="dateTo" />
+</div>
   <button @click="searchMonitoring">
     Search
   </button>
@@ -225,6 +241,8 @@ Vue.createApp({
       total: 0,
       loading: false,
       searchQuery: "",
+      dateFrom: "",
+      dateTo: "",
       isSearching: false
     }
   },
@@ -237,31 +255,32 @@ Vue.createApp({
 
   methods: {
   async searchMonitoring() {
-    if (!this.searchQuery) {
-      // reset to normal infinite scroll
-      this.rows = [];
-      this.page = 1;
-      this.total = 0;
-      this.isSearching = false;
-      this.loadMore();
-      return;
-    }
+  if (!this.searchQuery && !this.dateFrom && !this.dateTo) {
+    this.clearSearch();
+    return;
+  }
 
-    this.loading = true;
-    this.isSearching = true;
+  this.loading = true;
+  this.isSearching = true;
 
-    try {
-      const res = await fetch(
-        `${API}/monitoring_manual_search?search=${encodeURIComponent(this.searchQuery)}`
-      );
-      const data = await res.json();
-      this.rows = data.items || [];
-    } catch (err) {
-      console.error("Search error:", err);
-    } finally {
-      this.loading = false;
-    }
-  },
+  const params = new URLSearchParams();
+
+  if (this.searchQuery) params.append("search", this.searchQuery);
+  if (this.dateFrom) params.append("date_from", this.dateFrom);
+  if (this.dateTo) params.append("date_to", this.dateTo);
+
+  try {
+    const res = await fetch(
+      `${API}/monitoring_manual_search?${params.toString()}`
+    );
+    const data = await res.json();
+    this.rows = data.items || [];
+  } catch (err) {
+    console.error("Search error:", err);
+  } finally {
+    this.loading = false;
+  }
+},
 
   async loadMore() {
     if (this.loading || (this.total && !this.canLoadMore)) return;
@@ -292,8 +311,10 @@ Vue.createApp({
     }
   },
 
-  clearSearch() {
+clearSearch() {
   this.searchQuery = "";
+  this.dateFrom = "";
+  this.dateTo = "";
   this.rows = [];
   this.page = 1;
   this.total = 0;

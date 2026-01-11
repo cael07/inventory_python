@@ -5,7 +5,7 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, cast, or_
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from sqlalchemy.types import Date
 
 from backend.database import SessionLocal, engine
@@ -129,20 +129,41 @@ def get_products(
         "items": items
     }
 
-@app.get("/products_manual_search")
-def products_manual_search(
-    search: str,
+@app.get("/monitoring_manual_search")
+def monitoring_manual_search(
+    search: str | None = None,
+    date_from: str | None = None,   # YYYY-MM-DD
+    date_to: str | None = None,     # YYYY-MM-DD
     db: Session = Depends(get_db)
 ):
-    rows = (
-        db.query(Product)
-        .filter(
+    filters = []
+
+    # 🔍 Text search
+    if search:
+        filters.append(
             or_(
-                Product.barcode.ilike(f"%{search}%"),
-                Product.name.ilike(f"%{search}%")
+                ProductMonitoring.barcode.ilike(f"%{search}%"),
+                ProductMonitoring.name.ilike(f"%{search}%")
             )
         )
-        .order_by(Product.name.asc())
+
+    # 📅 Date range
+    if date_from:
+        from_dt = datetime.strptime(date_from, "%Y-%m-%d")
+        filters.append(ProductMonitoring.date >= from_dt)
+
+    if date_to:
+        to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+        filters.append(ProductMonitoring.date <= to_dt)
+
+    rows = (
+        db.query(ProductMonitoring)
+        .filter(and_(*filters)) if filters else db.query(ProductMonitoring)
+    )
+
+    rows = (
+        rows
+        .order_by(ProductMonitoring.date.desc())
         .limit(50)
         .all()
     )
@@ -154,11 +175,15 @@ def products_manual_search(
                 "barcode": r.barcode,
                 "name": r.name,
                 "price": r.price,
-                "quantity": r.quantity
+                "quantity": r.quantity,
+                "total_price": r.total_price,
+                "remark": r.remark,
+                "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
             }
             for r in rows
         ]
     }
+
 
 # ---------------- MONITORING ----------------
 @app.put("/update_product/{barcode}")
