@@ -138,6 +138,14 @@
 
   <!-- GLOBAL SCAN QUANTITY -->
   <div style="margin-bottom:10px;">
+    <button
+  @click="openSearchModal"
+  :disabled="!posActive"
+  style="margin-bottom:10px;"
+>
+  🔍 Manual Search
+</button>
+
     <b>Scan Quantity:</b>
     <input type="number" min="1" v-model.number="scanQty">
   </div>
@@ -185,6 +193,52 @@
       </div>
     </div>
   </div>
+<!-- 🔍 MANUAL SEARCH MODAL -->
+<div v-if="showSearchModal" class="modal">
+  <div class="modal-box" style="width:90%; max-width:420px;">
+
+    <h3>Search Product</h3>
+
+    <input
+      v-model="searchQuery"
+      placeholder="Barcode or name"
+      style="width:100%; padding:8px; margin-bottom:6px;"
+      @keyup.enter="searchProducts"
+    />
+
+    <button @click="searchProducts">Search</button>
+
+    <!-- RESULTS -->
+    <div style="max-height:220px; overflow:auto; margin-top:10px;">
+      <div
+        v-for="p in searchResults"
+        :key="p.id"
+        style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"
+      >
+        <input
+          type="radio"
+          name="productPick"
+          :value="p"
+          v-model="selectedProduct"
+        />
+        <span>
+          {{ p.name }} – ₱{{ p.price }} ({{ p.quantity }})
+        </span>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <button
+        @click="confirmManualAdd"
+        :disabled="!selectedProduct"
+      >
+        OK
+      </button>
+      <button @click="closeSearchModal">Cancel</button>
+    </div>
+
+  </div>
+</div>
 
 </div>
 
@@ -208,7 +262,12 @@ Vue.createApp({
       paidInput: null,
       paidAmount: null,
       diffAmount: null,
-      scanQty: 1
+      scanQty: 1,
+      showSearchModal: false,
+      searchQuery: "",
+      searchResults: [],
+      selectedProduct: null,
+
     }
   },
 
@@ -341,7 +400,54 @@ Vue.createApp({
       });
 
       alert("Purchase saved!");
-    }
+    },
+
+    openSearchModal() {
+  this.searchQuery = "";
+  this.searchResults = [];
+  this.selectedProduct = null;
+  this.showSearchModal = true;
+},
+
+closeSearchModal() {
+  this.showSearchModal = false;
+},
+
+async searchProducts() {
+  if (!this.searchQuery) return;
+
+  const res = await fetch(
+    `${API}/products_manual_search?search=${encodeURIComponent(this.searchQuery)}`
+  );
+  const data = await res.json();
+  this.searchResults = data.items || [];
+},
+
+confirmManualAdd() {
+  const p = this.selectedProduct;
+  const qty = this.scanQty || 1;
+
+  const idx = this.items.findIndex(i => i.barcode === p.barcode);
+
+  if (idx >= 0) {
+    this.items[idx].quantity += qty;
+    this.items[idx].total_price =
+      this.items[idx].quantity * this.items[idx].price;
+  } else {
+    this.items.push({
+      barcode: p.barcode,
+      name: p.name,
+      price: p.price,
+      quantity: qty,
+      total_price: p.price * qty
+    });
+  }
+
+  this.calculateTotal();
+  this.scanQty = 1;
+  this.showSearchModal = false;
+},
+
   }
 }).mount("#app");
 </script>
