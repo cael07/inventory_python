@@ -224,6 +224,34 @@ def update_product_item(
 
     return {"message": "Product updated and monitored"}
 
+@app.get("/products_manual_search")
+def products_manual_search(search: str, db: Session = Depends(get_db)):
+    rows = (
+        db.query(Product)
+        .filter(
+            or_(
+                Product.barcode.ilike(f"%{search}%"),
+                Product.name.ilike(f"%{search}%")
+            )
+        )
+        .limit(20)
+        .all()
+    )
+
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "barcode": r.barcode,
+                "name": r.name,
+                "price": r.price,
+                "quantity": r.quantity
+            }
+            for r in rows
+        ]
+    }
+
+
 @app.get("/monitoring_manual_search")
 def monitoring_manual_search(
     search: str,
