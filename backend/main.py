@@ -10,9 +10,8 @@ from sqlalchemy.types import Date
 from email.message import EmailMessage
 from backend.database import SessionLocal, engine
 from backend.models import User, Product, ProductMonitoring, Purchase
-from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate
+from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister
 from backend import auth
-
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
