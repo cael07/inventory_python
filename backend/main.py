@@ -82,7 +82,7 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
     db.commit()
 
     # 📧 SEND EMAIL HERE
-    send_verification_email(user.email, verification_code)
+    # send_verification_email(user.email, verification_code)
 
     return {
         "status": "registered",
