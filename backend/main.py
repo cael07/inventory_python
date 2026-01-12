@@ -51,6 +51,11 @@ def get_db():
 def root():
     return {"status": "API running"}
 
+#DEBUG
+@app.get("/debug/users")
+def debug_users(db: Session = Depends(get_db)):
+    return db.execute("SELECT * FROM users").fetchall()
+
 # ---------------- AUTH ----------------
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
