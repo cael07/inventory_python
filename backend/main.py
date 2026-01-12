@@ -19,6 +19,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 import uuid
 import secrets
 import smtplib
+import traceback
 
 # Create tables (safe: won't drop existing data)
 Product.__table__.create(bind=engine, checkfirst=True)
@@ -51,42 +52,49 @@ def get_db():
 def root():
     return {"status": "API running"}
 
-# DEBUG endpoint to see saved users
+# DEBUG: see all users
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
-    rows = db.execute(text("SELECT * FROM users")).fetchall()
-    return [dict(r._mapping) for r in rows]
+    try:
+        rows = db.execute(text("SELECT * FROM users")).fetchall()
+        return [dict(r._mapping) for r in rows]
+    except Exception:
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(500, detail="Error fetching users")
 
-# ---------------- AUTH ----------------
+# ---------------- REGISTER ----------------
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
-    """
-    Minimal registration: just save the form data as-is
-    """
     try:
-        new_user = User(
-            username=user.username,
-            email=user.email,
-            password=user.password,  # <- plain text for now
-            firstname=user.firstname,
-            middlename=user.middlename or None,
-            lastname=user.lastname,
-            address=user.address,
-            storename=user.storename,
-            storelocation=user.storelocation,
-            verified=False,
-            verification_code=None
-        )
+        print("Payload received:", user.dict())  # <-- DEBUG: see if payload reaches API
 
+        # Direct insert without checks or hashing
+        user_data = {
+            "username": user.username,
+            "email": user.email,
+            "password": user.password,
+            "firstname": user.firstname,
+            "middlename": user.middlename or None,
+            "lastname": user.lastname,
+            "address": user.address,
+            "storename": user.storename,
+            "storelocation": user.storelocation,
+            "verified": False,
+            "verification_code": secrets.token_hex(3)
+        }
+
+        new_user = User(**user_data)
         db.add(new_user)
         db.commit()
+        db.refresh(new_user)
 
+        print("User saved:", new_user.username, new_user.id)  # <-- DEBUG: confirm saved
         return {"status": "registered", "message": "Registered successfully"}
 
     except Exception as e:
-        import traceback
         print(traceback.format_exc())
-        raise HTTPException(500, detail=str(e))
+        raise HTTPException(500, detail=f"Server error: {str(e)}")
 
 
 def send_verification_email(to_email, code):
