@@ -24,6 +24,10 @@ import traceback
 # Create tables (safe: won't drop existing data)
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
+# Drop only the users table
+User.__table__.drop(bind=engine, checkfirst=True)
+
+# Recreate users table with updated model
 User.__table__.create(bind=engine, checkfirst=True)
 Purchase.__table__.create(bind=engine, checkfirst=True)
 
