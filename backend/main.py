@@ -4,7 +4,7 @@ import pandas as pd
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, cast, or_
+from sqlalchemy import func, cast, or_, text
 from datetime import date, timedelta, datetime
 from sqlalchemy.types import Date
 from email.message import EmailMessage
@@ -54,7 +54,9 @@ def root():
 #DEBUG
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
-    return db.execute("SELECT * FROM users").fetchall()
+    rows = db.execute(text("SELECT * FROM users")).fetchall()
+    return [dict(r._mapping) for r in rows]
+
 
 # ---------------- AUTH ----------------
 @app.post("/register")
