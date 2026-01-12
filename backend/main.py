@@ -51,50 +51,43 @@ def get_db():
 def root():
     return {"status": "API running"}
 
-#DEBUG
+# DEBUG endpoint to see saved users
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
     rows = db.execute(text("SELECT * FROM users")).fetchall()
     return [dict(r._mapping) for r in rows]
 
-
 # ---------------- AUTH ----------------
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
-    if db.query(User).filter(
-        (User.username == user.username) |
-        (User.email == user.email)
-    ).first():
-        raise HTTPException(400, "Username or email already exists")
+    """
+    Minimal registration: just save the form data as-is
+    """
+    try:
+        new_user = User(
+            username=user.username,
+            email=user.email,
+            password=user.password,  # <- plain text for now
+            firstname=user.firstname,
+            middlename=user.middlename or None,
+            lastname=user.lastname,
+            address=user.address,
+            storename=user.storename,
+            storelocation=user.storelocation,
+            verified=False,
+            verification_code=None
+        )
 
-    verification_code = secrets.token_hex(3)  # 6 chars
+        db.add(new_user)
+        db.commit()
 
-    new_user = User(
-        username=user.username,
-        email=user.email,
-        password=auth.hash_password(user.password),
+        return {"status": "registered", "message": "Registered successfully"}
 
-        firstname=user.firstname,
-        middlename=user.middlename,
-        lastname=user.lastname,
-        address=user.address,
-        storename=user.storename,
-        storelocation=user.storelocation,
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(500, detail=str(e))
 
-        verified=False,
-        verification_code=verification_code
-    )
-
-    db.add(new_user)
-    db.commit()
-
-    # 📧 SEND EMAIL HERE
-    # send_verification_email(user.email, verification_code)
-
-    return {
-        "status": "registered",
-        "message": "Check your email for verification code"
-    }
 
 def send_verification_email(to_email, code):
     msg = EmailMessage()

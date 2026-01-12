@@ -26,10 +26,10 @@
   <input v-model="f.address" placeholder="Address">
   <input v-model="f.storename" placeholder="Store name">
   <input v-model="f.storelocation" placeholder="Store location">
-<button @click="register" :disabled="loading">
-  {{ loading ? "Registering..." : "Register" }}
-</button>
 
+  <button @click="register" :disabled="loading">
+    {{ loading ? "Registering..." : "Register" }}
+  </button>
 
   <p>{{ message }}</p>
 
@@ -79,7 +79,7 @@ Vue.createApp({
           return;
         }
 
-        this.message = d.message || "Registered! Check your email.";
+        this.message = d.message || "Registered successfully!";
       } catch (e) {
         this.message = "Server not responding";
       } finally {
