@@ -72,7 +72,7 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
         # Direct insert without checks or hashing
         user_data = {
             "username": user.username,
-            "email": user.email,
+            "useremail": user.useremail,
             "password": user.password,
             "firstname": user.firstname,
             "middlename": user.middlename or None,

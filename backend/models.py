@@ -3,10 +3,26 @@ from backend.database import Base
 
 class User(Base):
     __tablename__ = "users"
+
     id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True)
+    username = Column(String, unique=True, index=True)
+    useremail = Column(String, unique=True, index=True)
+
     password = Column(String)
 
+    firstname = Column(String)
+    middlename = Column(String, nullable=True)
+    lastname = Column(String)
+
+    address = Column(String)
+    storename = Column(String)
+    storelocation = Column(String)
+
+    verified = Column(Boolean, default=False)
+    verification_code = Column(String, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+    
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True)
