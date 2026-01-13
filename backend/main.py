@@ -72,12 +72,13 @@ def debug_users(db: Session = Depends(get_db)):
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
         print("Payload received:", user.dict())  # <-- DEBUG: see if payload reaches API
-
+ # 🔐 Hash password
+        hashed_password = pwd_context.hash(user.password)
         # Direct insert without checks or hashing
         user_data = {
             "username": user.username,
             "useremail": user.useremail,
-            "password": user.password,
+            "password": hashed_password, 
             "firstname": user.firstname,
             "middlename": user.middlename or None,
             "lastname": user.lastname,
