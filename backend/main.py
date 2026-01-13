@@ -165,13 +165,6 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
         }
     }
 
-def hash_password(password):
-    return pwd_context.hash(password)
-
-def verify_password(password, hashed):
-    return pwd_context.verify(password, hashed)
-
-
 
 @app.get("/users")
 def get_users(db: Session = Depends(get_db)):
