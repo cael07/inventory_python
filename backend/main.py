@@ -79,7 +79,7 @@ def debug_users(db: Session = Depends(get_db)):
 BREVO_HOST = "smtp-relay.brevo.com"
 BREVO_PORT = 587
 BREVO_USER = "9ff4df001@smtp-brevo.com"
-BREVO_PASS = "xsmtpsib-3edc255aa63e5be1ac0fbb7044f69ee6c156934b760d0b9477e6a84857dea2f0-PONZYl94bluiGSKY"
+BREVO_PASS = "xsmtpsib-3edc255aa63e5be1ac0fbb7044f69ee6c156934b760d0b9477e6a84857dea2f0-9ggThTrQP8vtSpil"
 FROM_EMAIL = "Caesar <9ff4df001@smtp-brevo.com>"
 
 def send_verification_email(to_email: str, code: str):
