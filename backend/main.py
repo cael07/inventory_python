@@ -17,24 +17,29 @@ import uuid
 import secrets
 import smtplib
 import traceback
+import hashlib
+from passlib.context import CryptContext
 
-# -------------------------------------------------
-# CREATE TABLES
-# -------------------------------------------------
+# ---------------- PASSWORD CONTEXT ----------------
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+def hash_password(password: str) -> str:
+    """Safe password hashing: SHA256 -> bcrypt (avoids 72-byte limit)"""
+    sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.hash(sha)
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.verify(sha, hashed_password)
+
+# ---------------- DATABASE TABLES ----------------
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
-
-# DEV ONLY: reset users
-User.__table__.drop(bind=engine, checkfirst=True)
+User.__table__.drop(bind=engine, checkfirst=True)  # DEV ONLY
 User.__table__.create(bind=engine, checkfirst=True)
-
 Purchase.__table__.create(bind=engine, checkfirst=True)
 
-# -------------------------------------------------
-# APP
-# -------------------------------------------------
-
+# ---------------- FASTAPI APP ----------------
 app = FastAPI(
     title="Inventory API",
     docs_url="/docs",
@@ -44,7 +49,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # OK for testing
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -60,10 +65,7 @@ def get_db():
 def root():
     return {"status": "API running"}
 
-# -------------------------------------------------
-# DEBUG
-# -------------------------------------------------
-
+# DEBUG: see all users
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
     try:
@@ -73,19 +75,41 @@ def debug_users(db: Session = Depends(get_db)):
         print(traceback.format_exc())
         raise HTTPException(500, detail="Error fetching users")
 
-# -------------------------------------------------
-# REGISTER
-# -------------------------------------------------
+# ---------------- BREVO SMTP ----------------
+BREVO_HOST = "smtp-relay.brevo.com"
+BREVO_PORT = 587
+BREVO_USER = "9ff4df001@smtp-brevo.com"
+BREVO_PASS = "xsmtpsib-3edc255aa63e5be1ac0fbb7044f69ee6c156934b760d0b9477e6a84857dea2f0-PONZYl94bluiGSKY"
+FROM_EMAIL = "Caesar <9ff4df001@smtp-brevo.com>"
 
+def send_verification_email(to_email: str, code: str):
+    """Send verification email via Brevo SMTP"""
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = "Verify your account"
+        msg["From"] = FROM_EMAIL
+        msg["To"] = to_email
+        msg.set_content(f"Hello!\n\nYour verification code is: {code}\nEnter this code in the app to verify your email.")
+
+        with smtplib.SMTP(BREVO_HOST, BREVO_PORT) as smtp:
+            smtp.starttls()
+            smtp.login(BREVO_USER, BREVO_PASS)
+            smtp.send_message(msg)
+
+        print(f"Verification email sent to {to_email} via Brevo SMTP")
+    except Exception as e:
+        print("Failed to send verification email:", e)
+
+# ---------------- REGISTER ----------------
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
         print("Payload received:", user.dict())
 
-        # 🔐 HASH PASSWORD (ARGON2)
-        hashed_password = auth.hash_password(user.password)
+        # 🔐 HASH PASSWORD
+        hashed_password = hash_password(user.password)
 
-        # Generate verification code
+        # Verification code
         verification_code = secrets.token_hex(3)
 
         user_data = {
@@ -102,16 +126,14 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
             "verification_code": verification_code
         }
 
-        # Save user
         new_user = User(**user_data)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        # Send verification email via GMass/Gmail SMTP
+        # Send email
         try:
             send_verification_email(new_user.useremail, verification_code)
-            print(f"Verification email sent to {new_user.useremail}")
         except Exception as e:
             print("Failed to send verification email:", e)
 
@@ -125,29 +147,10 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
         print(traceback.format_exc())
         raise HTTPException(500, detail=f"Server error: {str(e)}")
 
-
-# -------------------------------------------------
-# EMAIL VERIFICATION
-# -------------------------------------------------
-
-def send_verification_email(to_email, code):
-    msg = EmailMessage()
-    msg["Subject"] = "Verify your account"
-    msg["From"] = "caesarliteratus@gmail.com"  # your GMass-enabled Gmail
-    msg["To"] = to_email
-    msg.set_content(
-        f"Hello!\n\nYour verification code is: {code}\n\n"
-        "Enter this code in the app to verify your email."
-    )
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login("caesarliteratus@gmail.com", "YOUR_APP_PASSWORD")  # GMass / Gmail app password
-        smtp.send_message(msg)
-
-
+# ---------------- VERIFY EMAIL ----------------
 @app.post("/verify-email")
 def verify_email(email: str, code: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(useremail=email).first()  # ✅ use useremail
+    user = db.query(User).filter_by(useremail=email).first()
 
     if not user or user.verification_code != code:
         raise HTTPException(400, "Invalid verification code")
@@ -156,18 +159,14 @@ def verify_email(email: str, code: str, db: Session = Depends(get_db)):
     user.verification_code = None
     db.commit()
 
-    return {"status": "verified", "message": "Email verified successfully"}
+    return {"status": "verified"}
 
-
-# -------------------------------------------------
-# LOGIN
-# -------------------------------------------------
-
+# ---------------- LOGIN ----------------
 @app.post("/login")
 def login(username: str, password: str, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(username=username).first()
 
-    if not user or not auth.verify(password, user.password):
+    if not user or not auth.verify_password(password, user.password):
         raise HTTPException(401, "Invalid credentials")
 
     if not user.verified:
@@ -181,6 +180,7 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
             "storename": user.storename
         }
     }
+
 
 
 @app.get("/users")
