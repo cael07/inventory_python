@@ -137,7 +137,7 @@ def send_verification_email(to_email, code):
 
 @app.post("/verify-email")
 def verify_email(email: str, code: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(email=email).first()
+    user = db.query(User).filter_by(useremail=email).first()  # ✅ use useremail
 
     if not user or user.verification_code != code:
         raise HTTPException(400, "Invalid verification code")
@@ -146,7 +146,8 @@ def verify_email(email: str, code: str, db: Session = Depends(get_db)):
     user.verification_code = None
     db.commit()
 
-    return {"status": "verified"}
+    return {"status": "verified", "message": "Email verified successfully"}
+
 
 # -------------------------------------------------
 # LOGIN
