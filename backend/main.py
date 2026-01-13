@@ -102,23 +102,29 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
             "verification_code": verification_code
         }
 
+        # Save user
         new_user = User(**user_data)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        # Send verification email
+        # Send verification email via GMass/Gmail SMTP
         try:
             send_verification_email(new_user.useremail, verification_code)
+            print(f"Verification email sent to {new_user.useremail}")
         except Exception as e:
             print("Failed to send verification email:", e)
 
         print("User saved:", new_user.username, new_user.id)
-        return {"status": "registered", "message": "Registered successfully, please verify your email"}
+        return {
+            "status": "registered",
+            "message": "Registered successfully, please check your email to verify"
+        }
 
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(500, detail=f"Server error: {str(e)}")
+
 
 # -------------------------------------------------
 # EMAIL VERIFICATION
@@ -127,13 +133,17 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 def send_verification_email(to_email, code):
     msg = EmailMessage()
     msg["Subject"] = "Verify your account"
-    msg["From"] = "your@email.com"
+    msg["From"] = "caesarliteratus@gmail.com"  # your GMass-enabled Gmail
     msg["To"] = to_email
-    msg.set_content(f"Your verification code is: {code}")
+    msg.set_content(
+        f"Hello!\n\nYour verification code is: {code}\n\n"
+        "Enter this code in the app to verify your email."
+    )
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login("caesarliteratus@gmail.com", "tfxd ifpc zwco lmyf")
+        smtp.login("caesarliteratus@gmail.com", "YOUR_APP_PASSWORD")  # GMass / Gmail app password
         smtp.send_message(msg)
+
 
 @app.post("/verify-email")
 def verify_email(email: str, code: str, db: Session = Depends(get_db)):
