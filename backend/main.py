@@ -85,6 +85,9 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
         # 🔐 HASH PASSWORD (ARGON2)
         hashed_password = auth.hash_password(user.password)
 
+        # Generate verification code
+        verification_code = secrets.token_hex(3)
+
         user_data = {
             "username": user.username,
             "useremail": user.useremail,
@@ -96,7 +99,7 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
             "storename": user.storename,
             "storelocation": user.storelocation,
             "verified": False,
-            "verification_code": secrets.token_hex(3)
+            "verification_code": verification_code
         }
 
         new_user = User(**user_data)
@@ -104,8 +107,14 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_user)
 
+        # Send verification email
+        try:
+            send_verification_email(new_user.useremail, verification_code)
+        except Exception as e:
+            print("Failed to send verification email:", e)
+
         print("User saved:", new_user.username, new_user.id)
-        return {"status": "registered", "message": "Registered successfully"}
+        return {"status": "registered", "message": "Registered successfully, please verify your email"}
 
     except Exception as e:
         print(traceback.format_exc())
