@@ -20,10 +20,24 @@ import uuid
 import secrets
 import smtplib
 import traceback
+import hashlib
+
+# ---------------- PASSWORD HASH HELPERS ----------------
+
+def hash_password(password: str) -> str:
+    sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.hash(sha)
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.verify(sha, hashed_password)
+
+# ------------------------------------------------------
 
 # Create tables (safe: won't drop existing data)
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
+
 # Drop only the users table
 User.__table__.drop(bind=engine, checkfirst=True)
 
@@ -63,7 +77,6 @@ def debug_users(db: Session = Depends(get_db)):
         rows = db.execute(text("SELECT * FROM users")).fetchall()
         return [dict(r._mapping) for r in rows]
     except Exception:
-        import traceback
         print(traceback.format_exc())
         raise HTTPException(500, detail="Error fetching users")
 
@@ -71,14 +84,15 @@ def debug_users(db: Session = Depends(get_db)):
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
-        print("Payload received:", user.dict())  # <-- DEBUG: see if payload reaches API
- # 🔐 Hash password
-        hashed_password = pwd_context.hash(user.password)
-        # Direct insert without checks or hashing
+        print("Payload received:", user.dict())  # DEBUG
+
+        # 🔐 HASH PASSWORD (bcrypt-safe)
+        hashed_password = hash_password(user.password)
+
         user_data = {
             "username": user.username,
             "useremail": user.useremail,
-            "password": hashed_password, 
+            "password": hashed_password,   # ✅ FIXED
             "firstname": user.firstname,
             "middlename": user.middlename or None,
             "lastname": user.lastname,
@@ -94,7 +108,7 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_user)
 
-        print("User saved:", new_user.username, new_user.id)  # <-- DEBUG: confirm saved
+        print("User saved:", new_user.username, new_user.id)
         return {"status": "registered", "message": "Registered successfully"}
 
     except Exception as e:
