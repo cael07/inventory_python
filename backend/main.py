@@ -14,17 +14,22 @@ from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, 
 from backend import auth
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 import uuid
 import secrets
 import smtplib
 import traceback
 import hashlib
 
-# ---------------- PASSWORD HASH HELPERS ----------------
+# ---------------- PASSWORD CONTEXT ----------------
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
+    """
+    Safe password hashing:
+    plain -> SHA256 -> bcrypt
+    (avoids bcrypt 72-byte limit)
+    """
     sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
     return pwd_context.hash(sha)
 
@@ -32,17 +37,16 @@ def verify_password(password: str, hashed_password: str) -> bool:
     sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
     return pwd_context.verify(sha, hashed_password)
 
-# ------------------------------------------------------
+# -------------------------------------------------
 
 # Create tables (safe: won't drop existing data)
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
 
-# Drop only the users table
+# Reset users table (DEV ONLY)
 User.__table__.drop(bind=engine, checkfirst=True)
-
-# Recreate users table with updated model
 User.__table__.create(bind=engine, checkfirst=True)
+
 Purchase.__table__.create(bind=engine, checkfirst=True)
 
 app = FastAPI(
@@ -84,15 +88,15 @@ def debug_users(db: Session = Depends(get_db)):
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
-        print("Payload received:", user.dict())  # DEBUG
+        print("Payload received:", user.dict())
 
-        # 🔐 HASH PASSWORD (bcrypt-safe)
+        # 🔐 HASH PASSWORD (FIXED)
         hashed_password = hash_password(user.password)
 
         user_data = {
             "username": user.username,
             "useremail": user.useremail,
-            "password": hashed_password,   # ✅ FIXED
+            "password": hashed_password,
             "firstname": user.firstname,
             "middlename": user.middlename or None,
             "lastname": user.lastname,
