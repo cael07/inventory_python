@@ -12,42 +12,28 @@ from backend.database import SessionLocal, engine
 from backend.models import User, Product, ProductMonitoring, Purchase
 from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister
 from backend import auth
-from passlib.context import CryptContext
 
 import uuid
 import secrets
 import smtplib
 import traceback
-import hashlib
-
-# ---------------- PASSWORD CONTEXT ----------------
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def hash_password(password: str) -> str:
-    """
-    Safe password hashing:
-    plain -> SHA256 -> bcrypt
-    (avoids bcrypt 72-byte limit)
-    """
-    sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
-    return pwd_context.hash(sha)
-
-def verify_password(password: str, hashed_password: str) -> bool:
-    sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
-    return pwd_context.verify(sha, hashed_password)
 
 # -------------------------------------------------
+# CREATE TABLES
+# -------------------------------------------------
 
-# Create tables (safe: won't drop existing data)
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
 
-# Reset users table (DEV ONLY)
+# DEV ONLY: reset users
 User.__table__.drop(bind=engine, checkfirst=True)
 User.__table__.create(bind=engine, checkfirst=True)
 
 Purchase.__table__.create(bind=engine, checkfirst=True)
+
+# -------------------------------------------------
+# APP
+# -------------------------------------------------
 
 app = FastAPI(
     title="Inventory API",
@@ -58,7 +44,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # OK for testing
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -74,7 +60,10 @@ def get_db():
 def root():
     return {"status": "API running"}
 
-# DEBUG: see all users
+# -------------------------------------------------
+# DEBUG
+# -------------------------------------------------
+
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
     try:
@@ -84,14 +73,17 @@ def debug_users(db: Session = Depends(get_db)):
         print(traceback.format_exc())
         raise HTTPException(500, detail="Error fetching users")
 
-# ---------------- REGISTER ----------------
+# -------------------------------------------------
+# REGISTER
+# -------------------------------------------------
+
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
         print("Payload received:", user.dict())
 
-        # 🔐 HASH PASSWORD (FIXED)
-        hashed_password = hash_password(user.password)
+        # 🔐 HASH PASSWORD (ARGON2)
+        hashed_password = auth.hash_password(user.password)
 
         user_data = {
             "username": user.username,
@@ -119,15 +111,16 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
         print(traceback.format_exc())
         raise HTTPException(500, detail=f"Server error: {str(e)}")
 
+# -------------------------------------------------
+# EMAIL VERIFICATION
+# -------------------------------------------------
 
 def send_verification_email(to_email, code):
     msg = EmailMessage()
     msg["Subject"] = "Verify your account"
     msg["From"] = "your@email.com"
     msg["To"] = to_email
-    msg.set_content(
-        f"Your verification code is: {code}"
-    )
+    msg.set_content(f"Your verification code is: {code}")
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login("caesarliteratus@gmail.com", "tfxd ifpc zwco lmyf")
@@ -146,11 +139,15 @@ def verify_email(email: str, code: str, db: Session = Depends(get_db)):
 
     return {"status": "verified"}
 
+# -------------------------------------------------
+# LOGIN
+# -------------------------------------------------
+
 @app.post("/login")
 def login(username: str, password: str, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(username=username).first()
 
-    if not user or not auth.verify_password(password, user.password):
+    if not user or not auth.verify(password, user.password):
         raise HTTPException(401, "Invalid credentials")
 
     if not user.verified:

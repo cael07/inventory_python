@@ -3,8 +3,9 @@ uvicorn
 sqlalchemy
 psycopg2-binary
 python-dotenv
-passlib[bcrypt]
+passlib       # just the base library, no [bcrypt]
 python-jose
 pandas
 openpyxl
 email-validator
+argon2-cffi
