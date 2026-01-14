@@ -18,16 +18,15 @@ import secrets
 import smtplib
 import traceback
 import os
-import requests
+import requests  # Needed for Brevo API email sending
 
 # -------------------------------------------------
 # CREATE TABLES
 # -------------------------------------------------
-
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
 
-# DEV ONLY
+# DEV ONLY: reset users
 User.__table__.drop(bind=engine, checkfirst=True)
 User.__table__.create(bind=engine, checkfirst=True)
 
@@ -36,7 +35,6 @@ Purchase.__table__.create(bind=engine, checkfirst=True)
 # -------------------------------------------------
 # APP
 # -------------------------------------------------
-
 app = FastAPI(
     title="Inventory API",
     docs_url="/docs",
@@ -63,11 +61,7 @@ def root():
     return {"status": "API running"}
 
 # -------------------------------------------------
-# DEBUG USERS
-# -------------------------------------------------
-
-# -------------------------------------------------
-# DEBUG
+# DEBUG: show users and env vars
 # -------------------------------------------------
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
@@ -76,71 +70,70 @@ def debug_users(db: Session = Depends(get_db)):
         rows = db.execute(text("SELECT * FROM users")).fetchall()
         users = [dict(r._mapping) for r in rows]
 
-        # Show all environment variables (for debug)
-        all_env = dict(os.environ)
-
-        # Optional: filter only relevant keys
-        brevo_env = {k: all_env.get(k, None) for k in [
-            "BREVO_API_KEY",
-            "BREVO_SENDER_EMAIL",
-            "BREVO_SENDER_NAME",
-            "SMTP_HOST",
-            "SMTP_PORT",
-            "SMTP_USERNAME",
-            "SMTP_PASSWORD",
-            "SMTP_FROM_EMAIL",
-            "SMTP_FROM_NAME"
-        ]}
+        # Fetch Brevo / SMTP env variables
+        brevo_env = {
+            "BREVO_API_KEY": "SET" if os.getenv("BREVO_API_KEY") else "MISSING",
+            "BREVO_SENDER_EMAIL": os.getenv("BREVO_SENDER_EMAIL"),
+            "BREVO_SENDER_NAME": os.getenv("BREVO_SENDER_NAME"),
+            "SMTP_HOST": os.getenv("SMTP_HOST"),
+            "SMTP_PORT": os.getenv("SMTP_PORT"),
+            "SMTP_USERNAME": os.getenv("SMTP_USERNAME"),
+            "SMTP_PASSWORD": "SET" if os.getenv("SMTP_PASSWORD") else "MISSING",
+            "SMTP_FROM_EMAIL": os.getenv("SMTP_FROM_EMAIL"),
+            "SMTP_FROM_NAME": os.getenv("SMTP_FROM_NAME")
+        }
 
         return {
             "users": users,
-            "brevo_env": brevo_env,
-            "all_env_keys": list(all_env.keys())  # lets you see all keys Render loaded
+            "brevo_env": brevo_env
         }
 
     except Exception:
         print(traceback.format_exc())
         raise HTTPException(500, detail="Error fetching users or env")
 
-
-
 # -------------------------------------------------
 # REGISTER
 # -------------------------------------------------
-
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
         print("Payload received:", user.dict())
 
-        # HASH PASSWORD (argon2 – from auth)
+        # 🔐 HASH PASSWORD (ARGON2)
         hashed_password = auth.hash_password(user.password)
 
+        # Generate verification code
         verification_code = secrets.token_hex(3)
 
-        new_user = User(
-            username=user.username,
-            useremail=user.useremail,
-            password=hashed_password,
-            firstname=user.firstname,
-            middlename=user.middlename or None,
-            lastname=user.lastname,
-            address=user.address,
-            storename=user.storename,
-            storelocation=user.storelocation,
-            verified=False,
-            verification_code=verification_code
-        )
+        user_data = {
+            "username": user.username,
+            "useremail": user.useremail,
+            "password": hashed_password,
+            "firstname": user.firstname,
+            "middlename": user.middlename or None,
+            "lastname": user.lastname,
+            "address": user.address,
+            "storename": user.storename,
+            "storelocation": user.storelocation,
+            "verified": False,
+            "verification_code": verification_code
+        }
 
+        # Save user
+        new_user = User(**user_data)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        # SEND EMAIL (LOG EVERYTHING)
-        send_verification_email(new_user.useremail, verification_code)
+        # Send verification email via Brevo API
+        try:
+            send_verification_email(new_user.useremail, verification_code)
+            print(f"Verification email sent to {new_user.useremail}")
+        except Exception as e:
+            print("Failed to send verification email:", e)
 
         print("User saved:", new_user.username, new_user.id)
-
         return {
             "status": "registered",
             "message": "Registered successfully, please check your email to verify"
@@ -148,12 +141,11 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 
     except Exception as e:
         print(traceback.format_exc())
-        raise HTTPException(500, detail=str(e))
+        raise HTTPException(500, detail=f"Server error: {str(e)}")
 
 # -------------------------------------------------
-# EMAIL
+# SEND VERIFICATION EMAIL (Brevo Transactional)
 # -------------------------------------------------
-
 def send_verification_email(to_email: str, code: str):
     print("📧 Sending verification email (Brevo Transactional)")
 
@@ -191,6 +183,7 @@ def send_verification_email(to_email: str, code: str):
         "content-type": "application/json"
     }
 
+    import requests
     response = requests.post(url, json=payload, headers=headers)
 
     print("📨 BREVO STATUS:", response.status_code)
@@ -202,10 +195,9 @@ def send_verification_email(to_email: str, code: str):
 # -------------------------------------------------
 # VERIFY EMAIL
 # -------------------------------------------------
-
 @app.post("/verify-email")
 def verify_email(email: str, code: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(useremail=email).first()
+    user = db.query(User).filter_by(useremail=email).first()  # ✅ use useremail
 
     if not user or user.verification_code != code:
         raise HTTPException(400, "Invalid verification code")
@@ -214,12 +206,11 @@ def verify_email(email: str, code: str, db: Session = Depends(get_db)):
     user.verification_code = None
     db.commit()
 
-    return {"status": "verified", "message": "Email verified"}
+    return {"status": "verified", "message": "Email verified successfully"}
 
 # -------------------------------------------------
 # LOGIN
 # -------------------------------------------------
-
 @app.post("/login")
 def login(username: str, password: str, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(username=username).first()
