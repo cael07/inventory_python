@@ -76,27 +76,32 @@ def debug_users(db: Session = Depends(get_db)):
         rows = db.execute(text("SELECT * FROM users")).fetchall()
         users = [dict(r._mapping) for r in rows]
 
-        # Fetch Brevo / SMTP env variables
-        brevo_env = {
-            "BREVO_API_KEY": "SET" if os.getenv("BREVO_API_KEY") else "MISSING",
-            "BREVO_SENDER_EMAIL": os.getenv("BREVO_SENDER_EMAIL"),
-            "BREVO_SENDER_NAME": os.getenv("BREVO_SENDER_NAME"),
-            "SMTP_HOST": os.getenv("SMTP_HOST"),
-            "SMTP_PORT": os.getenv("SMTP_PORT"),
-            "SMTP_USERNAME": os.getenv("SMTP_USERNAME"),
-            "SMTP_PASSWORD": "SET" if os.getenv("SMTP_PASSWORD") else "MISSING",
-            "SMTP_FROM_EMAIL": os.getenv("SMTP_FROM_EMAIL"),
-            "SMTP_FROM_NAME": os.getenv("SMTP_FROM_NAME")
-        }
+        # Show all environment variables (for debug)
+        all_env = dict(os.environ)
+
+        # Optional: filter only relevant keys
+        brevo_env = {k: all_env.get(k, None) for k in [
+            "BREVO_API_KEY",
+            "BREVO_SENDER_EMAIL",
+            "BREVO_SENDER_NAME",
+            "SMTP_HOST",
+            "SMTP_PORT",
+            "SMTP_USERNAME",
+            "SMTP_PASSWORD",
+            "SMTP_FROM_EMAIL",
+            "SMTP_FROM_NAME"
+        ]}
 
         return {
             "users": users,
-            "brevo_env": brevo_env
+            "brevo_env": brevo_env,
+            "all_env_keys": list(all_env.keys())  # lets you see all keys Render loaded
         }
 
     except Exception:
         print(traceback.format_exc())
         raise HTTPException(500, detail="Error fetching users or env")
+
 
 
 # -------------------------------------------------
