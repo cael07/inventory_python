@@ -18,6 +18,7 @@ import secrets
 import smtplib
 import traceback
 import os
+import requests
 
 # -------------------------------------------------
 # CREATE TABLES
@@ -121,30 +122,49 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 # -------------------------------------------------
 
 def send_verification_email(to_email: str, code: str):
-    print("=== EMAIL ENV DEBUG START ===")
-    print("SMTP_HOST:", os.getenv("SMTP_HOST"))
-    print("SMTP_PORT:", os.getenv("SMTP_PORT"))
-    print("SMTP_USERNAME:", os.getenv("SMTP_USERNAME"))
-    print("SMTP_PASSWORD SET:", bool(os.getenv("SMTP_PASSWORD")))
-    print("SMTP_FROM_EMAIL:", os.getenv("SMTP_FROM_EMAIL"))
-    print("SMTP_FROM_NAME:", os.getenv("SMTP_FROM_NAME"))
-    print("=== EMAIL ENV DEBUG END ===")
+    print("📧 Sending verification email (Brevo Transactional)")
 
-    msg = EmailMessage()
-    msg["Subject"] = "Verify your account"
-    msg["From"] = f"{os.getenv('SMTP_FROM_NAME')} <{os.getenv('SMTP_FROM_EMAIL')}>"
-    msg["To"] = to_email
-    msg.set_content(f"Your verification code is: {code}")
+    api_key = os.getenv("BREVO_API_KEY")
+    sender_email = os.getenv("BREVO_SENDER_EMAIL")
+    sender_name = os.getenv("BREVO_SENDER_NAME")
 
-    with smtplib.SMTP(os.getenv("SMTP_HOST"), int(os.getenv("SMTP_PORT"))) as smtp:
-        smtp.starttls()
-        smtp.login(
-            os.getenv("SMTP_USERNAME"),
-            os.getenv("SMTP_PASSWORD")
-        )
-        smtp.send_message(msg)
+    print("🔎 ENV CHECK")
+    print("BREVO_API_KEY:", "SET" if api_key else "MISSING")
+    print("SENDER_EMAIL:", sender_email)
+    print("SENDER_NAME:", sender_name)
 
-    print("Verification email SENT to", to_email)
+    url = "https://api.brevo.com/v3/smtp/email"
+
+    payload = {
+        "sender": {
+            "email": sender_email,
+            "name": sender_name
+        },
+        "to": [
+            {"email": to_email}
+        ],
+        "subject": "Verify your account",
+        "htmlContent": f"""
+            <h2>Verify your account</h2>
+            <p>Your verification code is:</p>
+            <h1>{code}</h1>
+            <p>This code expires in 10 minutes.</p>
+        """
+    }
+
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+
+    print("📨 BREVO STATUS:", response.status_code)
+    print("📨 BREVO BODY:", response.text)
+
+    if response.status_code not in (200, 201):
+        raise Exception("Email sending failed")
 
 # -------------------------------------------------
 # VERIFY EMAIL
