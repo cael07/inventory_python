@@ -17,6 +17,7 @@ import uuid
 import secrets
 import smtplib
 import traceback
+import os
 
 # -------------------------------------------------
 # CREATE TABLES
@@ -25,7 +26,7 @@ import traceback
 Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
 
-# DEV ONLY: reset users
+# DEV ONLY
 User.__table__.drop(bind=engine, checkfirst=True)
 User.__table__.create(bind=engine, checkfirst=True)
 
@@ -61,17 +62,13 @@ def root():
     return {"status": "API running"}
 
 # -------------------------------------------------
-# DEBUG
+# DEBUG USERS
 # -------------------------------------------------
 
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
-    try:
-        rows = db.execute(text("SELECT * FROM users")).fetchall()
-        return [dict(r._mapping) for r in rows]
-    except Exception:
-        print(traceback.format_exc())
-        raise HTTPException(500, detail="Error fetching users")
+    rows = db.execute(text("SELECT * FROM users")).fetchall()
+    return [dict(r._mapping) for r in rows]
 
 # -------------------------------------------------
 # REGISTER
@@ -82,40 +79,34 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
         print("Payload received:", user.dict())
 
-        # 🔐 HASH PASSWORD (ARGON2)
+        # HASH PASSWORD (argon2 – from auth)
         hashed_password = auth.hash_password(user.password)
 
-        # Generate verification code
         verification_code = secrets.token_hex(3)
 
-        user_data = {
-            "username": user.username,
-            "useremail": user.useremail,
-            "password": hashed_password,
-            "firstname": user.firstname,
-            "middlename": user.middlename or None,
-            "lastname": user.lastname,
-            "address": user.address,
-            "storename": user.storename,
-            "storelocation": user.storelocation,
-            "verified": False,
-            "verification_code": verification_code
-        }
+        new_user = User(
+            username=user.username,
+            useremail=user.useremail,
+            password=hashed_password,
+            firstname=user.firstname,
+            middlename=user.middlename or None,
+            lastname=user.lastname,
+            address=user.address,
+            storename=user.storename,
+            storelocation=user.storelocation,
+            verified=False,
+            verification_code=verification_code
+        )
 
-        # Save user
-        new_user = User(**user_data)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        # Send verification email via GMass/Gmail SMTP
-        try:
-            send_verification_email(new_user.useremail, verification_code)
-            print(f"Verification email sent to {new_user.useremail}")
-        except Exception as e:
-            print("Failed to send verification email:", e)
+        # SEND EMAIL (LOG EVERYTHING)
+        send_verification_email(new_user.useremail, verification_code)
 
         print("User saved:", new_user.username, new_user.id)
+
         return {
             "status": "registered",
             "message": "Registered successfully, please check your email to verify"
@@ -123,31 +114,45 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 
     except Exception as e:
         print(traceback.format_exc())
-        raise HTTPException(500, detail=f"Server error: {str(e)}")
-
+        raise HTTPException(500, detail=str(e))
 
 # -------------------------------------------------
-# EMAIL VERIFICATION
+# EMAIL
 # -------------------------------------------------
 
-def send_verification_email(to_email, code):
+def send_verification_email(to_email: str, code: str):
+    print("=== EMAIL ENV DEBUG START ===")
+    print("SMTP_HOST:", os.getenv("SMTP_HOST"))
+    print("SMTP_PORT:", os.getenv("SMTP_PORT"))
+    print("SMTP_USERNAME:", os.getenv("SMTP_USERNAME"))
+    print("SMTP_PASSWORD SET:", bool(os.getenv("SMTP_PASSWORD")))
+    print("SMTP_FROM_EMAIL:", os.getenv("SMTP_FROM_EMAIL"))
+    print("SMTP_FROM_NAME:", os.getenv("SMTP_FROM_NAME"))
+    print("=== EMAIL ENV DEBUG END ===")
+
     msg = EmailMessage()
     msg["Subject"] = "Verify your account"
-    msg["From"] = "caesarliteratus@gmail.com"  # your GMass-enabled Gmail
+    msg["From"] = f"{os.getenv('SMTP_FROM_NAME')} <{os.getenv('SMTP_FROM_EMAIL')}>"
     msg["To"] = to_email
-    msg.set_content(
-        f"Hello!\n\nYour verification code is: {code}\n\n"
-        "Enter this code in the app to verify your email."
-    )
+    msg.set_content(f"Your verification code is: {code}")
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login("caesarliteratus@gmail.com", "YOUR_APP_PASSWORD")  # GMass / Gmail app password
+    with smtplib.SMTP(os.getenv("SMTP_HOST"), int(os.getenv("SMTP_PORT"))) as smtp:
+        smtp.starttls()
+        smtp.login(
+            os.getenv("SMTP_USERNAME"),
+            os.getenv("SMTP_PASSWORD")
+        )
         smtp.send_message(msg)
 
+    print("Verification email SENT to", to_email)
+
+# -------------------------------------------------
+# VERIFY EMAIL
+# -------------------------------------------------
 
 @app.post("/verify-email")
 def verify_email(email: str, code: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(useremail=email).first()  # ✅ use useremail
+    user = db.query(User).filter_by(useremail=email).first()
 
     if not user or user.verification_code != code:
         raise HTTPException(400, "Invalid verification code")
@@ -156,8 +161,7 @@ def verify_email(email: str, code: str, db: Session = Depends(get_db)):
     user.verification_code = None
     db.commit()
 
-    return {"status": "verified", "message": "Email verified successfully"}
-
+    return {"status": "verified", "message": "Email verified"}
 
 # -------------------------------------------------
 # LOGIN
@@ -181,6 +185,7 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
             "storename": user.storename
         }
     }
+
 
 
 @app.get("/users")
