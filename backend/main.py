@@ -66,10 +66,38 @@ def root():
 # DEBUG USERS
 # -------------------------------------------------
 
+# -------------------------------------------------
+# DEBUG
+# -------------------------------------------------
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
-    rows = db.execute(text("SELECT * FROM users")).fetchall()
-    return [dict(r._mapping) for r in rows]
+    try:
+        # Fetch users from DB
+        rows = db.execute(text("SELECT * FROM users")).fetchall()
+        users = [dict(r._mapping) for r in rows]
+
+        # Fetch Brevo / SMTP env variables
+        brevo_env = {
+            "BREVO_API_KEY": "SET" if os.getenv("BREVO_API_KEY") else "MISSING",
+            "BREVO_SENDER_EMAIL": os.getenv("BREVO_SENDER_EMAIL"),
+            "BREVO_SENDER_NAME": os.getenv("BREVO_SENDER_NAME"),
+            "SMTP_HOST": os.getenv("SMTP_HOST"),
+            "SMTP_PORT": os.getenv("SMTP_PORT"),
+            "SMTP_USERNAME": os.getenv("SMTP_USERNAME"),
+            "SMTP_PASSWORD": "SET" if os.getenv("SMTP_PASSWORD") else "MISSING",
+            "SMTP_FROM_EMAIL": os.getenv("SMTP_FROM_EMAIL"),
+            "SMTP_FROM_NAME": os.getenv("SMTP_FROM_NAME")
+        }
+
+        return {
+            "users": users,
+            "brevo_env": brevo_env
+        }
+
+    except Exception:
+        print(traceback.format_exc())
+        raise HTTPException(500, detail="Error fetching users or env")
+
 
 # -------------------------------------------------
 # REGISTER
