@@ -1,7 +1,7 @@
-from fastapi.responses import StreamingResponse, RedirectResponse
+from fastapi.responses import StreamingResponse, RedirectResponse, HTMLResponse
 from io import BytesIO
 import pandas as pd
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, cast, or_, text
@@ -203,7 +203,51 @@ def send_verification_email(to_email: str, code: str):
     if response.status_code not in (200, 201):
         raise Exception("Brevo email sending failed")
 
+@app.get("/verify.html", response_class=HTMLResponse)
+def serve_verify_page(request: Request, email: str = ""):
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <script src="https://unpkg.com/vue@3"></script>
+      <style>
+        body {{ font-family: Arial; background:#f4f4f4; }}
+        .box {{ max-width:360px; margin:40px auto; background:white; padding:20px; border-radius:6px; }}
+        input, button {{ width:100%; padding:8px; margin:6px 0; }}
+        button {{ background:#27ae60; color:white; border:none; }}
+      </style>
+    </head>
+    <body>
+    <div id="app" class="box">
+      <h2>✅ Verify Email</h2>
+      <input v-model="email" placeholder="Email" :value="{email}">
+      <input v-model="code" placeholder="Verification Code">
+      <button @click="verify">Verify</button>
+      <p>{{ message }}</p>
+      <a href="/login.html">Go to Login</a>
+    </div>
+    <script>
+    const API = "https://inventory-python.onrender.com";
 
+    Vue.createApp({{
+      data() {{
+        return {{ email: "{email}", code:"", message:"" }}
+      }},
+      methods:{{
+        async verify() {{
+          const r = await fetch(`${{API}}/verify-email?email=${{this.email}}&code=${{this.code}}`, {{
+            method:"POST"
+          }});
+          const d = await r.json();
+          this.message = d.status || d.detail;
+        }}
+      }}
+    }}).mount("#app");
+    </script>
+    </body>
+    </html>
+    """
 
 # -------------------------------------------------
 # LOGIN
