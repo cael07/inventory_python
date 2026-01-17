@@ -162,22 +162,6 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 # -------------------------------------------------
 # EMAIL VERIFICATION
 # -------------------------------------------------
-
-def send_verification_email(to_email, code):
-    msg = EmailMessage()
-    msg["Subject"] = "Verify your account"
-    msg["From"] = "caesarliteratus@gmail.com"  # your GMass-enabled Gmail
-    msg["To"] = to_email
-    msg.set_content(
-        f"Hello!\n\nYour verification code is: {code}\n\n"
-        "Enter this code in the app to verify your email."
-    )
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login("caesarliteratus@gmail.com", "YOUR_APP_PASSWORD")  # GMass / Gmail app password
-        smtp.send_message(msg)
-
-
 def send_verification_email(to_email: str, code: str):
     print("📧 Sending verification email via Brevo API")
 
