@@ -16,8 +16,8 @@ from backend import auth
 import uuid
 import secrets
 import smtplib
+import os
 import traceback
-
 # -------------------------------------------------
 # CREATE TABLES
 # -------------------------------------------------
@@ -67,11 +67,43 @@ def root():
 @app.get("/debug/users")
 def debug_users(db: Session = Depends(get_db)):
     try:
+        # --- DATABASE CHECK ---
         rows = db.execute(text("SELECT * FROM users")).fetchall()
-        return [dict(r._mapping) for r in rows]
-    except Exception:
+        users = [dict(r._mapping) for r in rows]
+
+        # --- ENV CHECK (RAW, UNMASKED) ---
+        env_dump = {
+            # STATUS
+            "API_STATUS": "RUNNING",
+
+            # DATABASE
+            "DATABASE_URL": os.getenv("DATABASE_URL"),
+
+            # BREVO API
+            "BREVO_API_KEY": os.getenv("BREVO_API_KEY"),
+            "BREVO_SENDER_EMAIL": os.getenv("BREVO_SENDER_EMAIL"),
+            "BREVO_SENDER_NAME": os.getenv("BREVO_SENDER_NAME"),
+
+            # SMTP (even if unused)
+            "SMTP_HOST": os.getenv("SMTP_HOST"),
+            "SMTP_PORT": os.getenv("SMTP_PORT"),
+            "SMTP_USERNAME": os.getenv("SMTP_USERNAME"),
+            "SMTP_PASSWORD": os.getenv("SMTP_PASSWORD"),
+            "SMTP_FROM_EMAIL": os.getenv("SMTP_FROM_EMAIL"),
+            "SMTP_FROM_NAME": os.getenv("SMTP_FROM_NAME"),
+        }
+
+        return {
+            "status": "OK",
+            "env": env_dump,
+            "user_count": len(users),
+            "users": users
+        }
+
+    except Exception as e:
+        print("❌ DEBUG ERROR")
         print(traceback.format_exc())
-        raise HTTPException(500, detail="Error fetching users")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # -------------------------------------------------
 # REGISTER
