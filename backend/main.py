@@ -18,6 +18,7 @@ import secrets
 import smtplib
 import os
 import traceback
+import requests
 # -------------------------------------------------
 # CREATE TABLES
 # -------------------------------------------------
@@ -177,18 +178,54 @@ def send_verification_email(to_email, code):
         smtp.send_message(msg)
 
 
-@app.post("/verify-email")
-def verify_email(email: str, code: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(useremail=email).first()  # ✅ use useremail
+def send_verification_email(to_email: str, code: str):
+    print("📧 Sending verification email via Brevo API")
 
-    if not user or user.verification_code != code:
-        raise HTTPException(400, "Invalid verification code")
+    api_key = os.getenv("BREVO_API_KEY")
+    sender_email = os.getenv("BREVO_SENDER_EMAIL")
+    sender_name = os.getenv("BREVO_SENDER_NAME")
 
-    user.verified = True
-    user.verification_code = None
-    db.commit()
+    print("🔎 BREVO ENV CHECK")
+    print("BREVO_API_KEY:", api_key)
+    print("BREVO_SENDER_EMAIL:", sender_email)
+    print("BREVO_SENDER_NAME:", sender_name)
 
-    return {"status": "verified", "message": "Email verified successfully"}
+    if not api_key or not sender_email:
+        raise Exception("Brevo environment variables missing")
+
+    url = "https://api.brevo.com/v3/smtp/email"
+
+    payload = {
+        "sender": {
+            "email": sender_email,
+            "name": sender_name or "Verification"
+        },
+        "to": [
+            {"email": to_email}
+        ],
+        "subject": "Verify your account",
+        "htmlContent": f"""
+            <h2>Verify your account</h2>
+            <p>Your verification code is:</p>
+            <h1>{code}</h1>
+            <p>This code expires in 10 minutes.</p>
+        """
+    }
+
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+
+    print("📨 BREVO STATUS:", response.status_code)
+    print("📨 BREVO RESPONSE:", response.text)
+
+    if response.status_code not in (200, 201):
+        raise Exception("Brevo email sending failed")
+
 
 
 # -------------------------------------------------
