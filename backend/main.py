@@ -1,4 +1,4 @@
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse
 from io import BytesIO
 import pandas as pd
 from fastapi import FastAPI, Depends, HTTPException
@@ -113,51 +113,44 @@ def debug_users(db: Session = Depends(get_db)):
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
-        print("Payload received:", user.dict())
-
-        # 🔐 HASH PASSWORD (ARGON2)
+        # --- your existing registration logic ---
         hashed_password = auth.hash_password(user.password)
-
-        # Generate verification code
         verification_code = secrets.token_hex(3)
 
-        user_data = {
-            "username": user.username,
-            "useremail": user.useremail,
-            "password": hashed_password,
-            "firstname": user.firstname,
-            "middlename": user.middlename or None,
-            "lastname": user.lastname,
-            "address": user.address,
-            "storename": user.storename,
-            "storelocation": user.storelocation,
-            "verified": False,
-            "verification_code": verification_code
-        }
+        new_user = User(
+            username=user.username,
+            useremail=user.useremail,
+            password=hashed_password,
+            firstname=user.firstname,
+            middlename=user.middlename or None,
+            lastname=user.lastname,
+            address=user.address,
+            storename=user.storename,
+            storelocation=user.storelocation,
+            verified=False,
+            verification_code=verification_code
+        )
 
-        # Save user
-        new_user = User(**user_data)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        # Send verification email via GMass/Gmail SMTP
+        # --- send verification email via SMTP ---
         try:
             send_verification_email(new_user.useremail, verification_code)
-            print(f"Verification email sent to {new_user.useremail}")
+            print(f"✅ Verification email sent to {new_user.useremail}")
         except Exception as e:
-            print("Failed to send verification email:", e)
+            print("❌ Failed to send verification email:", e)
 
-        print("User saved:", new_user.username, new_user.id)
-        return {
-            "status": "registered",
-            "message": "Registered successfully, please check your email to verify"
-        }
+        # --- redirect to verification page ---
+        return RedirectResponse(
+            url=f"/verify.html?email={new_user.useremail}",  # pass email to pre-fill
+            status_code=303
+        )
 
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(500, detail=f"Server error: {str(e)}")
-
 
 # -------------------------------------------------
 # EMAIL VERIFICATION

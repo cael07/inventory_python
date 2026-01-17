@@ -32,6 +32,11 @@ Vue.createApp({
   data() {
     return { email:"", code:"", message:"" }
   },
+  mounted() {
+    // Pre-fill email from URL ?email=...
+    const params = new URLSearchParams(window.location.search);
+    this.email = params.get("email") || "";
+  },
   methods:{
     async verify() {
       const r = await fetch(`${API}/verify-email?email=${this.email}&code=${this.code}`, {
@@ -43,6 +48,7 @@ Vue.createApp({
   }
 }).mount("#app");
 </script>
+
 
 </body>
 </html>
