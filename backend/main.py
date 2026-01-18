@@ -27,7 +27,7 @@ Product.__table__.create(bind=engine, checkfirst=True)
 ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
 
 # DEV ONLY: reset users
-User.__table__.drop(bind=engine, checkfirst=True)
+# User.__table__.drop(bind=engine, checkfirst=True)
 User.__table__.create(bind=engine, checkfirst=True)
 
 Purchase.__table__.create(bind=engine, checkfirst=True)
