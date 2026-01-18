@@ -3,13 +3,44 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/vue@3"></script>
+
   <style>
-    body { font-family: Arial; background:#f4f4f4; }
-    .box { max-width:400px; margin:40px auto; background:white; padding:20px; border-radius:6px; }
-    input, button { width:100%; padding:8px; margin:6px 0; }
-    button { background:#1f3a5f; color:white; border:none; }
-    button:disabled { background:#999; }
-    .error { color:red; font-size:13px; }
+    body {
+      font-family: Arial;
+      background:#f4f4f4;
+    }
+    .box {
+      max-width:400px;
+      margin:40px auto;
+      background:white;
+      padding:20px;
+      border-radius:6px;
+    }
+    input, button {
+      width:100%;
+      padding:8px;
+      margin:6px 0;
+    }
+    button {
+      background:#1f3a5f;
+      color:white;
+      border:none;
+      cursor:pointer;
+    }
+    button:disabled {
+      background:#999;
+      cursor:not-allowed;
+    }
+    .error {
+      color:red;
+      font-size:13px;
+      margin-top:-4px;
+    }
+    .ok {
+      color:green;
+      font-size:13px;
+      margin-top:-4px;
+    }
   </style>
 </head>
 <body>
@@ -17,22 +48,40 @@
 <div id="app" class="box">
   <h2>📝 Register</h2>
 
-  <input v-model="f.username" @blur="checkUsername" placeholder="Username">
+  <!-- USERNAME -->
+  <input
+    v-model="f.username"
+    @input="onUsernameInput"
+    @blur="checkUsername"
+    placeholder="Username"
+  >
   <p v-if="usernameError" class="error">{{ usernameError }}</p>
+  <p v-if="usernameOk" class="ok">✔ Username available</p>
 
-  <input v-model="f.useremail" @blur="checkEmail" placeholder="Email">
+  <!-- EMAIL -->
+  <input
+    v-model="f.useremail"
+    @input="onEmailInput"
+    @blur="checkEmail"
+    placeholder="Email"
+  >
   <p v-if="emailError" class="error">{{ emailError }}</p>
+  <p v-if="emailOk" class="ok">✔ Email available</p>
 
+  <!-- PASSWORD -->
   <input type="password" v-model="f.password" placeholder="Password">
 
+  <!-- NAMES -->
   <input v-model="f.firstname" placeholder="First name">
   <input v-model="f.middlename" placeholder="Middle name (optional)">
   <input v-model="f.lastname" placeholder="Last name">
 
+  <!-- STORE INFO -->
   <input v-model="f.address" placeholder="Address">
   <input v-model="f.storename" placeholder="Store name">
   <input v-model="f.storelocation" placeholder="Store location">
 
+  <!-- SUBMIT -->
   <button @click="register" :disabled="loading || !canSubmit">
     {{ loading ? "Registering..." : "Register" }}
   </button>
@@ -62,8 +111,9 @@ Vue.createApp({
         storename:"",
         storelocation:""
       },
-      message:"",
+
       loading:false,
+      message:"",
 
       usernameError:"",
       emailError:"",
@@ -71,6 +121,7 @@ Vue.createApp({
       emailOk:false
     }
   },
+
   computed:{
     canSubmit() {
       return (
@@ -82,39 +133,56 @@ Vue.createApp({
       );
     }
   },
-  methods:{
-    async checkUsername() {
-      this.usernameError = "";
-      this.usernameOk = false;
 
+  methods:{
+    // RESET STATUS WHILE TYPING
+    onUsernameInput() {
+      this.usernameOk = false;
+      this.usernameError = "";
+    },
+
+    onEmailInput() {
+      this.emailOk = false;
+      this.emailError = "";
+    },
+
+    // CHECK USERNAME
+    async checkUsername() {
       if (!this.f.username) return;
 
-      const r = await fetch(`${API}/check-availability?username=${this.f.username}`);
+      const r = await fetch(
+        `${API}/check-availability?username=${encodeURIComponent(this.f.username)}`
+      );
       const d = await r.json();
 
       if (!d.available) {
         this.usernameError = "❌ Username already taken";
+        this.usernameOk = false;
       } else {
+        this.usernameError = "";
         this.usernameOk = true;
       }
     },
 
+    // CHECK EMAIL
     async checkEmail() {
-      this.emailError = "";
-      this.emailOk = false;
-
       if (!this.f.useremail) return;
 
-      const r = await fetch(`${API}/check-availability?email=${this.f.useremail}`);
+      const r = await fetch(
+        `${API}/check-availability?email=${encodeURIComponent(this.f.useremail)}`
+      );
       const d = await r.json();
 
       if (!d.available) {
         this.emailError = "❌ Email already registered";
+        this.emailOk = false;
       } else {
+        this.emailError = "";
         this.emailOk = true;
       }
     },
 
+    // REGISTER
     async register() {
       this.message = "";
       this.loading = true;
@@ -133,9 +201,9 @@ Vue.createApp({
           return;
         }
 
-        this.message = "Registered successfully! Check your email for verification.";
-      } catch (e) {
-        this.message = "Server not responding";
+        this.message = "✅ Registered! Check your email for verification.";
+      } catch {
+        this.message = "❌ Server not responding";
       } finally {
         this.loading = false;
       }
