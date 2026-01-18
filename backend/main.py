@@ -241,6 +241,30 @@ def serve_verify_page(request: Request, email: str = ""):
     </html>
     """
 
+@app.post("/verify-email")
+def verify_email(
+    email: str,
+    code: str,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.useremail == email).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.verified:
+        return {"status": "Account already verified"}
+
+    if user.verification_code != code:
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+
+    user.verified = True
+    user.verification_code = None
+    db.commit()
+
+    return {"status": "Email verified successfully"}
+
+
 @app.get("/check-availability")
 def check_availability(
     username: str | None = None,
