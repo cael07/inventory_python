@@ -249,6 +249,22 @@ def serve_verify_page(request: Request, email: str = ""):
     </html>
     """
 
+@app.get("/check-availability")
+def check_availability(
+    username: str | None = None,
+    email: str | None = None,
+    db: Session = Depends(get_db)
+):
+    if username:
+        exists = db.query(User).filter(User.username == username).first()
+        return {"field": "username", "available": not bool(exists)}
+
+    if email:
+        exists = db.query(User).filter(User.useremail == email).first()
+        return {"field": "email", "available": not bool(exists)}
+
+    raise HTTPException(400, "Missing username or email")
+
 # -------------------------------------------------
 # LOGIN
 # -------------------------------------------------

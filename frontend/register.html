@@ -8,6 +8,8 @@
     .box { max-width:400px; margin:40px auto; background:white; padding:20px; border-radius:6px; }
     input, button { width:100%; padding:8px; margin:6px 0; }
     button { background:#1f3a5f; color:white; border:none; }
+    button:disabled { background:#999; }
+    .error { color:red; font-size:13px; }
   </style>
 </head>
 <body>
@@ -15,8 +17,12 @@
 <div id="app" class="box">
   <h2>📝 Register</h2>
 
-  <input v-model="f.username" placeholder="Username">
-  <input v-model="f.useremail" placeholder="Email">
+  <input v-model="f.username" @blur="checkUsername" placeholder="Username">
+  <p v-if="usernameError" class="error">{{ usernameError }}</p>
+
+  <input v-model="f.useremail" @blur="checkEmail" placeholder="Email">
+  <p v-if="emailError" class="error">{{ emailError }}</p>
+
   <input type="password" v-model="f.password" placeholder="Password">
 
   <input v-model="f.firstname" placeholder="First name">
@@ -27,7 +33,7 @@
   <input v-model="f.storename" placeholder="Store name">
   <input v-model="f.storelocation" placeholder="Store location">
 
-  <button @click="register" :disabled="loading">
+  <button @click="register" :disabled="loading || !canSubmit">
     {{ loading ? "Registering..." : "Register" }}
   </button>
 
@@ -57,10 +63,58 @@ Vue.createApp({
         storelocation:""
       },
       message:"",
-      loading:false
+      loading:false,
+
+      usernameError:"",
+      emailError:"",
+      usernameOk:false,
+      emailOk:false
+    }
+  },
+  computed:{
+    canSubmit() {
+      return (
+        this.usernameOk &&
+        this.emailOk &&
+        this.f.password &&
+        this.f.firstname &&
+        this.f.lastname
+      );
     }
   },
   methods:{
+    async checkUsername() {
+      this.usernameError = "";
+      this.usernameOk = false;
+
+      if (!this.f.username) return;
+
+      const r = await fetch(`${API}/check-availability?username=${this.f.username}`);
+      const d = await r.json();
+
+      if (!d.available) {
+        this.usernameError = "❌ Username already taken";
+      } else {
+        this.usernameOk = true;
+      }
+    },
+
+    async checkEmail() {
+      this.emailError = "";
+      this.emailOk = false;
+
+      if (!this.f.useremail) return;
+
+      const r = await fetch(`${API}/check-availability?email=${this.f.useremail}`);
+      const d = await r.json();
+
+      if (!d.available) {
+        this.emailError = "❌ Email already registered";
+      } else {
+        this.emailOk = true;
+      }
+    },
+
     async register() {
       this.message = "";
       this.loading = true;
@@ -79,7 +133,7 @@ Vue.createApp({
           return;
         }
 
-        this.message = d.message || "Registered successfully!";
+        this.message = "Registered successfully! Check your email for verification.";
       } catch (e) {
         this.message = "Server not responding";
       } finally {
