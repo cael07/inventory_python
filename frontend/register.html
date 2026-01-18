@@ -183,31 +183,34 @@ Vue.createApp({
     },
 
     // REGISTER
-    async register() {
-      this.message = "";
-      this.loading = true;
+   async register() {
+  this.message = "";
+  this.loading = true;
 
-      try {
-        const r = await fetch(`${API}/register`, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify(this.f)
-        });
+  try {
+    const r = await fetch(`${API}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(this.f)
+    });
 
-        const d = await r.json();
+    const d = await r.json();
 
-        if (!r.ok) {
-          this.message = d.detail || "Registration failed";
-          return;
-        }
-
-        this.message = "✅ Registered! Check your email for verification.";
-      } catch {
-        this.message = "❌ Server not responding";
-      } finally {
-        this.loading = false;
-      }
+    if (!r.ok) {
+      this.message = d.detail || "Registration failed";
+      return;
     }
+
+    // ✅ redirect manually
+    window.location.href = `verify.html?email=${encodeURIComponent(d.email)}`;
+
+  } catch (e) {
+    this.message = "Server not responding";
+  } finally {
+    this.loading = false;
+  }
+}
+
   }
 }).mount("#app");
 </script>

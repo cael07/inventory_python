@@ -109,11 +109,9 @@ def debug_users(db: Session = Depends(get_db)):
 # -------------------------------------------------
 # REGISTER
 # -------------------------------------------------
-
 @app.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
-        # --- your existing registration logic ---
         hashed_password = auth.hash_password(user.password)
         verification_code = secrets.token_hex(3)
 
@@ -133,24 +131,18 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 
         db.add(new_user)
         db.commit()
-        db.refresh(new_user)
 
-        # --- send verification email via SMTP ---
-        try:
-            send_verification_email(new_user.useremail, verification_code)
-            print(f"✅ Verification email sent to {new_user.useremail}")
-        except Exception as e:
-            print("❌ Failed to send verification email:", e)
+        send_verification_email(new_user.useremail, verification_code)
 
-        # --- redirect to verification page ---
-        return RedirectResponse(
-            url=f"/verify.html?email={new_user.useremail}",  # pass email to pre-fill
-            status_code=303
-        )
+        return {
+            "status": "ok",
+            "message": "Verification email sent",
+            "email": new_user.useremail
+        }
 
     except Exception as e:
-        print(traceback.format_exc())
-        raise HTTPException(500, detail=f"Server error: {str(e)}")
+        raise HTTPException(500, detail=str(e))
+
 
 # -------------------------------------------------
 # EMAIL VERIFICATION
