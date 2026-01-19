@@ -44,7 +44,7 @@ Vue.createApp({
 
       if (d.status === "ok") {
         localStorage.setItem("user", JSON.stringify(d.user));
-        window.location.href = "pos.html"; // your POS page
+        window.location.href = "dashboard.html"; // your POS page
       } else {
         this.message = d.detail || "Login failed";
       }
@@ -55,3 +55,4 @@ Vue.createApp({
 
 </body>
 </html>
+ 
