@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/img/cael.ico" type="image/x-icon">
   <script src="https://unpkg.com/vue@3"></script>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
 
@@ -243,6 +244,10 @@
 </div>
 
 <script>
+  if (!token || !user.username) {
+    window.location.href = "login.html";
+    return;
+  }
 const API = "https://inventory-python.onrender.com";
 const beepSound = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
 
