@@ -1,141 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Inventory</title>
-<script src="https://unpkg.com/vue@3"></script>
-<style>
-  /* ---------- GLOBAL ---------- */
-  body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background: #000; /* full black background */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    color: #00f0ff;
-  }
-
-  /* ---------- CARD ---------- */
-  .box {
-    max-width: 380px;
-    width: 100%;
-    background: rgba(10,10,35,0.95);
-    padding: 40px 30px;
-    border-radius: 12px;
-    text-align: center;
-    position: relative;
-    color: #00f0ff;
-
-    /* outer flicker glow only */
-    box-shadow: 0 0 15px #00f0ff, 0 0 30px #00aaff, 0 0 45px #0055ff;
-    animation: flicker 1.5s infinite alternate;
-  }
-
-  @keyframes flicker {
-    0% { box-shadow: 0 0 10px #00f0ff, 0 0 20px #00aaff, 0 0 35px #0055ff; }
-    25% { box-shadow: 0 0 15px #00f0ff, 0 0 25px #00aaff, 0 0 40px #0055ff; }
-    50% { box-shadow: 0 0 12px #00f0ff, 0 0 22px #00aaff, 0 0 38px #0055ff; }
-    75% { box-shadow: 0 0 18px #00f0ff, 0 0 28px #00aaff, 0 0 42px #0055ff; }
-    100% { box-shadow: 0 0 10px #00f0ff, 0 0 20px #00aaff, 0 0 35px #0055ff; }
-  }
-
-  /* ---------- LOGO ---------- */
-  .box img.logo {
-    width: 80px;
-    margin-bottom: 20px;
-  }
-
-  h2 {
-    margin: 0 0 20px 0;
-    font-weight: 500;
-    color: #00f0ff;
-  }
-
-  /* ---------- INPUTS ---------- */
-  input {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 6px;
-    border: none;
-    background: rgba(255,255,255,0.05);
-    color: #00f0ff;
-    font-size: 14px;
-  }
-
-  input::placeholder {
-    color: #00bbff;
-  }
-
-  /* ---------- BUTTON ---------- */
-  button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 12px;
-    border: none;
-    border-radius: 6px;
-    background: #00f0ff;
-    color: #000;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 0 10px #00f0ff, 0 0 20px #00aaff;
-  }
-
-  button:hover {
-    background: #00bbff;
-    box-shadow: 0 0 20px #00f0ff, 0 0 30px #00aaff;
-  }
-
-  button:disabled {
-    background: #333;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
-
-  /* ---------- TEXT ---------- */
-  p {
-    margin: 12px 0 0 0;
-    font-size: 14px;
-  }
-
-  a {
-    color: #00f0ff;
-    text-decoration: none;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-
-  a:hover {
-    text-decoration: underline;
-    color: #00bbff;
-  }
-
-  .error {
-    color: #ff3333;
-    font-size: 13px;
-    margin: 4px 0 0 0;
-    text-align: left;
-  }
-
-  /* ---------- MOBILE FIX ---------- */
-  @media (max-width: 420px) {
-    .box {
-      margin: 20px;
-      padding: 30px 20px;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Inventory</title>
+  <script src="https://unpkg.com/vue@3"></script>
+  <style>
+    /* ---------- GLOBAL ---------- */
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #00ffff;
     }
-  }
-</style>
+
+    /* ---------- CARD ---------- */
+    .box {
+      max-width: 380px;
+      width: 100%;
+      background: rgba(20, 20, 35, 0.95);
+      padding: 40px 30px;
+      border-radius: 12px;
+      text-align: center;
+      position: relative;
+      color: #fff;
+      animation: flicker 1.5s infinite alternate;
+    }
+
+    @keyframes flicker {
+      0% { box-shadow: 0 0 10px #00ffff, 0 0 20px #00aaff; }
+      25% { box-shadow: 0 0 15px #00ffff, 0 0 25px #00aaff; }
+      50% { box-shadow: 0 0 12px #00ffff, 0 0 18px #00aaff; }
+      75% { box-shadow: 0 0 16px #00ffff, 0 0 22px #00aaff; }
+      100% { box-shadow: 0 0 14px #00ffff, 0 0 20px #00aaff; }
+    }
+
+    .box img.logo {
+      width: 80px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin: 0 0 20px 0;
+      font-weight: 500;
+      color: #00ffff;
+    }
+
+    /* ---------- INPUTS & BUTTON ---------- */
+    input, button {
+      width: 100%;
+      box-sizing: border-box;  /* ✅ ensure same width */
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+    }
+
+    input {
+      background: rgba(255, 255, 255, 0.05);
+      color: #00ffff;
+    }
+
+    input::placeholder {
+      color: #00aaff;
+    }
+
+    button {
+      background: #00ffff;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 0 10px #00ffff, 0 0 20px #00aaff;
+    }
+
+    button:hover {
+      background: #00ccff;
+      box-shadow: 0 0 20px #00ffff, 0 0 30px #00aaff;
+    }
+
+    button:disabled {
+      background: #333;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* ---------- TEXT ---------- */
+    p {
+      margin: 12px 0 0 0;
+      font-size: 14px;
+    }
+
+    a {
+      color: #00ffff;
+      text-decoration: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    a:hover {
+      text-decoration: underline;
+      color: #00ccff;
+    }
+
+    .error {
+      color: #ff3333;
+      font-size: 13px;
+      margin: 4px 0 0 0;
+      text-align: left;
+    }
+
+    /* ---------- MOBILE FIX ---------- */
+    @media (max-width: 420px) {
+      .box {
+        margin: 20px;
+        padding: 30px 20px;
+      }
+    }
+
+  </style>
 </head>
 <body>
 
 <div id="app" class="box">
   <!-- Logo -->
-  <img src="/static/img/cael.ico" alt="Logo" class="logo">
+  <img class="logo" src="/static/img/cael.ico" alt="Logo">
 
+  <!-- Heading -->
   <h2>🔐 Login</h2>
 
   <!-- Inputs -->
