@@ -10,7 +10,7 @@
   body {
     margin: 0;
     font-family: 'Arial', sans-serif;
-    background: #000;
+    background: #000; /* full black background */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -22,41 +22,27 @@
   .box {
     max-width: 380px;
     width: 100%;
-    background: rgba(10, 10, 35, 0.95);
+    background: rgba(10,10,35,0.95);
     padding: 40px 30px;
     border-radius: 12px;
     text-align: center;
     position: relative;
     color: #00f0ff;
-    overflow: visible;
 
-    /* Neon chip-like glow */
+    /* outer flicker glow only */
     box-shadow: 0 0 15px #00f0ff, 0 0 30px #00aaff, 0 0 45px #0055ff;
-  }
-
-  /* Small flickering chip lines */
-  .box::before {
-    content: '';
-    position: absolute;
-    top: -10px; left: -10px;
-    width: calc(100% + 20px);
-    height: calc(100% + 20px);
-    border-radius: 12px;
-    pointer-events: none;
-    box-shadow:
-      0 0 5px #00f0ff, 10px 0 10px #00aaff, 0 10px 10px #00f0ff,
-      -10px 0 10px #00aaff, 0 -10px 10px #00f0ff;
     animation: flicker 1.5s infinite alternate;
   }
 
   @keyframes flicker {
-    0% { opacity: 0.2; }
-    25% { opacity: 0.4; }
-    50% { opacity: 0.3; }
-    75% { opacity: 0.5; }
-    100% { opacity: 0.2; }
+    0% { box-shadow: 0 0 10px #00f0ff, 0 0 20px #00aaff, 0 0 35px #0055ff; }
+    25% { box-shadow: 0 0 15px #00f0ff, 0 0 25px #00aaff, 0 0 40px #0055ff; }
+    50% { box-shadow: 0 0 12px #00f0ff, 0 0 22px #00aaff, 0 0 38px #0055ff; }
+    75% { box-shadow: 0 0 18px #00f0ff, 0 0 28px #00aaff, 0 0 42px #0055ff; }
+    100% { box-shadow: 0 0 10px #00f0ff, 0 0 20px #00aaff, 0 0 35px #0055ff; }
   }
 
+  /* ---------- LOGO ---------- */
   .box img.logo {
     width: 80px;
     margin-bottom: 20px;
@@ -75,7 +61,7 @@
     margin: 8px 0;
     border-radius: 6px;
     border: none;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255,255,255,0.05);
     color: #00f0ff;
     font-size: 14px;
   }
