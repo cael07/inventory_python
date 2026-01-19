@@ -1,128 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Inventory</title>
-  <script src="https://unpkg.com/vue@3"></script>
-  <style>
-    /* ---------- GLOBAL ---------- */
-    body {
-      margin: 0;
-      font-family: 'Arial', sans-serif;
-      background: #0a0a18;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #00ffff;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Inventory</title>
+<script src="https://unpkg.com/vue@3"></script>
+<style>
+  /* ---------- GLOBAL ---------- */
+  body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #000022 0%, #000033 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #00f0ff;
+    position: relative;
+    overflow: hidden;
+  }
 
-    /* ---------- CARD ---------- */
+  /* ---------- COMPUTER CHIP LINES ---------- */
+  body::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image:
+      linear-gradient(0deg, rgba(0,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+  }
+
+  /* ---------- CARD ---------- */
+  .box {
+    max-width: 380px;
+    width: 100%;
+    background: rgba(10, 10, 35, 0.95);
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px #00f0ff, 0 0 30px #00aaff, 0 0 50px #0055ff;
+    text-align: center;
+    position: relative;
+    color: #00f0ff;
+    z-index: 1;
+  }
+
+  .box img.logo {
+    width: 80px;
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    margin: 0 0 20px 0;
+    font-weight: 500;
+    color: #00f0ff;
+  }
+
+  /* ---------- INPUTS ---------- */
+  input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: #00f0ff;
+    font-size: 14px;
+  }
+
+  input::placeholder {
+    color: #00bbff;
+  }
+
+  /* ---------- BUTTON ---------- */
+  button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 6px;
+    background: #00f0ff;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 0 10px #00f0ff, 0 0 20px #00aaff;
+  }
+
+  button:hover {
+    background: #00bbff;
+    box-shadow: 0 0 20px #00f0ff, 0 0 30px #00aaff;
+  }
+
+  button:disabled {
+    background: #333;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* ---------- TEXT ---------- */
+  p {
+    margin: 12px 0 0 0;
+    font-size: 14px;
+  }
+
+  a {
+    color: #00f0ff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  a:hover {
+    text-decoration: underline;
+    color: #00bbff;
+  }
+
+  .error {
+    color: #ff3333;
+    font-size: 13px;
+    margin: 4px 0 0 0;
+    text-align: left;
+  }
+
+  /* ---------- MOBILE FIX ---------- */
+  @media (max-width: 420px) {
     .box {
-      max-width: 380px;
-      width: 100%;
-      background: rgba(20, 20, 35, 0.95);
-      padding: 40px 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px #00ffff, 0 0 30px #00ff33, 0 0 50px #00ff99;
-      text-align: center;
-      position: relative;
-      color: #fff;
+      margin: 20px;
+      padding: 30px 20px;
     }
-
-    .box img.logo {
-      width: 80px;
-      margin-bottom: 20px;
-    }
-
-    h2 {
-      margin: 0 0 20px 0;
-      font-weight: 500;
-      color: #00ffff;
-    }
-
-    /* ---------- INPUTS ---------- */
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: none;
-      background: rgba(255, 255, 255, 0.05);
-      color: #00ffff;
-      font-size: 14px;
-    }
-
-    input::placeholder {
-      color: #00ff99;
-    }
-
-    /* ---------- BUTTON ---------- */
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 12px;
-      border: none;
-      border-radius: 6px;
-      background: #00ffff;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-      box-shadow: 0 0 10px #00ffff, 0 0 20px #00ff66;
-    }
-
-    button:hover {
-      background: #00ccff;
-      box-shadow: 0 0 20px #00ffff, 0 0 30px #00ff99;
-    }
-
-    button:disabled {
-      background: #333;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    /* ---------- TEXT ---------- */
-    p {
-      margin: 12px 0 0 0;
-      font-size: 14px;
-    }
-
-    a {
-      color: #00ffff;
-      text-decoration: none;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    a:hover {
-      text-decoration: underline;
-      color: #00ccff;
-    }
-
-    .error {
-      color: #ff3333;
-      font-size: 13px;
-      margin: 4px 0 0 0;
-      text-align: left;
-    }
-
-    /* ---------- MOBILE FIX ---------- */
-    @media (max-width: 420px) {
-      .box {
-        margin: 20px;
-        padding: 30px 20px;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
 
 <div id="app" class="box">
   <!-- Logo -->
-  <img class="logo" src="cael.ico" alt="Logo">
+  <img src="/static/img/cael.ico" alt="Logo" class="logo">
 
   <h2>🔐 Login</h2>
 
