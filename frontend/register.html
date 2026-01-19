@@ -1,53 +1,147 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register</title>
   <link rel="icon" href="/static/img/cael.ico" type="image/x-icon">
   <script src="https://unpkg.com/vue@3"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial;
-      background:#f4f4f4;
+      margin: 0;
+      height: 100vh;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      color: #00eaff;
     }
+
+    /* ---------- NEON CARD ---------- */
     .box {
-      max-width:400px;
-      margin:40px auto;
-      background:white;
-      padding:20px;
-      border-radius:6px;
+      width: 100%;
+      max-width: 400px;
+      background: #0b0b14;
+      padding: 36px 28px;
+      border-radius: 12px;
+      text-align: center;
+      animation: flicker 3.5s infinite alternate;
     }
-    input, button {
-      width:100%;
-      padding:8px;
-      margin:6px 0;
+
+    @keyframes flicker {
+      0% {
+        box-shadow: 0 0 10px #00eaff;
+      }
+      50% {
+        box-shadow: 0 0 18px #00eaff;
+      }
+      100% {
+        box-shadow: 0 0 26px #00eaff;
+      }
     }
+
+    .logo {
+      width: 70px;
+      margin-bottom: 18px;
+    }
+
+    h2 {
+      margin-bottom: 18px;
+      font-weight: 500;
+      color: #00eaff;
+    }
+
+    /* ---------- INPUTS ---------- */
+    input {
+      width: 100%;
+      padding: 11px;
+      margin: 7px 0;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      background: #111;
+      color: #00eaff;
+      font-size: 14px;
+    }
+
+    input::placeholder {
+      color: #00b3cc;
+    }
+
+    /* ---------- BUTTON ---------- */
     button {
-      background:#1f3a5f;
-      color:white;
-      border:none;
-      cursor:pointer;
+      width: 100%;
+      padding: 11px;
+      margin-top: 12px;
+      border-radius: 6px;
+      border: none;
+      background: #00eaff;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 12px #00eaff;
+      transition: 0.2s;
     }
+
+    button:hover {
+      box-shadow: 0 0 20px #00eaff;
+    }
+
     button:disabled {
-      background:#999;
-      cursor:not-allowed;
+      background: #333;
+      color: #777;
+      box-shadow: none;
+      cursor: not-allowed;
     }
+
+    /* ---------- TEXT ---------- */
     .error {
-      color:red;
-      font-size:13px;
-      margin-top:-4px;
+      color: #ff4444;
+      font-size: 13px;
+      text-align: left;
+      margin-top: -4px;
     }
+
     .ok {
-      color:green;
-      font-size:13px;
-      margin-top:-4px;
+      color: #44ffcc;
+      font-size: 13px;
+      text-align: left;
+      margin-top: -4px;
+    }
+
+    p {
+      font-size: 14px;
+      margin-top: 14px;
+    }
+
+    a {
+      color: #00eaff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 420px) {
+      .box {
+        margin: 16px;
+      }
     }
   </style>
 </head>
 <body>
 
 <div id="app" class="box">
-  <h2>📝 Register</h2>
+  <img src="/static/img/cael.ico" class="logo" alt="Logo">
+
+  <h2>Register</h2>
 
   <!-- USERNAME -->
   <input
@@ -56,8 +150,8 @@
     @blur="checkUsername"
     placeholder="Username"
   >
-  <p v-if="usernameError" class="error">{{ usernameError }}</p>
-  <p v-if="usernameOk" class="ok">✔ Username available</p>
+  <div v-if="usernameError" class="error">{{ usernameError }}</div>
+  <div v-if="usernameOk" class="ok">✔ Username available</div>
 
   <!-- EMAIL -->
   <input
@@ -66,23 +160,22 @@
     @blur="checkEmail"
     placeholder="Email"
   >
-  <p v-if="emailError" class="error">{{ emailError }}</p>
-  <p v-if="emailOk" class="ok">✔ Email available</p>
+  <div v-if="emailError" class="error">{{ emailError }}</div>
+  <div v-if="emailOk" class="ok">✔ Email available</div>
 
   <!-- PASSWORD -->
   <input type="password" v-model="f.password" placeholder="Password">
 
-  <!-- NAMES -->
+  <!-- NAME -->
   <input v-model="f.firstname" placeholder="First name">
   <input v-model="f.middlename" placeholder="Middle name (optional)">
   <input v-model="f.lastname" placeholder="Last name">
 
-  <!-- STORE INFO -->
+  <!-- STORE -->
   <input v-model="f.address" placeholder="Address">
   <input v-model="f.storename" placeholder="Store name">
   <input v-model="f.storelocation" placeholder="Store location">
 
-  <!-- SUBMIT -->
   <button @click="register" :disabled="loading || !canSubmit">
     {{ loading ? "Registering..." : "Register" }}
   </button>
@@ -112,10 +205,8 @@ Vue.createApp({
         storename:"",
         storelocation:""
       },
-
       loading:false,
       message:"",
-
       usernameError:"",
       emailError:"",
       usernameOk:false,
@@ -136,82 +227,55 @@ Vue.createApp({
   },
 
   methods:{
-    // RESET STATUS WHILE TYPING
     onUsernameInput() {
       this.usernameOk = false;
       this.usernameError = "";
     },
-
     onEmailInput() {
       this.emailOk = false;
       this.emailError = "";
     },
 
-    // CHECK USERNAME
     async checkUsername() {
       if (!this.f.username) return;
-
-      const r = await fetch(
-        `${API}/check-availability?username=${encodeURIComponent(this.f.username)}`
-      );
+      const r = await fetch(`${API}/check-availability?username=${encodeURIComponent(this.f.username)}`);
       const d = await r.json();
-
-      if (!d.available) {
-        this.usernameError = "❌ Username already taken";
-        this.usernameOk = false;
-      } else {
-        this.usernameError = "";
-        this.usernameOk = true;
-      }
+      this.usernameOk = d.available;
+      this.usernameError = d.available ? "" : "❌ Username already taken";
     },
 
-    // CHECK EMAIL
     async checkEmail() {
       if (!this.f.useremail) return;
-
-      const r = await fetch(
-        `${API}/check-availability?email=${encodeURIComponent(this.f.useremail)}`
-      );
+      const r = await fetch(`${API}/check-availability?email=${encodeURIComponent(this.f.useremail)}`);
       const d = await r.json();
-
-      if (!d.available) {
-        this.emailError = "❌ Email already registered";
-        this.emailOk = false;
-      } else {
-        this.emailError = "";
-        this.emailOk = true;
-      }
+      this.emailOk = d.available;
+      this.emailError = d.available ? "" : "❌ Email already registered";
     },
 
-    // REGISTER
-   async register() {
-  this.message = "";
-  this.loading = true;
+    async register() {
+      this.message = "";
+      this.loading = true;
 
-  try {
-    const r = await fetch(`${API}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(this.f)
-    });
+      try {
+        const r = await fetch(`${API}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(this.f)
+        });
 
-    const d = await r.json();
+        const d = await r.json();
+        if (!r.ok) {
+          this.message = d.detail || "Registration failed";
+          return;
+        }
 
-    if (!r.ok) {
-      this.message = d.detail || "Registration failed";
-      return;
+        window.location.href = `verify.html?email=${encodeURIComponent(d.email)}`;
+      } catch {
+        this.message = "Server not responding";
+      } finally {
+        this.loading = false;
+      }
     }
-
-    // ✅ redirect manually
-    window.location.href = `verify.html?email=${encodeURIComponent(d.email)}`;
-
-  } catch (e) {
-    this.message = "Server not responding";
-  } finally {
-    this.loading = false;
-  }
-}
-
   }
 }).mount("#app");
 </script>
