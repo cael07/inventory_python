@@ -204,29 +204,10 @@ def serve_verify_page(request: Request, email: str = ""):
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <script src="https://unpkg.com/vue@3"></script>
       <style>
-        body {{       
-        margin: 0;
-        height: 100vh;
-        background: #000;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-family: Arial, sans-serif;
-        color: #00eaff;}}
-        .box {{ max-width:360px; margin:40px auto; background:white; padding:20px; border-radius:6px; animation: flicker 3.5s infinite alternate;}}
+        body {{ font-family: Arial; background:#f4f4f4; }}
+        .box {{ max-width:360px; margin:40px auto; background:white; padding:20px; border-radius:6px; }}
         input, button {{ width:100%; padding:8px; margin:6px 0; }}
         button {{ background:#27ae60; color:white; border:none; }}
-            @keyframes flicker {{
-      0% {
-        box-shadow: 0 0 10px #00eaff;
-      }
-      50% {
-        box-shadow: 0 0 18px #00eaff;
-      }
-      100% {
-        box-shadow: 0 0 26px #00eaff;
-      }
-    }}
       </style>
     </head>
     <body>
