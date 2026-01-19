@@ -1,27 +1,144 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Inventory</title>
   <script src="https://unpkg.com/vue@3"></script>
   <style>
-    body { font-family: Arial; background:#f4f4f4; }
-    .box { max-width:360px; margin:40px auto; background:white; padding:20px; border-radius:6px; }
-    input, button { width:100%; padding:8px; margin:6px 0; }
-    button { background:#1f3a5f; color:white; border:none; }
+    /* ---------- GLOBAL ---------- */
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: #0a0a18;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #00ffff;
+    }
+
+    /* ---------- CARD ---------- */
+    .box {
+      max-width: 380px;
+      width: 100%;
+      background: rgba(20, 20, 35, 0.95);
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px #00ffff, 0 0 30px #00ff33, 0 0 50px #00ff99;
+      text-align: center;
+      position: relative;
+      color: #fff;
+    }
+
+    .box img.logo {
+      width: 80px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin: 0 0 20px 0;
+      font-weight: 500;
+      color: #00ffff;
+    }
+
+    /* ---------- INPUTS ---------- */
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: none;
+      background: rgba(255, 255, 255, 0.05);
+      color: #00ffff;
+      font-size: 14px;
+    }
+
+    input::placeholder {
+      color: #00ff99;
+    }
+
+    /* ---------- BUTTON ---------- */
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 6px;
+      background: #00ffff;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 0 10px #00ffff, 0 0 20px #00ff66;
+    }
+
+    button:hover {
+      background: #00ccff;
+      box-shadow: 0 0 20px #00ffff, 0 0 30px #00ff99;
+    }
+
+    button:disabled {
+      background: #333;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* ---------- TEXT ---------- */
+    p {
+      margin: 12px 0 0 0;
+      font-size: 14px;
+    }
+
+    a {
+      color: #00ffff;
+      text-decoration: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    a:hover {
+      text-decoration: underline;
+      color: #00ccff;
+    }
+
+    .error {
+      color: #ff3333;
+      font-size: 13px;
+      margin: 4px 0 0 0;
+      text-align: left;
+    }
+
+    /* ---------- MOBILE FIX ---------- */
+    @media (max-width: 420px) {
+      .box {
+        margin: 20px;
+        padding: 30px 20px;
+      }
+    }
   </style>
 </head>
 <body>
 
 <div id="app" class="box">
+  <!-- Logo -->
+  <img class="logo" src="cael.ico" alt="Logo">
+
   <h2>🔐 Login</h2>
 
+  <!-- Inputs -->
   <input v-model="username" placeholder="Username">
   <input type="password" v-model="password" placeholder="Password">
 
-  <button @click="login">Login</button>
+  <!-- Login Button -->
+  <button @click="login" :disabled="loading">
+    {{ loading ? "Logging in..." : "Login" }}
+  </button>
 
-  <p>{{ message }}</p>
+  <!-- Message -->
+  <p v-if="message" :class="{'error': error}">{{ message }}</p>
 
+  <!-- Register Link -->
   <p>
     No account?
     <a href="register.html">Register</a>
@@ -33,29 +150,43 @@ const API = "https://inventory-python.onrender.com";
 
 Vue.createApp({
   data() {
-    return { username:"", password:"", message:"" }
+    return {
+      username: "",
+      password: "",
+      message: "",
+      error: false,
+      loading: false
+    }
   },
-  methods:{
+  methods: {
     async login() {
+      this.message = "";
+      this.error = false;
+      this.loading = true;
+
       try {
         const r = await fetch(`${API}/login?username=${this.username}&password=${this.password}`, {
-          method:"POST"
+          method: "POST"
         });
 
         const d = await r.json();
 
         if (!r.ok) {
           this.message = d.detail || "Login failed";
-          return;
+          this.error = true;
+        } else {
+          // ✅ Save session token and user
+          localStorage.setItem("token", d.access_token || "demo-token");
+          localStorage.setItem("user", JSON.stringify(d.user));
+
+          // Redirect to dashboard
+          window.location.href = "dashboard.html";
         }
-
-        // ✅ SESSION STORAGE
-        localStorage.setItem("token", d.access_token);
-        localStorage.setItem("user", JSON.stringify(d.user));
-
-        window.location.href = "dashboard.html";
       } catch (e) {
         this.message = "Server not responding";
+        this.error = true;
+      } finally {
+        this.loading = false;
       }
     }
   }
