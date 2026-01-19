@@ -37,16 +37,25 @@ Vue.createApp({
   },
   methods:{
     async login() {
-      const r = await fetch(`${API}/login?username=${this.username}&password=${this.password}`, {
-        method:"POST"
-      });
-      const d = await r.json();
+      try {
+        const r = await fetch(`${API}/login?username=${this.username}&password=${this.password}`, {
+          method:"POST"
+        });
 
-      if (d.status === "ok") {
+        const d = await r.json();
+
+        if (!r.ok) {
+          this.message = d.detail || "Login failed";
+          return;
+        }
+
+        // ✅ SESSION STORAGE
+        localStorage.setItem("token", d.access_token);
         localStorage.setItem("user", JSON.stringify(d.user));
-        window.location.href = "dashboard.html"; // your POS page
-      } else {
-        this.message = d.detail || "Login failed";
+
+        window.location.href = "dashboard.html";
+      } catch (e) {
+        this.message = "Server not responding";
       }
     }
   }
@@ -55,4 +64,3 @@ Vue.createApp({
 
 </body>
 </html>
- 

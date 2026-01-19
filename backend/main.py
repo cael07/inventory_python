@@ -295,14 +295,21 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
     if not user.verified:
         raise HTTPException(403, "Email not verified")
 
+    token = auth.create_access_token({
+        "sub": str(user.id),
+        "username": user.username
+    })
+
     return {
         "status": "ok",
+        "access_token": token,
         "user": {
             "id": user.id,
             "username": user.username,
             "storename": user.storename
         }
     }
+
 
 
 @app.get("/users")
