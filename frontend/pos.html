@@ -146,7 +146,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <div>
         <b>Qty:</b>
-        <input type="number" min="1" v-model.number="scanQty" style="width: 60px;">
+        <input type="number" min="1" v-model.number="scanQty" style="width: 60px;" @focus="$event.target.select()">
       </div>
       <span class="grand-total" v-if="items.length">
         Total: ₱{{ grandTotal }}
