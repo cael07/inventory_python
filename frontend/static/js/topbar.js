@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   topbar.className = "topbar";
 
   topbar.innerHTML = `
-    <a href="index.html" class="topbar-logo">
+    <a href="dashboard.html" class="topbar-logo">
       <img src="/static/img/cael.ico" alt="Logo">
     </a>
 
