@@ -734,6 +734,12 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
             total_price=item["total_price"]
         )
         db.add(p)
+        
+        # Deduct from inventory
+        product = db.query(Product).filter_by(barcode=item["barcode"]).first()
+        if product:
+            product.quantity -= item["quantity"]
+            
     db.commit()
     return {"status": "success", "message": f"{len(items)} items saved"}
 
