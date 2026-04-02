@@ -56,8 +56,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- USER PROFILE MODAL INJECTION ---
   const profileModalHtml = `
     <div class="profile-modal" id="profile-modal">
-      <div class="profile-modal-box">
+      <div class="profile-modal-box" style="width: 400px; max-height: 90vh; overflow-y: auto;">
         <h3>User Profile</h3>
+
+        <!-- STATIC DETAILS -->
+        <div id="prof-static-details" style="background:#f5f6fa; padding:10px; border-radius:6px; margin-bottom:15px; font-size:14px; line-height:1.6;">
+          Loading details...
+        </div>
+
+        <h4 style="margin-bottom: 10px; margin-top: 0; color: #1f3a5f;">Edit Information</h4>
         <label>Address</label>
         <input type="text" id="prof-address" />
         <label>Store Name</label>
@@ -90,6 +97,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch(`https://inventory-python.onrender.com/user/${user.id}`);
       if(res.ok) {
         const data = await res.json();
+        
+        const staticHtml = `
+          <strong>Username:</strong> ${data.username}<br>
+          <strong>Email:</strong> ${data.email}<br>
+          <strong>Name:</strong> ${data.firstname} ${data.middlename ? data.middlename + ' ' : ''}${data.lastname}<br>
+          <strong>Registered:</strong> ${data.date || 'unknown'}<br>
+          <strong>Status:</strong> ${data.verified ? '<span style="color:#27ae60;">Verified</span>' : '<span style="color:#e74c3c;">Unverified</span>'}
+        `;
+        document.getElementById("prof-static-details").innerHTML = staticHtml;
+
         document.getElementById("prof-address").value = data.address || "";
         document.getElementById("prof-storename").value = data.storename || "";
         document.getElementById("prof-storelocation").value = data.storelocation || "";

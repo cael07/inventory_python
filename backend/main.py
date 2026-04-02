@@ -320,9 +320,15 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return {
         "id": user.id,
         "username": user.username,
+        "email": user.email,
+        "firstname": user.firstname,
+        "middlename": user.middlename,
+        "lastname": user.lastname,
         "address": user.address,
         "storename": user.storename,
-        "storelocation": user.storelocation
+        "storelocation": user.storelocation,
+        "verified": user.verified,
+        "date": user.date.strftime("%Y-%m-%d %H:%M:%S") if user.date else None
     }
 
 @app.put("/user/{user_id}")
