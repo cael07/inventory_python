@@ -204,8 +204,16 @@ input {
         <label>Price</label>
         <input v-model.number="updateForm.price" type="number" min="0.01" step="0.01" required />
 
-        <label>Add Quantity</label>
+        <p style="margin: 8px 0; font-size: 14px; color: #3498db; font-weight: bold;">
+          Current Stock: {{ updateForm.existing_quantity }}
+        </p>
+
+        <label>Quantity to Add</label>
         <input v-model.number="updateForm.quantity" type="number" min="1" required />
+
+        <p style="margin: 8px 0; font-size: 14px; color: #27ae60; font-weight: bold;" v-if="updateForm.quantity > 0">
+          New Total Stock: {{ updateForm.existing_quantity + updateForm.quantity }}
+        </p>
 
         <label>Remark</label>
         <input v-model="updateForm.remark" />
@@ -215,13 +223,12 @@ input {
       </div>
     </div>
 
-    <!-- LAST 5 -->
-    <div class="recent">
-      <h3>🧾 Latest 5 Products</h3>
+      <div class="recent">
+      <h3>🧾 Latest 5 Updates (Added Qty)</h3>
       <div v-if="recentProducts.length === 0">No products yet</div>
       <div v-for="p in recentProducts" :key="p.id" class="recent-item">
         <b>{{ p.name }}</b><br>
-        {{ p.barcode }} — ₱{{ p.price }} — Qty: {{ p.quantity }}
+        {{ p.barcode }} — ₱{{ p.price }} — <span style="color:#27ae60; font-weight:bold;">Added Qty: {{ p.quantity }}</span>
       </div>
     </div>
   </div>
@@ -237,7 +244,7 @@ Vue.createApp({
       showModal: false,
       showUpdateModal: false,
       form: { barcode: "", name: "", price: "", quantity: "" },
-      updateForm: { barcode: "", name: "", price: "", quantity: "", remark: "" },
+      updateForm: { barcode: "", name: "", price: "", existing_quantity: 0, quantity: "", remark: "" },
       recentProducts: [],
       showManualModal: false,
 manual: {
@@ -318,6 +325,7 @@ async saveManual() {
                 barcode: data.barcode,
                 name: data.name,
                 price: data.price,
+                existing_quantity: data.quantity || 0,
                 quantity: "",
                 remark: ""
               };

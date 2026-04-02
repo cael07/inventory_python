@@ -63,8 +63,16 @@
     <label>Price</label>
     <input v-model="updateForm.price" type="number" placeholder="Price" />
 
-    <label>Quantity</label>
-    <input v-model="updateForm.quantity" type="number" placeholder="Add Quantity" />
+    <p style="margin: 8px 0; font-size: 14px; color: #3498db; font-weight: bold;">
+      Current Stock: {{ updateForm.existing_quantity }}
+    </p>
+
+    <label>Quantity to Add</label>
+    <input v-model.number="updateForm.quantity" type="number" placeholder="Add Quantity" />
+
+    <p style="margin: 8px 0; font-size: 14px; color: #27ae60; font-weight: bold;" v-if="updateForm.quantity > 0">
+      New Total Stock: {{ updateForm.existing_quantity + updateForm.quantity }}
+    </p>
 
     <label>Remark</label>
     <input v-model="updateForm.remark" placeholder="Remark" />
@@ -103,7 +111,7 @@ Vue.createApp({
       existing: false,
       reader: null,
       form: { barcode: "", name: "", price: "", quantity: 0 },
-      updateForm: { barcode: "", name: "", price: 0, quantity: 0, remark: "" },
+      updateForm: { barcode: "", name: "", price: 0, existing_quantity: 0, quantity: 0, remark: "" },
       products: [],
       monitoring: []
     }
@@ -127,6 +135,7 @@ Vue.createApp({
                 this.updateForm.barcode = data.barcode;
                 this.updateForm.name = data.name;
                 this.updateForm.price = data.price;
+                this.updateForm.existing_quantity = data.quantity || 0;
                 this.updateForm.quantity = 0;
                 this.updateForm.remark = "";
                 this.showUpdateModal = true;
