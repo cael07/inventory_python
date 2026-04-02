@@ -320,7 +320,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return {
         "id": user.id,
         "username": user.username,
-        "email": user.email,
+        "email": user.useremail,
         "firstname": user.firstname,
         "middlename": user.middlename,
         "lastname": user.lastname,
@@ -328,7 +328,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         "storename": user.storename,
         "storelocation": user.storelocation,
         "verified": user.verified,
-        "date": user.date.strftime("%Y-%m-%d %H:%M:%S") if user.date else None
+        "date": user.created_at.strftime("%Y-%m-%d %H:%M:%S") if user.created_at else None
     }
 
 @app.put("/user/{user_id}")
@@ -359,7 +359,7 @@ def get_users(db: Session = Depends(get_db)):
             {
                 "id": u.id,
                 "username": u.username,
-                "email": u.email,
+                "email": u.useremail,
                 "firstname": u.firstname,
                 "middlename": u.middlename,
                 "lastname": u.lastname,
@@ -367,7 +367,7 @@ def get_users(db: Session = Depends(get_db)):
                 "storelocation": u.storelocation,
                 "address": u.address,
                 "verified": u.verified,
-                "date": u.date.strftime("%Y-%m-%d %H:%M:%S") if u.date else None
+                "date": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if u.created_at else None
             }
             for u in users
         ]
