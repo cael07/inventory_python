@@ -126,10 +126,6 @@
     <button @click="cancelPOS" :disabled="!posActive">❌ Cancel</button>
 
     <button @click="donePOS" :disabled="!posActive">✅ Done</button>
-
-    <span class="grand-total" v-if="items.length">
-      ₱ {{ grandTotal }}
-    </span>
   </div>
 
   <div class="paid-info" v-if="paidAmount !== null">
@@ -147,8 +143,15 @@
   🔍 Manual Search
 </button>
 
-    <b>Scan Quantity:</b>
-    <input type="number" min="1" v-model.number="scanQty">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <b>Qty:</b>
+        <input type="number" min="1" v-model.number="scanQty" style="width: 60px;">
+      </div>
+      <span class="grand-total" v-if="items.length">
+        Total: ₱{{ grandTotal }}
+      </span>
+    </div>
   </div>
 
   <video id="video"></video>
