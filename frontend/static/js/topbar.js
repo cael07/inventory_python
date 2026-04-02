@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       <div class="dropdown-divider"></div>
 
-      <a href="#">💬 Messages</a>
+      <a href="messages.html">💬 Messages</a>
 
       <div class="dropdown-divider"></div>
 

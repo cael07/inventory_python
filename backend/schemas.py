@@ -44,3 +44,7 @@ class UserUpdate(BaseModel):
     storename: Optional[str] = None
     storelocation: Optional[str] = None
     password: Optional[str] = None
+
+class MessageCreate(BaseModel):
+    receiver_id: int
+    content: str

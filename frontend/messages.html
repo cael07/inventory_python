@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Messages - Messenger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/img/cael.ico" type="image/x-icon">
+  
+  <script src="https://unpkg.com/vue@3"></script>
+
+  <!-- 🔷 Reusable Top Bar -->
+  <link rel="stylesheet" href="/static/css/topbar.css">
+  <script src="/static/js/topbar.js" defer></script>
+
+  <style>
+    body {
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      background: #f0f2f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .messenger-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 50px);
+      overflow: hidden;
+    }
+    
+    /* LEFT SIDEBAR - CONTACTS */
+    .sidebar {
+      width: 320px;
+      background: #ffffff;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+    }
+    .contact-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 15px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.2s;
+    }
+    .contact-item:hover {
+      background: #f5f6fa;
+    }
+    .contact-item.active {
+      background: #e6f2ff;
+    }
+    .contact-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6dd5ed, #2193b0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: bold;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+    .contact-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .contact-name {
+      font-weight: 600;
+      color: #111;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .contact-msg {
+      font-size: 13px;
+      color: #666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .contact-msg.unread {
+      font-weight: bold;
+      color: #1f3a5f;
+    }
+    .unread-badge {
+      background: #e74c3c;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+      height: 20px;
+      min-width: 20px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+      margin-left: 10px;
+      box-shadow: 0 2px 4px rgba(231,76,60,0.3);
+    }
+
+    /* RIGHT SIDE - CHAT AREA */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+    }
+    .chat-header {
+      padding: 15px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      background: #fff;
+    }
+    .chat-header .contact-avatar {
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    .chat-header-info h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .chat-header-info p {
+      margin: 0;
+      font-size: 13px;
+      color: #888;
+    }
+    
+    .chat-history {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .message-row {
+      display: flex;
+      margin-bottom: 15px;
+      max-width: 70%;
+    }
+    .message-row.me {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .message-row.them {
+      align-self: flex-start;
+    }
+    
+    .message-bubble {
+      padding: 10px 15px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.4;
+      position: relative;
+      word-wrap: break-word;
+    }
+    .message-row.them .message-bubble {
+      background: #e4e6eb;
+      color: #050505;
+      border-top-left-radius: 4px;
+    }
+    .message-row.me .message-bubble {
+      background: linear-gradient(135deg, #0084ff, #00C6FF);
+      color: #ffffff;
+      border-top-right-radius: 4px;
+    }
+    
+    .message-time {
+      font-size: 11px;
+      color: #999;
+      margin-top: 5px;
+      text-align: right;
+    }
+    .message-row.them .message-time {
+      text-align: left;
+    }
+
+    .chat-input-area {
+      padding: 15px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+    }
+    .chat-input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      font-size: 15px;
+      outline: none;
+      transition: border 0.3s;
+    }
+    .chat-input:focus {
+      border-color: #0084ff;
+    }
+    .chat-send-btn {
+      background: #0084ff;
+      color: white;
+      border: none;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      margin-left: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .chat-send-btn:hover {
+      background: #0073e6;
+      transform: scale(1.05);
+    }
+    .chat-send-btn svg {
+      fill: none;
+      stroke: white;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      width: 20px;
+      height: 20px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        display: block;
+      }
+      .chat-area {
+        display: none; /* Mobile view toggling */
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 10;
+        padding-top: 50px; /* Offset topbar */
+      }
+      .messenger-container.chat-active .sidebar {
+        display: none;
+      }
+      .messenger-container.chat-active .chat-area {
+        display: flex;
+        height: calc(100vh - 50px);
+      }
+      .back-btn {
+        display: block !important;
+        margin-right: 10px;
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+      }
+    }
+    .back-btn { display: none; }
+    
+    .empty-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+    }
+    .empty-chat svg {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+      fill: #e4e6eb;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app" class="messenger-container" :class="{'chat-active': activeChat}">
+  
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      Chats
+    </div>
+    <div class="contact-list">
+      <div v-if="contacts.length === 0" style="padding: 20px; text-align: center; color: #888;">
+        Loading users...
+      </div>
+      <div v-for="c in contacts" :key="c.user_id" 
+           class="contact-item" 
+           :class="{active: activeChat && activeChat.user_id === c.user_id}"
+           @click="openChat(c)">
+        <div class="contact-avatar">
+          {{ c.firstname ? c.firstname.charAt(0).toUpperCase() : c.username.charAt(0).toUpperCase() }}
+        </div>
+        <div class="contact-info">
+          <div class="contact-name">{{ c.firstname }} {{ c.lastname }}</div>
+          <div class="contact-msg" :class="{unread: c.unread_count > 0}">
+            {{ c.last_message || 'Start a conversation...' }}
+          </div>
+        </div>
+        <div class="unread-badge" v-if="c.unread_count > 0">
+          {{ c.unread_count }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT CHAT AREA -->
+  <div class="chat-area" v-if="activeChat">
+    <div class="chat-header">
+      <button class="back-btn" @click="activeChat = null">🔙</button>
+      <div class="contact-avatar">
+        {{ activeChat.firstname ? activeChat.firstname.charAt(0).toUpperCase() : activeChat.username.charAt(0).toUpperCase() }}
+      </div>
+      <div class="chat-header-info">
+        <h3>{{ activeChat.firstname }} {{ activeChat.lastname }}</h3>
+        <p>{{ activeChat.storename || 'Registered User' }}</p>
+      </div>
+    </div>
+    
+    <div class="chat-history" id="chat-history" ref="chatHistory">
+      <div v-if="messages.length === 0" style="text-align:center; color:#999; margin-top:20px;">
+        This is the beginning of your chat history.
+      </div>
+      
+      <div v-for="m in messages" :key="m.id" class="message-row" :class="m.sender_id === myUserId ? 'me' : 'them'">
+        <div>
+          <div class="message-bubble">{{ m.content }}</div>
+          <div class="message-time">{{ m.timestamp }}</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-input-area">
+      <input type="text" class="chat-input" placeholder="Type a message..." v-model="newMessage" @keyup.enter="sendMessage">
+      <button class="chat-send-btn" @click="sendMessage">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+      </button>
+    </div>
+  </div>
+  
+  <div class="chat-area empty-chat" v-else>
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/></svg>
+    <h2>Select a conversation</h2>
+    <p>Choose a contact from the left panel to start chatting.</p>
+  </div>
+
+</div>
+
+<script>
+const API = "https://inventory-python.onrender.com";
+
+Vue.createApp({
+  data() {
+    return {
+      contacts: [],
+      messages: [],
+      activeChat: null,
+      newMessage: "",
+      myUserId: null,
+      pollInterval: null
+    }
+  },
+  methods: {
+    async fetchContacts() {
+      if(!this.myUserId) return;
+      try {
+        const res = await fetch(`${API}/messages/contacts/${this.myUserId}`);
+        if(res.ok) {
+          const data = await res.json();
+          this.contacts = data;
+        }
+      } catch(e) {
+        console.error("Poll Contacts Error:", e);
+      }
+    },
+    async fetchMessages() {
+      if(!this.activeChat || !this.myUserId) return;
+      try {
+        const res = await fetch(`${API}/messages/${this.myUserId}/${this.activeChat.user_id}`);
+        if(res.ok) {
+          const data = await res.json();
+          const oldLen = this.messages.length;
+          this.messages = data;
+          
+          if(data.length > oldLen) {
+            this.scrollToBottom();
+            this.markAsRead(); // Mark new incoming messages as read
+          }
+        }
+      } catch(e) {
+        console.error("Poll Messages Error:", e);
+      }
+    },
+    async openChat(contact) {
+      this.activeChat = contact;
+      this.messages = [];
+      await this.fetchMessages();
+      this.scrollToBottom();
+      this.markAsRead();
+      
+      // Instantly clear unread count locally for better UX
+      const idx = this.contacts.findIndex(c => c.user_id === contact.user_id);
+      if(idx >= 0) this.contacts[idx].unread_count = 0;
+    },
+    async markAsRead() {
+      if(!this.activeChat || !this.myUserId) return;
+      try {
+        await fetch(`${API}/messages/${this.myUserId}/read/${this.activeChat.user_id}`, { method: "POST" });
+      } catch(e) {
+        console.error(e);
+      }
+    },
+    async sendMessage() {
+      if(!this.newMessage.trim() || !this.activeChat) return;
+      
+      const content = this.newMessage.trim();
+      this.newMessage = ""; // Optimistic clear
+      
+      // Optimistic append
+      this.messages.push({
+        id: Date.now(),
+        sender_id: this.myUserId,
+        receiver_id: this.activeChat.user_id,
+        content: content,
+        timestamp: "Now",
+        is_read: false
+      });
+      this.scrollToBottom();
+      
+      this.updateContactPreview(content);
+
+      try {
+        await fetch(`${API}/messages/${this.myUserId}`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            receiver_id: this.activeChat.user_id,
+            content: content
+          })
+        });
+        this.fetchContacts(); // Update contacts order immediately
+      } catch(e) {
+        console.error("Send Error:", e);
+      }
+    },
+    updateContactPreview(msg) {
+      if(!this.activeChat) return;
+      const idx = this.contacts.findIndex(c => c.user_id === this.activeChat.user_id);
+      if(idx >= 0) {
+        this.contacts[idx].last_message = msg;
+        // Bump to top
+        const c = this.contacts.splice(idx, 1)[0];
+        this.contacts.unshift(c);
+      }
+    },
+    scrollToBottom() {
+      setTimeout(() => {
+        const el = this.$refs.chatHistory;
+        if(el) el.scrollTop = el.scrollHeight;
+      }, 50);
+    }
+  },
+  mounted() {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if(!user) {
+      window.location.href = "login.html";
+      return;
+    }
+    this.myUserId = user.id;
+    
+    this.fetchContacts();
+    
+    // Polling setup (every 3 seconds)
+    this.pollInterval = setInterval(() => {
+        this.fetchContacts();
+        this.fetchMessages();
+    }, 3000);
+  },
+  beforeUnmount() {
+    if(this.pollInterval) clearInterval(this.pollInterval);
+  }
+}).mount("#app");
+</script>
+
+</body>
+</html>

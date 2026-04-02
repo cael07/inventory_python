@@ -9,8 +9,8 @@ from datetime import date, timedelta, datetime
 from sqlalchemy.types import Date
 from email.message import EmailMessage
 from backend.database import SessionLocal, engine
-from backend.models import User, Product, ProductMonitoring, Purchase
-from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister, UserUpdate
+from backend.models import User, Product, ProductMonitoring, Purchase, Message
+from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister, UserUpdate, MessageCreate
 from backend import auth
 
 import uuid
@@ -31,6 +31,7 @@ ProductMonitoring.__table__.create(bind=engine, checkfirst=True)
 User.__table__.create(bind=engine, checkfirst=True)
 
 Purchase.__table__.create(bind=engine, checkfirst=True)
+Message.__table__.create(bind=engine, checkfirst=True)
 
 # -------------------------------------------------
 # APP
@@ -372,6 +373,82 @@ def get_users(db: Session = Depends(get_db)):
             for u in users
         ]
     }
+
+# ---------------- MESSAGES ----------------
+@app.get("/messages/contacts/{user_id}")
+def get_message_contacts(user_id: int, db: Session = Depends(get_db)):
+    users = db.query(User).filter(User.id != user_id).all()
+    contacts = []
+    for u in users:
+        last_msg = db.query(Message).filter(
+            or_(
+                (Message.sender_id == user_id) & (Message.receiver_id == u.id),
+                (Message.sender_id == u.id) & (Message.receiver_id == user_id)
+            )
+        ).order_by(Message.timestamp.desc()).first()
+        
+        unread_count = db.query(Message).filter(
+            Message.sender_id == u.id,
+            Message.receiver_id == user_id,
+            Message.is_read == False
+        ).count()
+        
+        contacts.append({
+            "user_id": u.id,
+            "username": u.username,
+            "firstname": u.firstname,
+            "lastname": u.lastname,
+            "storename": u.storename,
+            "last_message": last_msg.content if last_msg else None,
+            "last_message_time": last_msg.timestamp.strftime("%Y-%m-%d %H:%M:%S") if last_msg else None,
+            "unread_count": unread_count
+        })
+        
+    contacts.sort(key=lambda x: x["last_message_time"] or "", reverse=True)
+    return contacts
+
+@app.get("/messages/{user_id}/{other_id}")
+def get_message_history(user_id: int, other_id: int, db: Session = Depends(get_db)):
+    history = db.query(Message).filter(
+        or_(
+            (Message.sender_id == user_id) & (Message.receiver_id == other_id),
+            (Message.sender_id == other_id) & (Message.receiver_id == user_id)
+        )
+    ).order_by(Message.timestamp.asc()).all()
+    
+    return [
+        {
+            "id": m.id,
+            "sender_id": m.sender_id,
+            "receiver_id": m.receiver_id,
+            "content": m.content,
+            "timestamp": m.timestamp.strftime("%H:%M") if m.timestamp else "",
+            "is_read": m.is_read
+        } for m in history
+    ]
+
+@app.post("/messages/{user_id}")
+def send_message(user_id: int, data: MessageCreate, db: Session = Depends(get_db)):
+    msg = Message(
+        sender_id=user_id,
+        receiver_id=data.receiver_id,
+        content=data.content
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return {"status": "success", "message": "Sent", "id": msg.id}
+
+@app.post("/messages/{user_id}/read/{other_id}")
+def mark_messages_read(user_id: int, other_id: int, db: Session = Depends(get_db)):
+    db.query(Message).filter(
+        Message.sender_id == other_id,
+        Message.receiver_id == user_id,
+        Message.is_read == False
+    ).update({"is_read": True})
+    db.commit()
+    return {"status": "success"}
+
 
 # ---------------- PRODUCTS ----------------
 @app.post("/product")
