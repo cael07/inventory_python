@@ -38,3 +38,9 @@ class PurchaseCreate(BaseModel):
     quantity: int
     total_price: float
     remark: Optional[str] = ""
+
+class UserUpdate(BaseModel):
+    address: Optional[str] = None
+    storename: Optional[str] = None
+    storelocation: Optional[str] = None
+    password: Optional[str] = None

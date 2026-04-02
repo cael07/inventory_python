@@ -10,7 +10,7 @@ from sqlalchemy.types import Date
 from email.message import EmailMessage
 from backend.database import SessionLocal, engine
 from backend.models import User, Product, ProductMonitoring, Purchase
-from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister
+from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister, UserUpdate
 from backend import auth
 
 import uuid
@@ -311,6 +311,37 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
     }
 
 
+
+@app.get("/user/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": user.id,
+        "username": user.username,
+        "address": user.address,
+        "storename": user.storename,
+        "storelocation": user.storelocation
+    }
+
+@app.put("/user/{user_id}")
+def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user_data.address:
+        user.address = user_data.address
+    if user_data.storename:
+        user.storename = user_data.storename
+    if user_data.storelocation:
+        user.storelocation = user_data.storelocation
+    if user_data.password:
+        user.password = auth.hash_password(user_data.password)
+        
+    db.commit()
+    return {"status": "success", "message": "User updated successfully"}
 
 @app.get("/users")
 def get_users(db: Session = Depends(get_db)):

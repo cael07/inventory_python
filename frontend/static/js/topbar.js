@@ -53,8 +53,104 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.body.prepend(topbar);
 
+  // --- USER PROFILE MODAL INJECTION ---
+  const profileModalHtml = `
+    <div class="profile-modal" id="profile-modal">
+      <div class="profile-modal-box">
+        <h3>User Profile</h3>
+        <label>Address</label>
+        <input type="text" id="prof-address" />
+        <label>Store Name</label>
+        <input type="text" id="prof-storename" />
+        <label>Store Location</label>
+        <input type="text" id="prof-storelocation" />
+        <label>New Password (Optional)</label>
+        <input type="password" id="prof-password" placeholder="Leave blank to keep current" />
+        <div class="btn-row">
+          <button id="prof-save-btn">Save</button>
+          <button id="prof-cancel-btn" class="btn-cancel">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML("beforeend", profileModalHtml);
+
   // 👤 SET USERNAME
   document.getElementById("topbar-username").innerText = user.username;
+
+  // 👤 PROFILE MODAL LOGIC
+  const profileModal = document.getElementById("profile-modal");
+  const usernameBtn = document.querySelector(".dropdown-user");
+  usernameBtn.style.cursor = "pointer";
+  
+  usernameBtn.title = "Edit Profile";
+  
+  usernameBtn.addEventListener("click", async () => {
+    try {
+      const res = await fetch(`https://inventory-python.onrender.com/user/${user.id}`);
+      if(res.ok) {
+        const data = await res.json();
+        document.getElementById("prof-address").value = data.address || "";
+        document.getElementById("prof-storename").value = data.storename || "";
+        document.getElementById("prof-storelocation").value = data.storelocation || "";
+        document.getElementById("prof-password").value = "";
+        profileModal.classList.add("show");
+        
+        // Hide dropdown
+        document.getElementById("hamburger").classList.remove("active");
+        document.getElementById("dropdown-menu").classList.remove("show");
+      } else {
+        alert("Could not load user profile");
+      }
+    } catch(e) {
+      console.error(e);
+      alert("Error loading profile");
+    }
+  });
+
+  document.getElementById("prof-cancel-btn").addEventListener("click", () => {
+    profileModal.classList.remove("show");
+  });
+
+  document.getElementById("prof-save-btn").addEventListener("click", async () => {
+    const payload = {};
+    const addr = document.getElementById("prof-address").value;
+    const store = document.getElementById("prof-storename").value;
+    const loc = document.getElementById("prof-storelocation").value;
+    const pwd = document.getElementById("prof-password").value;
+    
+    if(addr) payload.address = addr;
+    if(store) payload.storename = store;
+    if(loc) payload.storelocation = loc;
+    if(pwd) payload.password = pwd;
+
+    try {
+      const btn = document.getElementById("prof-save-btn");
+      btn.innerText = "Saving...";
+      btn.disabled = true;
+      
+      const res = await fetch(`https://inventory-python.onrender.com/user/${user.id}`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      });
+      if(res.ok) {
+        alert("Profile updated successfully!");
+        profileModal.classList.remove("show");
+        user.storename = store;
+        localStorage.setItem("user", JSON.stringify(user));
+      } else {
+        alert("Failed to update profile");
+      }
+      btn.innerText = "Save";
+      btn.disabled = false;
+    } catch(e) {
+      console.error(e);
+      alert("Error updating profile");
+      document.getElementById("prof-save-btn").innerText = "Save";
+      document.getElementById("prof-save-btn").disabled = false;
+    }
+  });
 
   // 🍔 TOGGLE DROPDOWN
   const hamburger = document.getElementById("hamburger");
