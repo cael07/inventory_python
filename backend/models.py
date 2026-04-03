@@ -26,11 +26,11 @@ class User(Base):
     
 class Product(Base):
     __tablename__ = "products"
-    id = Column(Integer, primary_key=True)
-    barcode = Column(String, unique=True)
+    id = Column(Integer, primary_key=True, index=True)
+    barcode = Column(String, unique=True, index=True)
     name = Column(String)
     price = Column(Float)
-    quantity = Column(Integer, default=0)
+    quantity = Column(Integer)
     store_name = Column(String, nullable=True)
     created_by = Column(String, nullable=True)
 
@@ -42,22 +42,22 @@ class ProductMonitoring(Base):
     price = Column(Float)
     quantity = Column(Integer)
     total_price = Column(Float)
-    remark = Column(String, default="")
-    date = Column(DateTime(timezone=True), server_default=func.now())
+    remark = Column(String)
+    date = Column(DateTime, default=func.now())
     store_name = Column(String, nullable=True)
     created_by = Column(String, nullable=True)
 
 class Purchase(Base):
     __tablename__ = "purchases"
     id = Column(Integer, primary_key=True, index=True)
-    purchase_number = Column(String)  # e.g., "POS-0001"
+    purchase_number = Column(String)
     barcode = Column(String)
     name = Column(String)
     price = Column(Float)
     quantity = Column(Integer)
     total_price = Column(Float)
-    remark = Column(String, default="")
-    date = Column(DateTime(timezone=True), server_default=func.now())
+    date = Column(DateTime, default=func.now())
+    remark = Column(String, nullable=True)
     store_name = Column(String, nullable=True)
     created_by = Column(String, nullable=True)
 

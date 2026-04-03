@@ -34,11 +34,26 @@
     .modal ul { padding-left:18px; }
     .modal li { margin-bottom:6px; }
     .close-btn { margin-top:15px; padding:8px 14px; background:#333; color:white; border:none; border-radius:5px; cursor:pointer; }
+    .header { margin-bottom: 20px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
   </style>
 </head>
 <body>
 
 <div class="page">
+    <!-- Header -->
+    <div class="header" id="welcomeBanner">
+      <div class="welcome-text">
+        <h1 style="margin:0; font-size: 24px;">Welcome!</h1>
+        <p style="margin:5px 0 0 0; opacity:0.8; font-size:14px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Store: <strong id="storeName" style="color:#0084ff;">Loading...</strong> 
+          | 
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px; margin-left:8px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          Identity: <strong id="fullName">Loading...</strong>
+        </p>
+      </div>
+    </div>
+
   <div class="alert-container">
     <button id="alertBtn" class="alert-btn alert-gray" style="display:none;">
       Stock <span id="alertBadge" class="alert-badge pulse">0</span>
@@ -208,6 +223,11 @@ document.querySelectorAll('input[name="topType"]').forEach(r=>{
     loadTopProducts(e.target.value);
   });
 });
+
+/* ---------------- SESSION DISPLAY ---------------- */
+const u = JSON.parse(localStorage.getItem("user") || "{}");
+document.getElementById("storeName").innerText = u.storename || "No Store Set (Edit Profile)";
+document.getElementById("fullName").innerText = `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.username || "Unknown";
 
 /* ---------------- LOAD ---------------- */
 checkLowStock();

@@ -84,15 +84,19 @@ document.addEventListener("DOMContentLoaded", () => {
           <span id="global-unread-badge" style="display:none; background:#fa3e3e; color:white; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:5px; font-weight:bold;">0</span>
         </a>
 
-        <div class="dropdown-divider"></div>
-        
-        <div class="dropdown-user" style="padding: 10px 16px; color: white;">
-          👤 <strong id="topbar-username"></strong>
+        <div class="dropdown" id="user-dropdown">
+        <div class="dropdown-user">
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px; opacity:0.8;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+           <div style="display:flex; flex-direction:column; align-items:flex-start;">
+              <span style="font-weight:600; color:#fff;">${user.username}</span>
+              <span style="font-size:11px; opacity:0.7; color:#fff;">${user.storename || 'No Store Set'}</span>
+           </div>
         </div>
-
-        <div class="dropdown-divider"></div>
-
-        <a href="#" id="logout-btn">🚪 Log Out</a>
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:8px 0;">
+        <a href="#" id="logout-btn" style="color: #ff9999; display:flex; align-items:center;">
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+           Logout
+        </a>
       </div>
     `;
 

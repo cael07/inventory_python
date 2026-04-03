@@ -564,7 +564,11 @@ def mark_messages_read(user_id: int, other_id: int, db: Session = Depends(get_db
     return {"status": "success"}
 
 
-# ---------------- PRODUCTS ----------------
+    # -------------------------------------------------
+    # PERSISTENCE LOGIC (V3 - Audited)
+    # -------------------------------------------------
+    return f"Product {product.name} saved successfully by {product.created_by}"
+
 @app.post("/product")
 def save_product(p: ProductCreate, db: Session = Depends(get_db)):
     # 1️⃣ Save product (current stock)
@@ -707,6 +711,17 @@ def update_product_item(
     data: ProductMonitoringCreate,
     db: Session = Depends(get_db)
 ):
+    # --- AUTO-DETECTION FALLBACK ---
+    s_name = data.store_name
+    c_by = data.created_by
+    
+    # If the frontend failed to send the name/store, try to find it via username
+    if not s_name or not c_by:
+        user = db.query(User).filter(User.username == c_by).first()
+        if user:
+            s_name = s_name or user.storename
+            c_by = c_by or user.username
+
     # Fetch product
     product = db.query(Product).filter_by(barcode=barcode).first()
 
@@ -717,33 +732,32 @@ def update_product_item(
             name=data.name,
             price=data.price,
             quantity=data.quantity,
-            store_name=data.store_name,
-            created_by=data.created_by
+            store_name=s_name,
+            created_by=c_by
         )
         db.add(product)
     else:
         # Update quantity
         product.quantity += data.quantity
         product.price = data.price
-        product.store_name = data.store_name
-        product.created_by = data.created_by
+        product.store_name = s_name
+        product.created_by = c_by
+        
     # Add monitoring entry
     monitoring = ProductMonitoring(
         barcode=data.barcode,
         name=data.name,
         price=data.price,
         quantity=data.quantity,
-        total_price=data.total_price,  # comes from frontend or calculate here
+        total_price=data.total_price,
         remark=data.remark,
-        store_name=data.store_name,
-        created_by=data.created_by
+        store_name=s_name,
+        created_by=c_by
     )
     db.add(monitoring)
-
-    # Commit everything at once
     db.commit()
 
-    return {"message": "Product updated and monitored"}
+    return {"message": "Success", "saved_as": c_by, "store": s_name}
 
 @app.get("/products_manual_search")
 def products_manual_search(search: str, db: Session = Depends(get_db)):
