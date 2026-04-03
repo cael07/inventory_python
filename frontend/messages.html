@@ -34,15 +34,14 @@
       flex-direction: column;
     }
 
-    /* Top bar hide on mobile to save space */
-    @media (max-width: 768px) {
-      .topbar { display: none !important; }
-    }
+    /* Keep top bar visible on mobile as requested */
+    .topbar { position: relative; z-index: 2000; }
 
     .messenger-wrapper {
       display: flex;
       flex: 1;
-      height: 100%;
+      height: calc(100vh - 50px); /* Match topbar.css height */
+      height: calc(100svh - 50px);
       overflow: hidden;
       position: relative;
     }
@@ -70,26 +69,11 @@
       justify-content: space-between;
     }
 
-    .header-top h1 {
-      font-size: 24px;
-      font-weight: 800;
-      margin: 0;
-    }
-
-    .header-icons {
-      display: flex;
-      gap: 12px;
-    }
-
+    .header-top h1 { font-size: 24px; font-weight: 800; margin: 0; }
+    .header-icons { display: flex; gap: 12px; }
     .header-icon-btn {
-      width: 36px;
-      height: 36px;
-      background: var(--secondary-bg);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
+      width: 36px; height: 36px; background: var(--secondary-bg); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
 
     .search-container { position: relative; }
@@ -110,15 +94,14 @@
     }
     .active-avatar-wrap { position: relative; }
     .active-avatar {
-      width: 52px; height: 52px; border-radius: 50%; background: #eee;
-      display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: #fff;
+      width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: #fff;
     }
     .online-indicator {
       width: 14px; height: 14px; background: #31a24c; border: 3px solid #fff; border-radius: 50%;
       position: absolute; bottom: 2px; right: 2px;
     }
     .active-name {
-      font-size: 12px; color: var(--text-secondary); text-align: center;
+      font-size: 11px; color: var(--text-secondary); text-align: center;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
     }
 
@@ -132,8 +115,7 @@
 
     .conv-avatar-wrap { position: relative; flex-shrink: 0; }
     .conv-avatar {
-      width: 56px; height: 56px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #fff;
+      width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #fff;
     }
     
     .conv-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -142,12 +124,11 @@
     .conv-last-msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
     .conv-time { white-space: nowrap; margin-left: 4px; }
 
-    /* Unread Styling */
     .conversation-item.unread .conv-name { font-weight: 700; }
     .conversation-item.unread .conv-last-msg { font-weight: 700; color: var(--text-main); }
     .unread-indicator { width: 12px; height: 12px; background: var(--messenger-blue); border-radius: 50%; flex-shrink: 0; margin-left: 8px; }
 
-    /* --- CHAT AREA --- */
+    /* --- CHAT AREA (MESSAGE FORM) --- */
     .chat-container { flex: 1; display: flex; flex-direction: column; background: #fff; position: relative; }
     .chat-header {
       padding: 8px 16px; height: 62px; display: flex; align-items: center; justify-content: space-between;
@@ -166,8 +147,7 @@
     .message-bubble.them { background: #f0f0f0; color: var(--text-main); align-self: flex-start; }
     .message-bubble.me { background: var(--messenger-blue); color: #fff; align-self: flex-end; }
 
-    /* CHAT INPUT AREA */
-    .chat-input-row { padding: 10px 16px; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--border-color); background: #fff; z-index: 10; }
+    .chat-input-row { padding: 10px 16px; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--border-color); background: #fff; }
     .input-field {
       flex: 1; background: #f0f2f5; border: none; padding: 10px 16px; border-radius: 20px; font-size: 15px; outline: none;
     }
@@ -175,26 +155,27 @@
 
     /* --- MOBILE RESPONSIVE --- */
     @media (max-width: 768px) {
-      .sidebar { 
-        width: 100%; 
-        border-right: none; 
-        display: flex;
-      }
-      /* When chat is active, hide sidebar and show chat box fullscreen */
+      .sidebar { width: 100%; border-right: none; display: flex; }
+      
+      /* Use a more robust way to toggle views on mobile */
+      [v-cloak] { display: none; }
+      
       .mobile-view-active .sidebar {
         display: none !important;
       }
       .chat-container {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        position: fixed; 
+        top: 0; left: 0; right: 0; bottom: 0;
         z-index: 1000;
         display: none; 
         width: 100%;
         height: 100%;
       }
+      /* If chat is active on mobile, cover the whole screen */
       .mobile-view-active .chat-container {
         display: flex !important;
       }
-      .back-btn { display: block; }
+      .back-btn { display: block; padding-right: 8px; }
       .empty-screen-desktop { display: none !important; }
     }
 
@@ -202,13 +183,16 @@
     .icon-svg { width: 24px; height: 24px; fill: currentColor; }
   </style>
 </head>
-<body>
+<body v-cloak>
 
-<div id="app" :class="{'mobile-view-active': activeChat}">
+<div id="app" :class="{'mobile-view-active': (activeChat != null)}">
+
+  <!-- Optional Global Topbar (Re-enabled) -->
+  <div class="topbar-container"></div><!-- topbar.js will inject here or target body -->
 
   <div class="messenger-wrapper">
     
-    <!-- SIDEBAR / CONTACT LIST -->
+    <!-- SIDEBAR -->
     <div class="sidebar">
       <div class="sidebar-header">
         <div class="header-top">
@@ -243,22 +227,19 @@
         </div>
       </div>
 
-      <!-- Chats List -->
       <div class="conversation-list">
         <div v-if="filteredContacts.length === 0" style="padding:40px; text-align:center; color:#888;">
-          <p v-if="loadingContacts">Loading...</p>
+          <p v-if="loading">Loading...</p>
           <p v-else>No users found.</p>
         </div>
         <div v-for="c in filteredContacts" :key="c.user_id" 
              class="conversation-item" 
              :class="{active: activeChat && activeChat.user_id === c.user_id, 'unread': c.unread_count > 0}" 
              @click="openChat(c)">
-          
           <div class="conv-avatar-wrap">
              <div class="conv-avatar" :style="{background: getRandomColor(c.user_id)}">{{ c.firstname.charAt(0) }}</div>
              <div v-if="c.is_online" class="online-indicator"></div>
           </div>
-          
           <div class="conv-info">
             <div class="conv-name">{{ c.firstname }} {{ c.lastname }}</div>
             <div class="conv-meta">
@@ -266,13 +247,12 @@
               <span v-if="c.last_message_time" class="conv-time">· {{ formatTime(c.last_message_time) }}</span>
             </div>
           </div>
-          
           <div v-if="c.unread_count > 0" class="unread-indicator"></div>
         </div>
       </div>
     </div>
 
-    <!-- CHAT AREA (MESSAGE FORM) -->
+    <!-- CHAT AREA -->
     <div class="chat-container" v-if="activeChat">
       <div class="chat-header">
         <div class="header-left">
@@ -292,30 +272,30 @@
       </div>
 
       <div class="chat-scroll" ref="chatHistory">
-        <div v-if="messages.length === 0" style="padding-top:40px; text-align:center;">
+        <div v-if="messages.length === 0" style="padding:40px 0; text-align:center;">
           <div class="conv-avatar" style="width:80px; height:80px; font-size:32px; margin:0 auto 12px auto; background:#ddd;">{{ activeChat.firstname.charAt(0) }}</div>
           <h3 style="margin:0;">{{ activeChat.firstname }}</h3>
-          <p style="color:#888; font-size:14px;">Messenger Contact</p>
+          <p style="color:#888; font-size:13px;">Messenger Contact</p>
         </div>
         <div v-for="m in messages" :key="m.id" class="message-bubble" :class="m.sender_id === myUserId ? 'me' : 'them'">
           {{ m.content }}
         </div>
       </div>
 
-      <div class="chat-input-row">
+      <div class="chat-input-row" @click.stop>
         <svg class="icon-svg" style="color:var(--messenger-blue);" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-        <input type="text" class="input-field" placeholder="Aa" v-model="newMessage" @keyup.enter="sendMessage">
+        <input type="text" class="input-field" placeholder="Aa" v-model="newMessage" @keyup.enter="sendMessage" @click.stop>
         <button class="send-btn" @click="sendMessage">
            <svg style="width:28px;height:28px;" viewBox="0 0 24 24"><path fill="currentColor" d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- Desktop PlaceHolder -->
+    <!-- Desktop -->
     <div v-else class="chat-container empty-screen-desktop">
-       <div style="color:#aaa; text-align:center;">
-          <h2 style="margin-bottom:8px;">Select a chat</h2>
-          <p>Choose an account to start messaging</p>
+       <div style="color:#aaa;">
+          <h2>Select a chat</h2>
+          <p>Start a conversation with a contact</p>
        </div>
     </div>
   </div>
@@ -328,7 +308,7 @@ Vue.createApp({
   data() {
     return {
       contacts: [], messages: [], activeChat: null, newMessage: "",
-      myUserId: null, searchQuery: "", pollInterval: null, loadingContacts: true
+      myUserId: null, searchQuery: "", pollInterval: null, loading: true
     }
   },
   computed: {
@@ -363,8 +343,8 @@ Vue.createApp({
           if (totalUnreadAfter > totalUnreadBefore) this.playPing();
           this.contacts = data;
         }
-      } catch(e) { console.error("Fetch contacts error", e); }
-      finally { this.loadingContacts = false; }
+      } catch(e) {}
+      finally { this.loading = false; }
     },
     async fetchMessages() {
       if(!this.activeChat || !this.myUserId) return;
@@ -375,12 +355,12 @@ Vue.createApp({
           if(data.length > this.messages.length) {
             this.messages = data;
             this.scrollToBottom();
-            this.markAsRead();
           }
         }
       } catch(e) {}
     },
     async openChat(contact) {
+      console.log("Opening chat with:", contact.firstname);
       this.activeChat = contact; 
       this.messages = [];
       await this.fetchMessages();
@@ -392,16 +372,24 @@ Vue.createApp({
     },
     async sendMessage() {
       if(!this.newMessage.trim() || !this.activeChat) return;
-      const content = this.newMessage.trim(); this.newMessage = "";
+      const content = this.newMessage.trim(); 
+      this.newMessage = "";
       this.messages.push({ id: Date.now(), sender_id: this.myUserId, content: content });
       this.scrollToBottom();
-      await fetch(`${API}/messages/${this.myUserId}`, {
-        method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ receiver_id: this.activeChat.user_id, content: content })
-      });
-      this.fetchContacts();
+      try {
+        await fetch(`${API}/messages/${this.myUserId}`, {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ receiver_id: this.activeChat.user_id, content: content })
+        });
+        this.fetchContacts();
+      } catch(e) {}
     },
-    scrollToBottom() { setTimeout(() => { const el = this.$refs.chatHistory; if(el) el.scrollTop = el.scrollHeight; }, 100); },
+    scrollToBottom() { 
+      setTimeout(() => { 
+        const el = this.$refs.chatHistory; 
+        if(el) el.scrollTop = el.scrollHeight; 
+      }, 100); 
+    },
     getRandomColor(id) { const colors = ['#0084ff', '#31a24c', '#f5c33b', '#fa3e3e', '#764abc', '#ff7800']; return colors[id % colors.length]; },
     formatTime(t) { 
       if(!t) return ''; 
@@ -420,7 +408,6 @@ Vue.createApp({
     this.pollInterval = setInterval(() => { 
         this.fetchContacts(); 
         this.fetchMessages(); 
-        // Ping activity
         fetch(`${API}/user/${this.myUserId}/ping`, { method: "POST" }).catch(()=>{});
     }, 4000);
   }
