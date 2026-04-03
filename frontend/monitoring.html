@@ -199,7 +199,7 @@
     <div class="table-wrap">
       <table v-if="rows.length > 0">
         <tr>
-          <th>#</th>
+          <th>ID</th>
           <th>Date</th>
           <th>Barcode</th>
           <th>Name</th>
@@ -212,8 +212,8 @@
         </tr>
 
         <tr v-for="(m, i) in rows" :key="m.id">
-          <td>{{ i + 1 }}</td>
-          <td>{{ formatDate(m.date) }}</td>
+          <td style="font-size:11px; color:#888;">#{{ m.id }}</td>
+          <td>{{ m.date.replace("T", " ").split(".")[0] }}</td>
           <td>{{ m.barcode }}</td>
           <td>{{ m.name }}</td>
           <td>₱{{ m.price }}</td>
