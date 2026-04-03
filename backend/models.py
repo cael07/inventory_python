@@ -30,7 +30,9 @@ class Product(Base):
     barcode = Column(String, unique=True)
     name = Column(String)
     price = Column(Float)
-    quantity = Column(Integer, default=0)  # NEW
+    quantity = Column(Integer, default=0)
+    store_name = Column(String, nullable=True)
+    created_by = Column(String, nullable=True)
 
 class ProductMonitoring(Base):
     __tablename__ = "product_monitoring"
@@ -42,6 +44,8 @@ class ProductMonitoring(Base):
     total_price = Column(Float)
     remark = Column(String, default="")
     date = Column(DateTime(timezone=True), server_default=func.now())
+    store_name = Column(String, nullable=True)
+    created_by = Column(String, nullable=True)
 
 class Purchase(Base):
     __tablename__ = "purchases"
@@ -54,6 +58,8 @@ class Purchase(Base):
     total_price = Column(Float)
     remark = Column(String, default="")
     date = Column(DateTime(timezone=True), server_default=func.now())
+    store_name = Column(String, nullable=True)
+    created_by = Column(String, nullable=True)
 
 class Message(Base):
     __tablename__ = "messages"

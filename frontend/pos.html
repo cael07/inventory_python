@@ -393,13 +393,18 @@ Vue.createApp({
 
       if (this.reader) this.reader.reset();
 
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const fullName = `${user.firstname || ""} ${user.middlename || ""} ${user.lastname || ""}`.trim() || user.username;
+
       await fetch(`${API}/pos/save`, {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({
           purchase_number: this.purchase_number,
           items: this.items,
-          paid_amount: this.paidAmount
+          paid_amount: this.paidAmount,
+          store_name: user.storename,
+          created_by: fullName
         })
       });
 

@@ -88,6 +88,21 @@ def sync_db():
         except Exception as e2:
             GLOBAL_ERRORS.append(f"Migration failed (suki status): {str(e2)}")
 
+    # NEW MIGRATION: Tracking columns
+    for table_name in ["products", "product_monitoring", "purchases"]:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(f"SELECT store_name FROM {table_name} LIMIT 1"))
+        except Exception:
+            try:
+                with engine.connect() as conn:
+                    conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN store_name VARCHAR"))
+                    conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN created_by VARCHAR"))
+                    conn.commit()
+                    GLOBAL_ERRORS.append(f"✅ Added tracking columns to {table_name}")
+            except Exception as e2:
+                GLOBAL_ERRORS.append(f"Migration failed ({table_name} tracking): {str(e2)}")
+
 # Run sync after app definition
 @app.on_event("startup")
 def on_startup():
@@ -365,7 +380,10 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
         "user": {
             "id": user.id,
             "username": user.username,
-            "storename": user.storename
+            "storename": user.storename,
+            "firstname": user.firstname,
+            "middlename": user.middlename,
+            "lastname": user.lastname
         }
     }
 
@@ -554,7 +572,9 @@ def save_product(p: ProductCreate, db: Session = Depends(get_db)):
         barcode=p.barcode,
         name=p.name,
         price=p.price,
-        quantity=p.quantity
+        quantity=p.quantity,
+        store_name=p.store_name,
+        created_by=p.created_by
     )
     db.add(product)
     db.commit()
@@ -567,7 +587,9 @@ def save_product(p: ProductCreate, db: Session = Depends(get_db)):
         price=p.price,
         quantity=p.quantity,
         total_price=p.price * p.quantity,
-        remark="Initial stock"
+        remark="Initial stock",
+        store_name=p.store_name,
+        created_by=p.created_by
     )
     db.add(monitoring)
     db.commit()
@@ -690,7 +712,9 @@ def update_product_item(
             barcode=data.barcode,
             name=data.name,
             price=data.price,
-            quantity=data.quantity
+            quantity=data.quantity,
+            store_name=data.store_name,
+            created_by=data.created_by
         )
         db.add(product)
     else:
@@ -704,7 +728,9 @@ def update_product_item(
         price=data.price,
         quantity=data.quantity,
         total_price=data.total_price,  # comes from frontend or calculate here
-        remark=data.remark
+        remark=data.remark,
+        store_name=data.store_name,
+        created_by=data.created_by
     )
     db.add(monitoring)
 
@@ -934,6 +960,9 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
     items = data["items"]
     paid_amount = data.get("paid_amount", 0)
 
+    store_name = data.get("store_name")
+    created_by = data.get("created_by")
+
     for item in items:
         p = Purchase(
             purchase_number=purchase_number,
@@ -941,7 +970,9 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
             name=item["name"],
             price=item["price"],
             quantity=item["quantity"],
-            total_price=item["total_price"]
+            total_price=item["total_price"],
+            store_name=store_name,
+            created_by=created_by
         )
         db.add(p)
         
@@ -949,6 +980,19 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
         product = db.query(Product).filter_by(barcode=item["barcode"]).first()
         if product:
             product.quantity -= item["quantity"]
+            
+            # Record in monitoring
+            mon = ProductMonitoring(
+                barcode=item["barcode"],
+                name=item["name"],
+                price=item["price"],
+                quantity=-item["quantity"],  # negative for deduction
+                total_price=-item["total_price"],
+                remark=f"Sold (POS: {purchase_number})",
+                store_name=store_name,
+                created_by=created_by
+            )
+            db.add(mon)
             
     db.commit()
     return {"status": "success", "message": f"{len(items)} items saved"}

@@ -21,6 +21,8 @@ class ProductCreate(BaseModel):
     name: str
     price: float
     quantity: int
+    store_name: Optional[str] = None
+    created_by: Optional[str] = None
 
 class ProductMonitoringCreate(BaseModel):
     barcode: str
@@ -29,6 +31,8 @@ class ProductMonitoringCreate(BaseModel):
     quantity: int
     total_price: float
     remark: Optional[str] = "" 
+    store_name: Optional[str] = None
+    created_by: Optional[str] = None
 
 class PurchaseCreate(BaseModel):
     purchase_number: str
@@ -38,6 +42,8 @@ class PurchaseCreate(BaseModel):
     quantity: int
     total_price: float
     remark: Optional[str] = ""
+    store_name: Optional[str] = None
+    created_by: Optional[str] = None
 
 class UserUpdate(BaseModel):
     address: Optional[str] = None
