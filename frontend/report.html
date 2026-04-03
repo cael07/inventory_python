@@ -123,34 +123,39 @@
       <input type="date" v-model="filters.date_to" />
     </div>
 
-    <button @click="applyFilter">🔍 Filter</button>
-    <button @click="exportExcel">⬇ Export Excel</button>
+    <button @click="applyFilter" style="background:#27ae60; color:white; border:none; border-radius:4px;">🔍 Filter</button>
+    <button @click="exportExcel" style="background:#2980b9; color:white; border:none; border-radius:4px;">⬇ Export Excel</button>
   </div>
 
   <!-- TABLE -->
-  <table v-if="rows.length">
-    <tr>
-      <th>#</th>
-      <th>Date</th>
-      <th>Purchase #</th>
-      <th>Barcode</th>
-      <th>Name</th>
-      <th>Price</th>
-      <th>Qty</th>
-      <th>Total</th>
-    </tr>
-
-    <tr v-for="(r, index) in rows" :key="r.id">
-      <td>{{ index + 1 }}</td>
-      <td>{{ r.date }}</td>
-      <td>{{ r.purchase_number }}</td>
-      <td>{{ r.barcode }}</td>
-      <td>{{ r.name }}</td>
-      <td>₱{{ r.price }}</td>
-      <td>{{ r.quantity }}</td>
-      <td>₱{{ r.total_price }}</td>
-    </tr>
-  </table>
+  <div class="table-responsive" v-if="rows.length">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Purchase #</th>
+          <th>Barcode</th>
+          <th>Name</th>
+          <th>Price</th>
+          <th>Qty</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(r, index) in rows" :key="r.id">
+          <td>{{ index + 1 }}</td>
+          <td>{{ r.date }}</td>
+          <td>{{ r.purchase_number }}</td>
+          <td>{{ r.barcode }}</td>
+          <td>{{ r.name }}</td>
+          <td>₱{{ r.price }}</td>
+          <td>{{ r.quantity }}</td>
+          <td>₱{{ r.total_price }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
   <p v-if="!rows.length && !loading">No records found</p>
 
