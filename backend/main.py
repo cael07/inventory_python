@@ -628,7 +628,9 @@ def get_products(
             "barcode": r.barcode,
             "name": r.name,
             "price": r.price,
-            "quantity": r.quantity
+            "quantity": r.quantity,
+            "store_name": r.store_name,
+            "created_by": r.created_by
         }
         for r in rows
     ]
@@ -689,7 +691,9 @@ def monitoring_manual_search(
                 "quantity": r.quantity,
                 "total_price": r.total_price,
                 "remark": r.remark,
-                "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+                "date": r.date.strftime("%Y-%m-%d %H:%M:%S"), "store_name": r.store_name, "created_by": r.created_by,
+                "store_name": r.store_name,
+                "created_by": r.created_by
             }
             for r in rows
         ]
@@ -721,6 +725,8 @@ def update_product_item(
         # Update quantity
         product.quantity += data.quantity
         product.price = data.price
+        product.store_name = data.store_name
+        product.created_by = data.created_by
     # Add monitoring entry
     monitoring = ProductMonitoring(
         barcode=data.barcode,
@@ -795,7 +801,7 @@ def monitoring_manual_search(
                 "quantity": r.quantity,
                 "total_price": r.total_price,
                 "remark": r.remark,
-                "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+                "date": r.date.strftime("%Y-%m-%d %H:%M:%S"), "store_name": r.store_name, "created_by": r.created_by
             }
             for r in rows
         ]
@@ -833,7 +839,7 @@ def get_monitoring(
                 "quantity": r.quantity,
                 "total_price": r.total_price,
                 "remark": r.remark,
-                "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+                "date": r.date.strftime("%Y-%m-%d %H:%M:%S"), "store_name": r.store_name, "created_by": r.created_by
             }
             for r in rows
         ]
@@ -933,7 +939,7 @@ def pos_report(
                 "quantity": r.quantity,
                 "total_price": r.total_price,
                 "remark": r.remark,
-                "date": r.date.strftime("%Y-%m-%d %H:%M:%S")
+                "date": r.date.strftime("%Y-%m-%d %H:%M:%S"), "store_name": r.store_name, "created_by": r.created_by
             }
             for r in rows
         ]
@@ -1023,13 +1029,15 @@ def export_pos_report(
 
     data = [
         {
-            "Date": r.date.strftime("%Y-%m-%d %H:%M:%S"),
+            "date": r.date.strftime("%Y-%m-%d %H:%M:%S"), "store_name": r.store_name, "created_by": r.created_by,
             "Purchase Number": r.purchase_number,
             "Barcode": r.barcode,
             "Name": r.name,
             "Price": r.price,
             "Quantity": r.quantity,
             "Total": r.total_price,
+            "Store": r.store_name,
+            "Created By": r.created_by
         }
         for r in rows
     ]
