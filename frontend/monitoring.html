@@ -207,6 +207,7 @@
           <th>Qty</th>
           <th>Total</th>
           <th>Remark</th>
+          <th>Store</th>
           <th>Created By</th>
         </tr>
 
@@ -219,6 +220,7 @@
           <td>{{ m.quantity }}</td>
           <td>₱{{ m.total_price }}</td>
           <td>{{ m.remark }}</td>
+          <td>{{ m.store_name || 'N/A' }}</td>
           <td>{{ m.created_by || 'System' }}</td>
         </tr>
       </table>
