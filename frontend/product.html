@@ -21,8 +21,6 @@
 
 <div id="app">
   <button @click="startScan">📷 Scan Barcode</button>
-  <button @click="loadProducts">📦 Show All Products</button>
-  <button @click="loadMonitoring">📝 Show Monitoring Log</button>
   <p>Status: {{ status }}</p>
 
   <video id="video"></video>
@@ -82,21 +80,7 @@
   </div>
 </div>
 
-  <!-- Product list -->
-  <h3>Products</h3>
-  <ul>
-    <li v-for="p in products" :key="p.id">
-      {{ p.barcode }} — {{ p.name }} — ₱{{ p.price }} — Qty: {{ p.quantity }}
-    </li>
-  </ul>
-
-  <!-- Monitoring log -->
-  <h3>Monitoring Log</h3>
-  <ul>
-    <li v-for="m in monitoring" :key="m.id">
-      {{ m.date }} — {{ m.barcode }} — {{ m.name }} — ₱{{ m.price }} x {{ m.quantity }} = ₱{{ m.total_price }} — {{ m.remark }}
-    </li>
-  </ul>
+  <!-- Modals and video handle the scanning and addition -->
 </div>
 
 <script>

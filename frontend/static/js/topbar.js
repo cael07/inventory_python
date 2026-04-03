@@ -96,11 +96,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       <div class="dropdown-menu" id="dropdown-menu">
         <a href="dashboard.html">📊 Dashboard</a>
-        <a href="inventory.html">📦 Inventory</a>
-        <a href="product.html">➕ Product Management</a>
+        <a href="products.html">📦 Inventory</a>
+        <a href="product.html">➕ Add Product</a>
         <a href="pos.html">🛒 POS Terminal</a>
         <a href="report.html">📈 POS Report</a>
-        <a href="monitoring.html">📋 Monitoring Log</a>
+        <a href="monitoring.html">📑 Product Report</a>
         
         <div class="dropdown-divider"></div>
 
