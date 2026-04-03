@@ -30,13 +30,40 @@ document.addEventListener("DOMContentLoaded", () => {
     .profile-modal-box input { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #ddd; border-radius: 6px; }
     
     /* Topbar Specifics */
-    .top-bar { display: flex; justify-content: space-between; align-items: center; background: #1f3a5f; padding: 10px 20px; color: white; position: sticky; top: 0; z-index: 1000; }
-    .dropdown-menu { display: none; position: fixed; top: 50px; right: 0; background: #2c3e50; width: 250px; height: calc(100vh - 50px); flex-direction: column; padding: 20px; z-index: 999; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
-    .dropdown-menu.show { display: flex; }
-    .dropdown-menu a { color: white; text-decoration: none; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; background: #1f3a5f; padding: 10px 20px; color: white; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .dropdown-menu { 
+      display: flex; 
+      position: fixed; 
+      top: 52px; 
+      right: -260px; /* Hidden by default */
+      background: #2c3e50; 
+      width: 250px; 
+      height: calc(100vh - 52px); 
+      flex-direction: column; 
+      padding: 20px; 
+      z-index: 999; 
+      box-shadow: -5px 0 15px rgba(0,0,0,0.1); 
+      transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .dropdown-menu.show { 
+      right: 0; 
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .dropdown-menu a { color: white; text-decoration: none; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; transition: background 0.2s; }
+    .dropdown-menu a:hover { background: rgba(255,255,255,0.05); padding-left: 5px; }
+    
     .dropdown-divider { border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0; }
-    .hamburger { cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
-    .hamburger span { width: 24px; height: 3px; background: white; border-radius: 2px; transition: 0.3s; }
+    
+    .hamburger { cursor: pointer; display: flex; flex-direction: column; gap: 5px; width: 30px; height: 18px; justify-content: center; position: relative; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: white; border-radius: 2px; transition: all 0.3s ease-in-out; }
+    
+    /* ❌ X Animation */
+    .hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.active span:nth-child(2) { opacity: 0; transform: translateX(-10px); }
+    .hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
   `;
   document.head.appendChild(style);
 
