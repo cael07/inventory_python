@@ -18,10 +18,14 @@
     canvas { background:white; padding:10px; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.15);}
     .filters { margin:20px 0; }
     .filters label { margin-right:20px; font-weight:bold; cursor:pointer; }
-    .alert-btn { display:none; color:white; padding:10px 16px; border-radius:6px; border:none; font-weight:bold; cursor:pointer; margin-bottom:15px; display:flex; align-items:center; gap:10px;}
+    .alert-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .alert-btn { color:white; padding:10px 16px; border-radius:6px; border:none; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:10px; flex: 1; min-width: 120px; justify-content: center; }
     .alert-orange { background:#f39c12; }
     .alert-red { background:#e74c3c; }
-    .alert-badge { background:white; color:#e74c3c; font-size:12px; font-weight:bold; padding:4px 8px; border-radius:12px; min-width:22px; text-align:center; animation:pulse 1.5s infinite;}
+    .alert-blue { background:#0084ff; }
+    .alert-gray { background:#8e8e93; }
+    .alert-badge { background:white; color:#333; font-size:12px; font-weight:bold; padding:2px 8px; border-radius:12px; min-width:18px; text-align:center; }
+    .alert-badge.pulse { animation:pulse 1.5s infinite; color:#e74c3c; }
     @keyframes pulse { 0%{transform:scale(1);opacity:1;}50%{transform:scale(1.15);opacity:0.8;}100%{transform:scale(1);opacity:1;} }
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000; opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
     .modal-overlay.show { opacity:1; pointer-events:all; }
@@ -35,12 +39,19 @@
 <body>
 
 <div class="page">
+  <div class="alert-container">
+    <button id="alertBtn" class="alert-btn alert-gray" style="display:none;">
+      Stock <span id="alertBadge" class="alert-badge pulse">0</span>
+    </button>
 
-  <!-- 🔔 LOW STOCK ALERT -->
-  <button id="alertBtn" class="alert-btn">
-    ⚠️ Low Stock Alert
-    <span id="alertBadge" class="alert-badge">0</span>
-  </button>
+    <button id="sukiNotifyBtn" class="alert-btn alert-blue" style="background:#4b6584;" onclick="document.getElementById('nav-suki').click()">
+      Suki <span id="sukiBadge" class="alert-badge">0</span>
+    </button>
+
+    <button id="msgNotifyBtn" class="alert-btn alert-blue" onclick="window.location.href='messages.html'">
+      Message <span id="msgBadge" class="alert-badge">0</span>
+    </button>
+  </div>
 
   <!-- 📅 PURCHASE FILTER -->
   <div class="filters" id="chartFilters">
@@ -151,6 +162,37 @@ async function loadTopProducts(type="daily") {
   });
 }
 
+/* ---------------- NOTIFICATIONS (SUKI & MSG) ---------------- */
+async function checkOtherNotifications() {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  if (!user.id) return;
+
+  try {
+    // Suki requests
+    const sukiRes = await fetch(`${API}/suki/pending/${user.id}`);
+    if (sukiRes.ok) {
+      const sukiReqs = await sukiRes.json();
+      const sBadge = document.getElementById("sukiBadge");
+      const sBtn = document.getElementById("sukiNotifyBtn");
+      sBadge.textContent = sukiReqs.length;
+      sBtn.style.background = sukiReqs.length > 0 ? "#e74c3c" : "#4b6584";
+    }
+
+    // Unread messages
+    const msgRes = await fetch(`${API}/messages/contacts/${user.id}`);
+    if (msgRes.ok) {
+      const contacts = await msgRes.json();
+      const totalUnread = contacts.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+      const mBadge = document.getElementById("msgBadge");
+      const mBtn = document.getElementById("msgNotifyBtn");
+      mBadge.textContent = totalUnread;
+      mBtn.style.background = totalUnread > 0 ? "#e74c3c" : "#0084ff";
+    }
+  } catch (e) {
+    console.error("Dashboard poll error:", e);
+  }
+}
+
 /* ---------------- TOGGLES ---------------- */
 document.querySelectorAll('input[name="chartType"]').forEach(r=>{
   r.addEventListener("change", e=>{
@@ -166,8 +208,13 @@ document.querySelectorAll('input[name="topType"]').forEach(r=>{
 
 /* ---------------- LOAD ---------------- */
 checkLowStock();
+checkOtherNotifications();
 loadPurchaseChart();
 loadTopProducts("daily");
+
+// Polling for notifications
+setInterval(checkOtherNotifications, 10000); // 10s
+setInterval(checkLowStock, 60000);           // 1m
 </script>
 
 </body>

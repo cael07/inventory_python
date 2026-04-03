@@ -43,7 +43,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div class="dropdown-divider"></div>
 
-        <a href="#" id="nav-suki">👨‍👩‍👧‍👦 SUKI</a>
+        <a href="#" id="nav-suki">
+          👨‍👩‍👧‍👦 SUKI
+          <span id="suki-unread-badge" style="display:none; background:#fa3e3e; color:white; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:5px; font-weight:bold;">0</span>
+        </a>
         <a href="#">🧑‍🤝‍🧑 Employees</a>
 
         <div class="dropdown-divider"></div>
@@ -98,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Ping to update last_activity
         fetch(`${window.CONFIG_API}/user/${user.id}/ping`, { method: "POST" });
 
-        // Get contacts to sum unread
+        // 1. Get messages to sum unread
         const res = await fetch(`${window.CONFIG_API}/messages/contacts/${user.id}`);
         if (res.ok) {
           const contacts = await res.json();
@@ -110,6 +113,21 @@ document.addEventListener("DOMContentLoaded", () => {
               badge.style.display = "inline-block";
             } else {
               badge.style.display = "none";
+            }
+          }
+        }
+
+        // 2. Get pending Suki requests
+        const sukiRes = await fetch(`${window.CONFIG_API}/suki/pending/${user.id}`);
+        if (sukiRes.ok) {
+          const requests = await sukiRes.json();
+          const sukiBadge = document.getElementById("suki-unread-badge");
+          if (sukiBadge) {
+            if (requests.length > 0) {
+              sukiBadge.innerText = requests.length;
+              sukiBadge.style.display = "inline-block";
+            } else {
+              sukiBadge.style.display = "none";
             }
           }
         }
