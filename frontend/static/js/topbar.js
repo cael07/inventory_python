@@ -148,9 +148,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- SUKI MODAL INJECTION ---
   const sukiModalHtml = `
     <div class="profile-modal" id="suki-modal">
-      <div class="profile-modal-box" style="width: 420px; max-height: 90vh; overflow-y: auto;">
+      <div class="profile-modal-box" style="width: 95%; max-width: 420px; max-height: 85vh; overflow-y: auto; margin: 10px;">
         <h3 style="display:flex; align-items:center; justify-content:space-between;">
-          Suki / Friend List
+          Suki List
           <button id="suki-close-btn" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">&times;</button>
         </h3>
         
@@ -218,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (res.ok) {
         const data = await res.json();
         if (data.length === 0) {
-          sukiListContainer.innerHTML = `<p style="color:#888; font-size:14px; text-align:center; padding:20px 0;">No mutual suki yet. Add friends to start chatting!</p>`;
+          sukiListContainer.innerHTML = `<p style="color:#888; font-size:14px; text-align:center; padding:20px 0;">No mutual suki yet. Add stores or users to start chatting!</p>`;
           return;
         }
         sukiListContainer.innerHTML = data.map(s => `
