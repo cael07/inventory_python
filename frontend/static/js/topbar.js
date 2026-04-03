@@ -164,6 +164,11 @@ document.addEventListener("DOMContentLoaded", () => {
            </div>
         </div>
 
+        <div id="suki-pending-section" style="display:none; background:#fffcf0; padding:10px; border-radius:6px; border:1px solid #ffeeba; margin-bottom:15px;">
+           <h4 style="margin:0 0 10px 0; font-size:14px; color:#856404;">📥 Requests Received</h4>
+           <div id="suki-pending-list"></div>
+        </div>
+
         <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
         
         <h4 style="margin-bottom:10px; color:#1f3a5f;">Your Suki List</h4>
@@ -178,17 +183,42 @@ document.addEventListener("DOMContentLoaded", () => {
   const sukiModal = document.getElementById("suki-modal");
   const sukiLink = document.getElementById("nav-suki");
   const sukiListContainer = document.getElementById("suki-list-container");
+  const sukiPendingSection = document.getElementById("suki-pending-section");
+  const sukiPendingList = document.getElementById("suki-pending-list");
   const sukiSearchInput = document.getElementById("suki-search-input");
   const sukiSearchResults = document.getElementById("suki-search-results");
 
-  // Load Suki List
-  const loadSukiList = async () => {
+  // Load Suki List & Requests
+  const loadSukiData = async () => {
     try {
+      // 1. Load Requests
+      const reqRes = await fetch(`${window.CONFIG_API}/suki/pending/${user.id}`);
+      if (reqRes.ok) {
+        const reqs = await reqRes.json();
+        if (reqs.length > 0) {
+          sukiPendingSection.style.display = "block";
+          sukiPendingList.innerHTML = reqs.map(r => `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
+               <div style="font-size:13px;">
+                  <strong>${r.storename || r.username}</strong> wishes to be your suki
+               </div>
+               <div style="display:flex; gap:5px;">
+                  <button onclick="window.handleSukiRequest(${r.id}, 'accept')" style="background:#27ae60; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:11px; cursor:pointer;">Accept</button>
+                  <button onclick="window.handleSukiRequest(${r.id}, 'decline')" style="background:#e74c3c; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:11px; cursor:pointer;">&times;</button>
+               </div>
+            </div>
+          `).join("");
+        } else {
+          sukiPendingSection.style.display = "none";
+        }
+      }
+
+      // 2. Load Friends
       const res = await fetch(`${window.CONFIG_API}/suki/${user.id}`);
       if (res.ok) {
         const data = await res.json();
         if (data.length === 0) {
-          sukiListContainer.innerHTML = `<p style="color:#888; font-size:14px; text-align:center; padding:20px 0;">No suki added yet.</p>`;
+          sukiListContainer.innerHTML = `<p style="color:#888; font-size:14px; text-align:center; padding:20px 0;">No mutual suki yet. Add friends to start chatting!</p>`;
           return;
         }
         sukiListContainer.innerHTML = data.map(s => `
@@ -197,20 +227,30 @@ document.addEventListener("DOMContentLoaded", () => {
                <div style="font-weight:bold; font-size:15px;">${s.storename || s.username}</div>
                <div style="font-size:12px; color:#65676b;">${s.firstname} ${s.lastname} · ${s.storelocation || 'No location'}</div>
             </div>
-            <div style="display:flex; gap:8px;">
-               <button onclick="window.removeSuki(${s.id})" style="background:#f2f3f5; color:#444; border:none; padding:5px 10px; border-radius:4px; font-size:12px; cursor:pointer;">Remove</button>
-            </div>
+            <button onclick="window.removeSuki(${s.id})" style="background:#f2f3f5; color:#444; border:none; padding:5px 10px; border-radius:4px; font-size:12px; cursor:pointer;">Remove</button>
           </div>
         `).join("");
       }
     } catch (e) { console.error(e); }
   };
 
+  window.handleSukiRequest = async (requesterId, action) => {
+    try {
+      let res;
+      if (action === 'accept') {
+        res = await fetch(`${window.CONFIG_API}/suki/accept/${requesterId}/${user.id}`, { method: "PUT" });
+      } else {
+        res = await fetch(`${window.CONFIG_API}/suki/${requesterId}/${user.id}`, { method: "DELETE" });
+      }
+      if (res.ok) loadSukiData();
+    } catch (e) { console.error(e); }
+  };
+
   window.removeSuki = async (sukiId) => {
-    if (!confirm("Remove this suki?")) return;
+    if (!confirm("Remove this suki? Connection will be lost for both of you.")) return;
     try {
       const res = await fetch(`${window.CONFIG_API}/suki/${user.id}/${sukiId}`, { method: "DELETE" });
-      if (res.ok) loadSukiList();
+      if (res.ok) loadSukiData();
     } catch (e) { console.error(e); }
   };
 
@@ -222,9 +262,11 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ suki_id: sukiId })
       });
       if (res.ok) {
+        const d = await res.json();
+        alert(d.message);
         sukiSearchInput.value = "";
         sukiSearchResults.style.display = "none";
-        loadSukiList();
+        loadSukiData();
       }
     } catch (e) { console.error(e); }
   };
@@ -240,13 +282,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     searchTimeout = setTimeout(async () => {
       try {
-        const res = await fetch(`${window.CONFIG_API}/users`); // For now search all, maybe refine endpoint later
+        const res = await fetch(`${window.CONFIG_API}/users`); 
         if (res.ok) {
           const allUsers = (await res.json()).items;
-          const filtered = allUsers.filter(u => 
-            u.id !== user.id && 
-            (u.username.toLowerCase().includes(q.toLowerCase()) || (u.storename && u.storename.toLowerCase().includes(q.toLowerCase())))
-          ).slice(0, 5);
+          const filtered = allUsers.filter(u => u.id !== user.id && (u.username.toLowerCase().includes(q.toLowerCase()) || (u.storename && u.storename.toLowerCase().includes(q.toLowerCase())))).slice(0, 5);
 
           if (filtered.length > 0) {
             sukiSearchResults.innerHTML = filtered.map(u => `
@@ -270,7 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sukiLink) {
     sukiLink.addEventListener("click", (e) => {
       e.preventDefault();
-      loadSukiList();
+      loadSukiData();
       sukiModal.classList.add("show");
       if (hamburger) hamburger.classList.remove("active");
       if (dropdown) dropdown.classList.remove("show");

@@ -32,6 +32,9 @@ User.__table__.create(bind=engine, checkfirst=True)
 
 Purchase.__table__.create(bind=engine, checkfirst=True)
 Message.__table__.create(bind=engine, checkfirst=True)
+
+# DEV ONLY: reset suki for now
+Suki.__table__.drop(bind=engine, checkfirst=True)
 Suki.__table__.create(bind=engine, checkfirst=True)
 
 # -------------------------------------------------
@@ -69,7 +72,21 @@ def sync_db():
                 conn.commit()
                 GLOBAL_ERRORS.append("✅ Successfully added last_activity column")
         except Exception as e2:
-            GLOBAL_ERRORS.append(f"Migration failed: {str(e2)}")
+            GLOBAL_ERRORS.append(f"Migration failed (last_activity): {str(e2)}")
+    
+    # NEW MIGRATION: suki status
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT status FROM suki LIMIT 1"))
+    except Exception as e:
+        GLOBAL_ERRORS.append(f"Initial suki check failed: {str(e)}")
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE suki ADD COLUMN status VARCHAR DEFAULT 'pending'"))
+                conn.commit()
+                GLOBAL_ERRORS.append("✅ Successfully added suki status column")
+        except Exception as e2:
+            GLOBAL_ERRORS.append(f"Migration failed (suki status): {str(e2)}")
 
 # Run sync after app definition
 @app.on_event("startup")
@@ -98,6 +115,10 @@ def root(db: Session = Depends(get_db)):
 @app.get("/debug/errors")
 def get_debug_errors():
     return {"errors": GLOBAL_ERRORS}
+
+# -------------------------------------------------
+# SUKI (FRIEND LIST)
+# -------------------------------------------------
 
 # -------------------------------------------------
 # DEBUG
@@ -426,48 +447,60 @@ def ping_user_status(user_id: int, db: Session = Depends(get_db)):
 # ---------------- MESSAGES ----------------
 @app.get("/messages/contacts/{user_id}")
 def get_message_contacts(user_id: int, db: Session = Depends(get_db)):
-    users = db.query(User).filter(User.id != user_id).all()
+    # 🚨 RESTRICTION: Only show users who are mutual Sukis (accepted)
+    # Get all sukis related to this user where status = accepted
+    accepted_sukis = db.query(Suki).filter(
+        or_(
+            and_(Suki.owner_id == user_id, Suki.status == "accepted"),
+            and_(Suki.suki_id == user_id, Suki.status == "accepted")
+        )
+    ).all()
+    
+    friend_ids = set()
+    for s in accepted_sukis:
+        if s.owner_id == user_id: friend_ids.add(s.suki_id)
+        else: friend_ids.add(s.owner_id)
+    
+    # Now get user objects for these IDs
     contacts = []
-    for u in users:
-        last_msg = db.query(Message).filter(
-            or_(
-                (Message.sender_id == user_id) & (Message.receiver_id == u.id),
-                (Message.sender_id == u.id) & (Message.receiver_id == user_id)
-            )
-        ).order_by(Message.timestamp.desc()).first()
-        
-        unread_count = db.query(Message).filter(
-            Message.sender_id == u.id,
-            Message.receiver_id == user_id,
-            Message.is_read == False
-        ).count()
-        
-        now = datetime.now()
-        is_online = False
-        if u.last_activity:
-            try:
-                # Ensure we are comparing aware with aware or naive with naive
-                ua = u.last_activity.replace(tzinfo=None) if hasattr(u.last_activity, "replace") else u.last_activity
-                diff = (now - ua).total_seconds()
-                if diff < 180: # 3 minutes
-                    is_online = True
-            except:
-                pass
+    if friend_ids:
+        users = db.query(User).filter(User.id.in_(friend_ids)).all()
+        for u in users:
+            # Existing message history logic...
+            last_msg = db.query(Message).filter(
+                or_(
+                    and_(Message.sender_id == user_id, Message.receiver_id == u.id),
+                    and_(Message.sender_id == u.id, Message.receiver_id == user_id)
+                )
+            ).order_by(Message.id.desc()).first()
+            
+            unread = db.query(Message).filter(
+                Message.sender_id == u.id,
+                Message.receiver_id == user_id,
+                Message.is_read == False
+            ).count()
+            
+            now = datetime.now()
+            is_online = False
+            if (u.last_activity and hasattr(u.last_activity, "replace")):
+                 ua = u.last_activity.replace(tzinfo=None)
+                 is_online = (now - ua).total_seconds() < 300
 
-        contacts.append({
-            "user_id": u.id,
-            "username": u.username,
-            "firstname": u.firstname,
-            "lastname": u.lastname,
-            "storename": u.storename,
-            "last_message": last_msg.content if last_msg else None,
-            "last_message_time": last_msg.timestamp.strftime("%Y-%m-%d %H:%M:%S") if (last_msg and last_msg.timestamp and hasattr(last_msg.timestamp, "strftime")) else None,
-            "unread_count": unread_count,
-            "is_online": is_online
-        })
-        
-    # Improved sorting: Recent messages first, then others alphabetically by name
-    contacts.sort(key=lambda x: (x["last_message_time"] or "0000", x["firstname"] or ""), reverse=True)
+            contacts.append({
+                "user_id": u.id,
+                "username": u.username,
+                "firstname": u.firstname,
+                "lastname": u.lastname,
+                "storename": u.storename,
+                "storelocation": u.storelocation,
+                "last_message": last_msg.content if last_msg else None,
+                "last_message_time": last_msg.timestamp if last_msg else None,
+                "unread_count": unread,
+                "is_online": is_online
+            })
+    
+    # Sort: Online first, then unread first, then by last message time
+    contacts.sort(key=lambda x: (not x["is_online"], not (x["unread_count"] > 0), str(x["last_message_time"] or "0000")), reverse=False)
     return contacts
 
 @app.get("/messages/{user_id}/{other_id}")
@@ -1084,19 +1117,69 @@ def top_products_monthly(db: Session = Depends(get_db)):
 
 @app.post("/suki")
 def add_suki(suki_in: SukiCreate, owner_id: int, db: Session = Depends(get_db)):
-    # Check if already exists
+    # 1. Check if user already requested
     existing = db.query(Suki).filter(Suki.owner_id == owner_id, Suki.suki_id == suki_in.suki_id).first()
     if existing:
-        return {"message": "Already in your Suki list"}
+        if existing.status == "accepted":
+            return {"message": "Already mutual Sukis"}
+        return {"message": "Request already sent"}
     
-    new_suki = Suki(owner_id=owner_id, suki_id=suki_in.suki_id)
+    # 2. Check if the OTHER user already sent a request to ME (auto-accept)
+    reverse_req = db.query(Suki).filter(Suki.owner_id == suki_in.suki_id, Suki.suki_id == owner_id).first()
+    if reverse_req:
+        reverse_req.status = "accepted"
+        # Also create my direction as accepted
+        new_suki = Suki(owner_id=owner_id, suki_id=suki_in.suki_id, status="accepted")
+        db.add(new_suki)
+        db.commit()
+        return {"message": "Mutual Suki connection established!"}
+    
+    # 3. Create a new pending request
+    new_suki = Suki(owner_id=owner_id, suki_id=suki_in.suki_id, status="pending")
     db.add(new_suki)
     db.commit()
-    return {"message": "Suki added successfully"}
+    return {"message": "Suki request sent"}
+
+@app.get("/suki/pending/{user_id}")
+def get_pending_requests(user_id: int, db: Session = Depends(get_db)):
+    # Get requests sent TO me (suki_id = me) where status is pending
+    requests = db.query(Suki).filter(Suki.suki_id == user_id, Suki.status == "pending").all()
+    results = []
+    for r in requests:
+        u = db.query(User).filter(User.id == r.owner_id).first()
+        if u:
+            results.append({
+                "id": u.id,
+                "username": u.username,
+                "firstname": u.firstname,
+                "lastname": u.lastname,
+                "storename": u.storename
+            })
+    return results
+
+@app.put("/suki/accept/{owner_id}/{suki_id}")
+def accept_suki(owner_id: int, suki_id: int, db: Session = Depends(get_db)):
+    # owner_id is the requester, suki_id is the receiver (me)
+    req = db.query(Suki).filter(Suki.owner_id == owner_id, Suki.suki_id == suki_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    req.status = "accepted"
+    # Create the mutual connection in the other direction too
+    existing_other = db.query(Suki).filter(Suki.owner_id == suki_id, Suki.suki_id == owner_id).first()
+    if not existing_other:
+        new_other = Suki(owner_id=suki_id, suki_id=owner_id, status="accepted")
+        db.add(new_other)
+    else:
+        existing_other.status = "accepted"
+    
+    db.commit()
+    return {"message": "Suki request accepted"}
 
 @app.get("/suki/{owner_id}")
 def get_sukis(owner_id: int, db: Session = Depends(get_db)):
-    sukis = db.query(Suki).filter(Suki.owner_id == owner_id).all()
+    # Only return accepted sukis
+    sukis = db.query(Suki).filter(Suki.owner_id == owner_id, Suki.status == "accepted").all()
     results = []
     for s in sukis:
         user = db.query(User).filter(User.id == s.suki_id).first()
@@ -1113,9 +1196,12 @@ def get_sukis(owner_id: int, db: Session = Depends(get_db)):
 
 @app.delete("/suki/{owner_id}/{suki_id}")
 def remove_suki(owner_id: int, suki_id: int, db: Session = Depends(get_db)):
-    suki = db.query(Suki).filter(Suki.owner_id == owner_id, Suki.suki_id == suki_id).first()
-    if not suki:
-        raise HTTPException(status_code=404, detail="Suki not found")
-    db.delete(suki)
+    # Remove BOTH directions
+    rel1 = db.query(Suki).filter(Suki.owner_id == owner_id, Suki.suki_id == suki_id).first()
+    rel2 = db.query(Suki).filter(Suki.owner_id == suki_id, Suki.suki_id == owner_id).first()
+    
+    if rel1: db.delete(rel1)
+    if rel2: db.delete(rel2)
+    
     db.commit()
     return {"message": "Suki removed successfully"}

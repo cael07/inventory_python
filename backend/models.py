@@ -69,4 +69,5 @@ class Suki(Base):
     id = Column(Integer, primary_key=True)
     owner_id = Column(Integer, index=True)
     suki_id = Column(Integer, index=True)
+    status = Column(String, default="pending") # pending, accepted
     created_at = Column(DateTime, server_default=func.now())
