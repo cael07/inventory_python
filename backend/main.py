@@ -9,8 +9,8 @@ from datetime import date, timedelta, datetime
 from sqlalchemy.types import Date
 from email.message import EmailMessage
 from backend.database import SessionLocal, engine
-from backend.models import User, Product, ProductMonitoring, Purchase, Message
-from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister, UserUpdate, MessageCreate
+from backend.models import User, Product, ProductMonitoring, Purchase, Message, Suki
+from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister, UserUpdate, MessageCreate, SukiCreate
 from backend import auth
 
 import uuid
@@ -32,6 +32,7 @@ User.__table__.create(bind=engine, checkfirst=True)
 
 Purchase.__table__.create(bind=engine, checkfirst=True)
 Message.__table__.create(bind=engine, checkfirst=True)
+Suki.__table__.create(bind=engine, checkfirst=True)
 
 # -------------------------------------------------
 # APP STARTUP
@@ -1076,3 +1077,45 @@ def top_products_monthly(db: Session = Depends(get_db)):
         {"name": r.name, "quantity": int(r.qty or 0)}
         for r in rows
     ]
+
+# -------------------------------------------------
+# SUKI (FRIEND LIST)
+# -------------------------------------------------
+
+@app.post("/suki")
+def add_suki(suki_in: SukiCreate, owner_id: int, db: Session = Depends(get_db)):
+    # Check if already exists
+    existing = db.query(Suki).filter(Suki.owner_id == owner_id, Suki.suki_id == suki_in.suki_id).first()
+    if existing:
+        return {"message": "Already in your Suki list"}
+    
+    new_suki = Suki(owner_id=owner_id, suki_id=suki_in.suki_id)
+    db.add(new_suki)
+    db.commit()
+    return {"message": "Suki added successfully"}
+
+@app.get("/suki/{owner_id}")
+def get_sukis(owner_id: int, db: Session = Depends(get_db)):
+    sukis = db.query(Suki).filter(Suki.owner_id == owner_id).all()
+    results = []
+    for s in sukis:
+        user = db.query(User).filter(User.id == s.suki_id).first()
+        if user:
+            results.append({
+                "id": user.id,
+                "username": user.username,
+                "firstname": user.firstname,
+                "lastname": user.lastname,
+                "storename": user.storename,
+                "storelocation": user.storelocation
+            })
+    return results
+
+@app.delete("/suki/{owner_id}/{suki_id}")
+def remove_suki(owner_id: int, suki_id: int, db: Session = Depends(get_db)):
+    suki = db.query(Suki).filter(Suki.owner_id == owner_id, Suki.suki_id == suki_id).first()
+    if not suki:
+        raise HTTPException(status_code=404, detail="Suki not found")
+    db.delete(suki)
+    db.commit()
+    return {"message": "Suki removed successfully"}

@@ -48,3 +48,6 @@ class UserUpdate(BaseModel):
 class MessageCreate(BaseModel):
     receiver_id: int
     content: str
+
+class SukiCreate(BaseModel):
+    suki_id: int

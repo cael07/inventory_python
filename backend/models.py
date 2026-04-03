@@ -63,3 +63,10 @@ class Message(Base):
     content = Column(String)
     is_read = Column(Boolean, default=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+class Suki(Base):
+    __tablename__ = "suki"
+    id = Column(Integer, primary_key=True)
+    owner_id = Column(Integer, index=True)
+    suki_id = Column(Integer, index=True)
+    created_at = Column(DateTime, server_default=func.now())

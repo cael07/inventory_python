@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div class="dropdown-divider"></div>
 
-        <a href="#">👨‍👩‍👧‍👦 SUKI</a>
+        <a href="#" id="nav-suki">👨‍👩‍👧‍👦 SUKI</a>
         <a href="#">🧑‍🤝‍🧑 Employees</a>
 
         <div class="dropdown-divider"></div>
@@ -144,6 +144,145 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
   `;
   document.body.insertAdjacentHTML("beforeend", profileModalHtml);
+
+  // --- SUKI MODAL INJECTION ---
+  const sukiModalHtml = `
+    <div class="profile-modal" id="suki-modal">
+      <div class="profile-modal-box" style="width: 420px; max-height: 90vh; overflow-y: auto;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between;">
+          Suki / Friend List
+          <button id="suki-close-btn" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">&times;</button>
+        </h3>
+        
+        <div style="margin-bottom:15px;">
+           <label style="margin-bottom:8px; display:block;">Add New Suki</label>
+           <div style="display:flex; gap:8px;">
+              <input type="text" id="suki-search-input" placeholder="Search username or store..." style="margin-bottom:0; flex:1;" />
+           </div>
+           <div id="suki-search-results" style="margin-top:8px; max-height:150px; overflow-y:auto; border:1px solid #eee; border-radius:4px; display:none;">
+              <!-- Search results here -->
+           </div>
+        </div>
+
+        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+        
+        <h4 style="margin-bottom:10px; color:#1f3a5f;">Your Suki List</h4>
+        <div id="suki-list-container" style="min-height:100px;">
+           <p style="color:#888; font-size:14px; text-align:center; padding:20px 0;">Loading your suki list...</p>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML("beforeend", sukiModalHtml);
+
+  const sukiModal = document.getElementById("suki-modal");
+  const sukiLink = document.getElementById("nav-suki");
+  const sukiListContainer = document.getElementById("suki-list-container");
+  const sukiSearchInput = document.getElementById("suki-search-input");
+  const sukiSearchResults = document.getElementById("suki-search-results");
+
+  // Load Suki List
+  const loadSukiList = async () => {
+    try {
+      const res = await fetch(`${window.CONFIG_API}/suki/${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length === 0) {
+          sukiListContainer.innerHTML = `<p style="color:#888; font-size:14px; text-align:center; padding:20px 0;">No suki added yet.</p>`;
+          return;
+        }
+        sukiListContainer.innerHTML = data.map(s => `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid #f9f9f9;">
+            <div style="line-height:1.4;">
+               <div style="font-weight:bold; font-size:15px;">${s.storename || s.username}</div>
+               <div style="font-size:12px; color:#65676b;">${s.firstname} ${s.lastname} · ${s.storelocation || 'No location'}</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+               <button onclick="window.removeSuki(${s.id})" style="background:#f2f3f5; color:#444; border:none; padding:5px 10px; border-radius:4px; font-size:12px; cursor:pointer;">Remove</button>
+            </div>
+          </div>
+        `).join("");
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  window.removeSuki = async (sukiId) => {
+    if (!confirm("Remove this suki?")) return;
+    try {
+      const res = await fetch(`${window.CONFIG_API}/suki/${user.id}/${sukiId}`, { method: "DELETE" });
+      if (res.ok) loadSukiList();
+    } catch (e) { console.error(e); }
+  };
+
+  window.addSuki = async (sukiId) => {
+    try {
+      const res = await fetch(`${window.CONFIG_API}/suki?owner_id=${user.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suki_id: sukiId })
+      });
+      if (res.ok) {
+        sukiSearchInput.value = "";
+        sukiSearchResults.style.display = "none";
+        loadSukiList();
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  // Search Logic
+  let searchTimeout;
+  sukiSearchInput.addEventListener("input", (e) => {
+    clearTimeout(searchTimeout);
+    const q = e.target.value.trim();
+    if (q.length < 2) {
+      sukiSearchResults.style.display = "none";
+      return;
+    }
+    searchTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`${window.CONFIG_API}/users`); // For now search all, maybe refine endpoint later
+        if (res.ok) {
+          const allUsers = (await res.json()).items;
+          const filtered = allUsers.filter(u => 
+            u.id !== user.id && 
+            (u.username.toLowerCase().includes(q.toLowerCase()) || (u.storename && u.storename.toLowerCase().includes(q.toLowerCase())))
+          ).slice(0, 5);
+
+          if (filtered.length > 0) {
+            sukiSearchResults.innerHTML = filtered.map(u => `
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-bottom:1px solid #f0f0f0;">
+                <div style="font-size:13px;">
+                   <strong>${u.storename || u.username}</strong><br>
+                   <small style="color:#888;">${u.firstname} ${u.lastname}</small>
+                </div>
+                <button onclick="window.addSuki(${u.id})" style="background:var(--messenger-blue, #0084ff); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;">Add</button>
+              </div>
+            `).join("");
+            sukiSearchResults.style.display = "block";
+          } else {
+            sukiSearchResults.style.display = "none";
+          }
+        }
+      } catch (e) { console.error(e); }
+    }, 400);
+  });
+
+  if (sukiLink) {
+    sukiLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      loadSukiList();
+      sukiModal.classList.add("show");
+      if (hamburger) hamburger.classList.remove("active");
+      if (dropdown) dropdown.classList.remove("show");
+    });
+  }
+
+  const sukiCloseBtn = document.getElementById("suki-close-btn");
+  if (sukiCloseBtn) {
+    sukiCloseBtn.addEventListener("click", () => {
+      sukiModal.classList.remove("show");
+    });
+  }
 
   const profileModal = document.getElementById("profile-modal");
   const usernameBtn = document.querySelector(".dropdown-user");
