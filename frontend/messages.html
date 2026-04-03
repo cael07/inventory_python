@@ -170,10 +170,43 @@
     .nav-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--text-secondary); font-size: 12px; position: relative; cursor: pointer; }
     .nav-tab.active { color: var(--messenger-blue); }
 
+    /* --- MOBILE RESPONSIVE LOGIC --- */
     @media (max-width: 768px) {
-      .sidebar { width: 100%; border-right: none; }
-      .chat-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; display: none; }
-      .mobile-view-active .chat-container { display: flex; }
+      .sidebar { 
+        width: 100%; 
+        border-right: none; 
+        display: flex;
+      }
+
+      /* Hide sidebar when chat is open on mobile */
+      .mobile-view-active .sidebar {
+        display: none;
+      }
+      
+      .chat-container {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 1000;
+        display: none; /* Hidden by default */
+        width: 100%;
+        height: 100dvh;
+      }
+
+      /* Show chat container only when active chat exists on mobile */
+      .mobile-view-active .chat-container {
+        display: flex !important;
+      }
+
+      /* Completely hide the desktop empty screen placeholder on mobile */
+      .empty-screen {
+        display: none !important;
+      }
+
+      /* But allow the empty screen inside a chat (new convo) to show if needed */
+      .chat-container .empty-screen {
+        display: flex !important;
+      }
+
       .back-btn { display: block; }
     }
 
