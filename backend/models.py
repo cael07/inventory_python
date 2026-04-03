@@ -22,6 +22,7 @@ class User(Base):
     verification_code = Column(String, nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())
+    last_activity = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
 class Product(Base):
     __tablename__ = "products"

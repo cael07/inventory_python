@@ -4,7 +4,7 @@ import pandas as pd
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, cast, or_, text
+from sqlalchemy import func, cast, or_, and_, text
 from datetime import date, timedelta, datetime
 from sqlalchemy.types import Date
 from email.message import EmailMessage
@@ -374,6 +374,14 @@ def get_users(db: Session = Depends(get_db)):
         ]
     }
 
+@app.post("/user/{user_id}/ping")
+def ping_user_status(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.last_activity = func.now()
+        db.commit()
+    return {"status": "ok"}
+
 # ---------------- MESSAGES ----------------
 @app.get("/messages/contacts/{user_id}")
 def get_message_contacts(user_id: int, db: Session = Depends(get_db)):
@@ -393,6 +401,14 @@ def get_message_contacts(user_id: int, db: Session = Depends(get_db)):
             Message.is_read == False
         ).count()
         
+        now = datetime.now()
+        is_online = False
+        if u.last_activity:
+            # Check if last_activity was within the last 3 minutes
+            diff = (now - u.last_activity.replace(tzinfo=None)).total_seconds()
+            if diff < 180: # 3 minutes
+                is_online = True
+
         contacts.append({
             "user_id": u.id,
             "username": u.username,
@@ -401,7 +417,8 @@ def get_message_contacts(user_id: int, db: Session = Depends(get_db)):
             "storename": u.storename,
             "last_message": last_msg.content if last_msg else None,
             "last_message_time": last_msg.timestamp.strftime("%Y-%m-%d %H:%M:%S") if last_msg else None,
-            "unread_count": unread_count
+            "unread_count": unread_count,
+            "is_online": is_online
         })
         
     contacts.sort(key=lambda x: x["last_message_time"] or "", reverse=True)

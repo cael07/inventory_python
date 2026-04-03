@@ -3,6 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/vue@3"></script>
+  <script src="/static/js/topbar.js"></script>
   <style>
     body { font-family: Arial; background:#f4f4f4; }
     .box { max-width:360px; margin:40px auto; background:white; padding:20px; border-radius:6px; }
@@ -26,7 +27,7 @@
 </div>
 
 <script>
-const API = "https://inventory-python.onrender.com";
+const API = window.CONFIG_API || "https://inventory-python.onrender.com";
 
 Vue.createApp({
   data() {

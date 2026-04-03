@@ -6,6 +6,7 @@
   <title>Login - Inventory</title>
   <link rel="icon" href="/static/img/cael.ico" type="image/x-icon">
   <script src="https://unpkg.com/vue@3"></script>
+  <script src="/static/js/topbar.js"></script>
   <style>
     /* ---------- GLOBAL ---------- */
     body {
@@ -185,7 +186,7 @@
 </div>
 
 <script>
-const API = "https://inventory-python.onrender.com";
+const API = window.CONFIG_API || "https://inventory-python.onrender.com";
 
 Vue.createApp({
   data() {
