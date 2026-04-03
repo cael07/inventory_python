@@ -84,9 +84,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!isLoginPage) {
     const topbarHtml = `
       <div class="top-bar">
-        <div class="logo">
+        <a href="dashboard.html" class="logo" style="text-decoration:none; display:flex; align-items:center;">
           <img src="/static/img/cael.ico" alt="Logo" style="height:32px; width:32px; border-radius:50%; object-fit:cover; border:1px solid rgba(255,255,255,0.2);">
-        </div>
+        </a>
         <div class="hamburger" id="hamburger">
           <span></span>
           <span></span>
