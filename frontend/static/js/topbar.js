@@ -57,10 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
         </a>
 
         <div class="dropdown-divider"></div>
-
-        <div class="dropdown-user">
+        
+        <div class="dropdown-user" style="padding: 10px 16px; color: white;">
           👤 <strong id="topbar-username"></strong>
         </div>
+
+        <div class="dropdown-divider"></div>
 
         <a href="#" id="logout-btn">🚪 Log Out</a>
       </div>

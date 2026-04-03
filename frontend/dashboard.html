@@ -95,15 +95,18 @@ async function checkLowStock() {
   const res = await fetch(`${API}/products?page=1&limit=1000`);
   const data = await res.json();
   lowStockProducts = data.items.filter(p => p.quantity < 5);
-  if (!lowStockProducts.length) return;
-
+  
   const btn = document.getElementById("alertBtn");
   const badge = document.getElementById("alertBadge");
-  const critical = lowStockProducts.some(p => p.quantity < 2);
 
-  btn.classList.add(critical ? "alert-red" : "alert-orange");
-  badge.textContent = lowStockProducts.length;
-  btn.style.display = "flex";
+  if (lowStockProducts.length > 0) {
+    btn.classList.remove("alert-gray");
+    btn.classList.add("alert-red");
+    badge.textContent = lowStockProducts.length;
+    btn.style.display = "flex";
+  } else {
+    btn.style.display = "none";
+  }
 }
 
 function openModal() { document.getElementById("modalOverlay").classList.add("show"); }
