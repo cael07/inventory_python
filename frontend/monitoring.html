@@ -207,6 +207,7 @@
           <th>Qty</th>
           <th>Total</th>
           <th>Remark</th>
+          <th>Created By</th>
         </tr>
 
         <tr v-for="(m, i) in rows" :key="m.id">
@@ -218,6 +219,7 @@
           <td>{{ m.quantity }}</td>
           <td>₱{{ m.total_price }}</td>
           <td>{{ m.remark }}</td>
+          <td>{{ m.created_by || 'System' }}</td>
         </tr>
       </table>
     </div>
