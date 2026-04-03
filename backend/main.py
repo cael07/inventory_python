@@ -34,7 +34,7 @@ Purchase.__table__.create(bind=engine, checkfirst=True)
 Message.__table__.create(bind=engine, checkfirst=True)
 
 # -------------------------------------------------
-# APP
+# APP STARTUP
 # -------------------------------------------------
 
 app = FastAPI(
@@ -51,6 +51,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+GLOBAL_ERRORS = []
+
+def sync_db():
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT last_activity FROM users LIMIT 1"))
+    except Exception as e:
+        GLOBAL_ERRORS.append(f"Initial check failed: {str(e)}")
+        try:
+            with engine.connect() as conn:
+                # Detect dialect and use appropriate syntax
+                dialect = engine.dialect.name
+                col_type = "TIMESTAMPTZ" if dialect == "postgresql" else "TIMESTAMP"
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN last_activity {col_type}"))
+                conn.commit()
+                GLOBAL_ERRORS.append("✅ Successfully added last_activity column")
+        except Exception as e2:
+            GLOBAL_ERRORS.append(f"Migration failed: {str(e2)}")
+
+# Run sync after app definition
+@app.on_event("startup")
+def on_startup():
+    sync_db()
+
 def get_db():
     db = SessionLocal()
     try:
@@ -59,8 +83,20 @@ def get_db():
         db.close()
 
 @app.get("/")
-def root():
-    return {"status": "API running"}
+def root(db: Session = Depends(get_db)):
+    try:
+        users = db.query(User).all()
+        return {
+            "status": "API running",
+            "user_count": len(users),
+            "errors": GLOBAL_ERRORS
+        }
+    except Exception as e:
+        return {"status": "API running", "error": str(e), "errors": GLOBAL_ERRORS}
+
+@app.get("/debug/errors")
+def get_debug_errors():
+    return {"errors": GLOBAL_ERRORS}
 
 # -------------------------------------------------
 # DEBUG
@@ -352,27 +388,31 @@ def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_d
 
 @app.get("/users")
 def get_users(db: Session = Depends(get_db)):
-    users = db.query(User).order_by(User.id.desc()).all()
+    try:
+        users = db.query(User).order_by(User.id.desc()).all()
 
-    return {
-        "total": len(users),
-        "items": [
-            {
-                "id": u.id,
-                "username": u.username,
-                "email": u.useremail,
-                "firstname": u.firstname,
-                "middlename": u.middlename,
-                "lastname": u.lastname,
-                "storename": u.storename,
-                "storelocation": u.storelocation,
-                "address": u.address,
-                "verified": u.verified,
-                "date": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if u.created_at else None
-            }
-            for u in users
-        ]
-    }
+        return {
+            "total": len(users),
+            "items": [
+                {
+                    "id": u.id,
+                    "username": u.username,
+                    "email": u.useremail,
+                    "firstname": u.firstname,
+                    "middlename": u.middlename,
+                    "lastname": u.lastname,
+                    "storename": u.storename,
+                    "storelocation": u.storelocation,
+                    "address": u.address,
+                    "verified": u.verified,
+                    "date": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if (u.created_at and hasattr(u.created_at, "strftime")) else None
+                }
+                for u in users
+            ]
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
 @app.post("/user/{user_id}/ping")
 def ping_user_status(user_id: int, db: Session = Depends(get_db)):
@@ -404,10 +444,14 @@ def get_message_contacts(user_id: int, db: Session = Depends(get_db)):
         now = datetime.now()
         is_online = False
         if u.last_activity:
-            # Check if last_activity was within the last 3 minutes
-            diff = (now - u.last_activity.replace(tzinfo=None)).total_seconds()
-            if diff < 180: # 3 minutes
-                is_online = True
+            try:
+                # Ensure we are comparing aware with aware or naive with naive
+                ua = u.last_activity.replace(tzinfo=None) if hasattr(u.last_activity, "replace") else u.last_activity
+                diff = (now - ua).total_seconds()
+                if diff < 180: # 3 minutes
+                    is_online = True
+            except:
+                pass
 
         contacts.append({
             "user_id": u.id,
@@ -416,12 +460,13 @@ def get_message_contacts(user_id: int, db: Session = Depends(get_db)):
             "lastname": u.lastname,
             "storename": u.storename,
             "last_message": last_msg.content if last_msg else None,
-            "last_message_time": last_msg.timestamp.strftime("%Y-%m-%d %H:%M:%S") if last_msg else None,
+            "last_message_time": last_msg.timestamp.strftime("%Y-%m-%d %H:%M:%S") if (last_msg and last_msg.timestamp and hasattr(last_msg.timestamp, "strftime")) else None,
             "unread_count": unread_count,
             "is_online": is_online
         })
         
-    contacts.sort(key=lambda x: x["last_message_time"] or "", reverse=True)
+    # Improved sorting: Recent messages first, then others alphabetically by name
+    contacts.sort(key=lambda x: (x["last_message_time"] or "0000", x["firstname"] or ""), reverse=True)
     return contacts
 
 @app.get("/messages/{user_id}/{other_id}")
