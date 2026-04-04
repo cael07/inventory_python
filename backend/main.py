@@ -334,11 +334,24 @@ def serve_verify_page(request: Request, email: str = ""):
       }},
       methods:{{
         async verify() {{
-          const r = await fetch(`${{API}}/verify-email?email=${{this.email}}&code=${{this.code}}`, {{
-            method:"POST"
-          }});
-          const d = await r.json();
-          this.message = d.status || d.detail;
+          if (!this.email || !this.code) {{
+            this.message = "Please enter both email and code.";
+            return;
+          }}
+          this.message = "Verifying...";
+          try {{
+            const r = await fetch(`${{API}}/verify-email?email=${{encodeURIComponent(this.email.trim())}}&code=${{encodeURIComponent(this.code.trim())}}`, {{
+              method:"POST"
+            }});
+            const d = await r.json();
+            this.message = d.status || d.detail || "Verification processed";
+            if (d.status === "Email verified successfully" || d.status === "Account already verified") {{
+               setTimeout(() => {{ window.location.href = "login.html"; }}, 1500);
+            }}
+          }} catch(e) {{
+            this.message = "Connection error. Please try again.";
+            console.error(e);
+          }}
         }}
       }}
     }}).mount("#app");
