@@ -212,24 +212,17 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
         const sukiRes = await fetch(`${window.CONFIG_API}/suki/pending/${user.id}`);
-        if (sukiRes.ok) {
-          const reqs = await sukiRes.json();
+        const empRes = await fetch(`${window.CONFIG_API}/employee/pending/${user.id}`);
+        
+        if (sukiRes.ok && empRes.ok) {
+          const sReqs = await sukiRes.json();
+          const eReqs = await empRes.json();
           const sBadge = document.getElementById("suki-unread-badge");
           if (sBadge) {
-            sBadge.innerText = reqs.length;
-            sBadge.style.display = reqs.length > 0 ? "inline-block" : "none";
+            const total = sReqs.length + eReqs.length;
+            sBadge.innerText = total;
+            sBadge.style.display = total > 0 ? "inline-block" : "none";
           }
-        }
-        if (userRank === "owner") {
-            const empRes = await fetch(`${window.CONFIG_API}/employee/pending/${user.id}`);
-            if (empRes.ok) {
-              const reqs = await empRes.json();
-              const eBadge = document.getElementById("emp-unread-badge");
-              if (eBadge) {
-                eBadge.innerText = reqs.length;
-                eBadge.style.display = reqs.length > 0 ? "inline-block" : "none";
-              }
-            }
         }
       } catch (e) { console.error(e); }
     };

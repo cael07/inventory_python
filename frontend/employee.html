@@ -137,7 +137,7 @@
     <div class="tabs">
       <div class="tab" :class="{active: activeTab === 'list'}" @click="activeTab = 'list'">Staff List</div>
       <div class="tab" :class="{active: activeTab === 'add'}" @click="activeTab = 'add'">Hire Employee</div>
-      <div class="tab" :class="{active: activeTab === 'sent'}" @click="activeTab = 'sent'">Requests</div>
+      <div class="tab" :class="{active: activeTab === 'sent'}" @click="activeTab = 'sent'">Sent Requests</div>
     </div>
 
     <!-- TAB: LIST -->
@@ -198,11 +198,11 @@
       </div>
     </div>
 
-    <!-- TAB: REQUESTS -->
+    <!-- TAB: SENT REQUESTS -->
     <div v-if="activeTab === 'sent'">
       <div class="card">
-        <h3>Requests</h3>
-        <p v-if="sentRequests.length === 0" style="color: #aaa;">No active requests.</p>
+        <h3>Pending Offers</h3>
+        <p v-if="sentRequests.length === 0" style="color: #aaa;">No pending employment offers.</p>
         <table v-if="sentRequests.length > 0">
           <thead>
             <tr>
@@ -217,9 +217,7 @@
               <td>{{ req.firstname }} {{ req.lastname }}</td>
               <td>@{{ req.username }}</td>
               <td><span class="badge-rank">{{ req.suggested_rank }}</span></td>
-              <td>
-                  <button class="btn-small" style="background:#f39c12; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;" @click="autoAccept(req)">Accept</button>
-              </td>
+              <td style="color:#f39c12; font-weight:bold;">Pending...</td>
             </tr>
           </tbody>
         </table>
@@ -322,7 +320,6 @@
             if (r.ok) {
                 let data = await r.json();
                 // We're adapting the Suki search endpoint which is global, but filtering out ourselves
-                // Wait! Suki endpoint returns all matching users. We just format.
                 this.searchResults = data.map(u => ({...u, selectedRank: 'cashier'}));
             }
           } catch(e) { console.error(e); }
@@ -344,17 +341,6 @@
              // Remove from search results
              this.searchResults = this.searchResults.filter(u => u.id !== targetUser.id);
            } catch(e) { console.error(e); }
-        },
-        async autoAccept(req) {
-            try {
-                const r = await fetch(`${API}/employee/accept/${this.user.id}/${req.id}`, { method: 'PUT' });
-                if(r.ok) {
-                    alert("Employee officially hired!");
-                    this.fetchSentRequests();
-                    this.fetchEmployees();
-                    this.activeTab = 'list';
-                }
-            } catch(e) { console.error(e); }
         },
         openRemoveModal(emp) {
             this.targetEmployee = emp;
