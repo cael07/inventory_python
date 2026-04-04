@@ -6,15 +6,27 @@
   <script src="https://unpkg.com/vue@3"></script>
 
   <style>
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
     body {
       font-family: Arial, sans-serif;
       background:#f5f6fa;
       padding:20px;
     }
-    h2 { margin-bottom:10px; }
+    h2 { margin-bottom:15px; }
+
+    /* ✅ TABLE SCROLL CONTAINER */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
 
     table {
       width:100%;
+      min-width: 800px;
       border-collapse: collapse;
       background:white;
     }
@@ -39,34 +51,36 @@
 <div id="app">
   <p v-if="loading">Loading users...</p>
 
-  <table v-if="users.length">
-    <tr>
-      <th>#</th>
-      <th>Username</th>
-      <th>Email</th>
-      <th>Name</th>
-      <th>Store</th>
-      <th>Verified</th>
-      <th>Date</th>
-    </tr>
+  <div class="table-wrap">
+    <table v-if="users.length">
+      <tr>
+        <th>#</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Name</th>
+        <th>Store</th>
+        <th>Verified</th>
+        <th>Date</th>
+      </tr>
 
-    <tr v-for="(u, i) in users" :key="u.id">
-      <td>{{ i + 1 }}</td>
-      <td>{{ u.username }}</td>
-      <td>{{ u.email }}</td>
-      <td>{{ u.firstname }} {{ u.middlename }} {{ u.lastname }}</td>
-      <td>
-        {{ u.storename }}<br>
-        <small>{{ u.storelocation }}</small>
-      </td>
-      <td>
-        <span :class="u.verified ? 'yes' : 'no'">
-          {{ u.verified ? 'YES' : 'NO' }}
-        </span>
-      </td>
-      <td>{{ u.date }}</td>
-    </tr>
-  </table>
+      <tr v-for="(u, i) in users" :key="u.id">
+        <td>{{ i + 1 }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.firstname }} {{ u.middlename }} {{ u.lastname }}</td>
+        <td>
+          {{ u.storename }}<br>
+          <small>{{ u.storelocation }}</small>
+        </td>
+        <td>
+          <span :class="u.verified ? 'yes' : 'no'">
+            {{ u.verified ? 'YES' : 'NO' }}
+          </span>
+        </td>
+        <td>{{ u.date }}</td>
+      </tr>
+    </table>
+  </div>
 
   <p v-if="!loading && !users.length">No users found</p>
 </div>

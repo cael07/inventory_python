@@ -38,9 +38,35 @@
     font-size: 16px;          /* larger text */}
     ul { margin-top: 20px; }
     .latest-section { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
-    .latest-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .latest-table th { background: #1f3a5f; color: white; padding: 10px; text-align: left; }
-    .latest-table td { padding: 10px; border-bottom: 1px solid #eee; }
+    
+    /* ✅ TABLE SCROLL CONTAINER */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .latest-table { 
+      width: 100%; 
+      min-width: 600px; 
+      border-collapse: collapse; 
+      margin-top: 10px; 
+      background: white; 
+    }
+
+    .latest-table th, .latest-table td { 
+      border: 1px solid #ccc; 
+      padding: 8px; 
+      font-size: 14px; 
+      text-align: center; 
+      white-space: nowrap; 
+    }
+
+    .latest-table th { 
+      background: #f8f9fa; 
+      color: #333; 
+      font-weight: bold; 
+    }
   </style>
 </head>
 <body>
@@ -61,27 +87,29 @@
   <!-- LATEST PRODUCTS SECTION -->
   <div class="latest-section">
     <h3 style="color: #1f3a5f; margin-bottom: 10px;">📋 Recently Added Products</h3>
-    <table class="latest-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Barcode</th>
-          <th>Price</th>
-          <th>Qty</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="p in latestProducts" :key="p.id">
-          <td>{{ p.name }}</td>
-          <td>{{ p.barcode }}</td>
-          <td>₱{{ p.price }}</td>
-          <td>{{ p.quantity }}</td>
-        </tr>
-        <tr v-if="latestProducts.length === 0">
-          <td colspan="4" style="text-align:center; color:#999;">No products yet.</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="latest-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Barcode</th>
+            <th>Price</th>
+            <th>Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="p in latestProducts" :key="p.id">
+            <td>{{ p.name }}</td>
+            <td>{{ p.barcode }}</td>
+            <td>₱{{ p.price }}</td>
+            <td>{{ p.quantity }}</td>
+          </tr>
+          <tr v-if="latestProducts.length === 0">
+            <td colspan="4" style="text-align:center; color:#999;">No products yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
 <!-- ADD / EDIT PRODUCT MODAL -->

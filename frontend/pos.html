@@ -8,8 +8,35 @@
 
   <style>
     video { width:100%; max-width:400px; border:2px solid #333; margin-bottom:10px; }
-    table { width:100%; border-collapse: collapse; margin-top:10px; }
-    th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+    
+    /* ✅ TABLE SCROLL CONTAINER */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 10px;
+    }
+
+    table { 
+      width:100%; 
+      min-width: 700px; 
+      border-collapse: collapse; 
+      background: #fff;
+    }
+
+    th, td { 
+      border:1px solid #ccc; 
+      padding: 8px; 
+      font-size: 14px;
+      text-align:center; 
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f8f9fa;
+      font-weight: bold;
+    }
+
     button { padding:8px 12px; font-size:14px; margin:2px; }
     input { padding:6px; width:80px; text-align:center; }
 
@@ -159,28 +186,30 @@
   <p><b>Purchase #:</b> {{ purchase_number }}</p>
   <p>Status: {{ status }}</p>
 
-  <table v-if="items.length">
-    <tr>
-      <th>#</th>
-      <th>Name</th>
-      <th>Price</th>
-      <th>Qty</th>
-      <th>Total</th>
-      <th>Action</th>
-    </tr>
+  <div class="table-wrap">
+    <table v-if="items.length">
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Total</th>
+        <th>Action</th>
+      </tr>
 
-    <tr v-for="(i, index) in items" :key="i.barcode">
-      <td>{{ index + 1 }}</td>
-      <td>{{ i.name }}</td>
-      <td>₱{{ i.price }}</td>
-      <td>{{ i.quantity }}</td>
-      <td>₱{{ i.total_price }}</td>
-      <td>
-        <button @click="decreaseQty(index)">➖</button>
-        <button @click="removeItem(index)">❌</button>
-      </td>
-    </tr>
-  </table>
+      <tr v-for="(i, index) in items" :key="i.barcode">
+        <td>{{ index + 1 }}</td>
+        <td>{{ i.name }}</td>
+        <td>₱{{ i.price }}</td>
+        <td>{{ i.quantity }}</td>
+        <td>₱{{ i.total_price }}</td>
+        <td>
+          <button @click="decreaseQty(index)">➖</button>
+          <button @click="removeItem(index)">❌</button>
+        </td>
+      </tr>
+    </table>
+  </div>
 
   <div v-if="showScanModal" class="scan-modal">✅ Scanned!</div>
 
