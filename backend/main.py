@@ -67,8 +67,6 @@ try:
 except Exception as e:
     print(f"[MIGRATION WARNING] {e}")
 
-# DEV ONLY: reset suki for now
-Suki.__table__.drop(bind=engine, checkfirst=True)
 Suki.__table__.create(bind=engine, checkfirst=True)
 
 # -------------------------------------------------
@@ -1337,6 +1335,18 @@ def get_pending_requests(user_id: int, db: Session = Depends(get_db)):
                 "storename": u.storename
             })
     return results
+
+@app.get("/suki/sent/{user_id}")
+def get_sent_requests(user_id: int, db: Session = Depends(get_db)):
+    """Requests I sent that are still pending."""
+    reqs = db.query(Suki).filter(Suki.owner_id == user_id, Suki.status == "pending").all()
+    results = []
+    for r in reqs:
+        u = db.query(User).filter(User.id == r.suki_id).first()
+        if u:
+            results.append({"id": u.id, "username": u.username, "firstname": u.firstname, "lastname": u.lastname, "storename": u.storename})
+    return results
+
 
 @app.put("/suki/accept/{owner_id}/{suki_id}")
 def accept_suki(owner_id: int, suki_id: int, db: Session = Depends(get_db)):

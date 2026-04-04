@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Suki List</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/static/img/cael.ico" type="image/x-icon">
+  <script src="https://unpkg.com/vue@3"></script>
+  <link rel="stylesheet" href="/static/css/topbar.css">
+  <script src="/static/js/topbar.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin:0; background:#f5f6fa; min-height:100vh; }
+    .page { max-width:680px; margin:0 auto; padding:16px; }
+
+    /* TABS */
+    .tabs { display:flex; gap:8px; margin-bottom:16px; }
+    .tab { flex:1; padding:10px; border:none; border-radius:10px; background:#e8e8e8; font-size:14px; cursor:pointer; font-weight:600; transition:.15s; }
+    .tab.active { background:#0084ff; color:#fff; }
+
+    /* SEARCH BAR */
+    .search-bar { display:flex; gap:8px; margin-bottom:16px; }
+    .search-bar input { flex:1; padding:12px 16px; border:1.5px solid #ddd; border-radius:20px; font-size:15px; outline:none; background:#fff; }
+    .search-bar input:focus { border-color:#0084ff; }
+    .search-bar button { padding:12px 20px; background:#0084ff; color:#fff; border:none; border-radius:20px; font-size:15px; cursor:pointer; font-weight:600; }
+
+    /* CARD */
+    .card { background:#fff; border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:14px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,.07); }
+    .avatar { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; color:#fff; flex-shrink:0; }
+    .info { flex:1; min-width:0; }
+    .info .name { font-weight:700; font-size:15px; }
+    .info .sub { font-size:12px; color:#888; margin-top:2px; }
+    .btn { padding:8px 18px; border:none; border-radius:20px; font-size:13px; cursor:pointer; font-weight:600; white-space:nowrap; }
+    .btn-add { background:#0084ff; color:#fff; }
+    .btn-remove { background:#ff4d4f; color:#fff; }
+    .btn-accept { background:#31a24c; color:#fff; }
+    .btn-pending { background:#f5f5f5; color:#888; cursor:default; }
+
+    .empty { text-align:center; color:#aaa; padding:40px 20px; }
+    .pending-badge { background:red; color:#fff; border-radius:50%; font-size:11px; padding:2px 6px; margin-left:6px; }
+    .loading { text-align:center; color:#aaa; padding:24px; }
+
+    .section-title { font-size:13px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px; margin:16px 0 8px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div class="page">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <a href="messages.html" style="color:#0084ff;text-decoration:none;font-size:13px;">← Back to Chats</a>
+      <h2 style="margin:0;font-size:20px;">👥 Suki List</h2>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab" :class="{active:tab==='sukis'}" @click="tab='sukis'">My Sukis ({{ sukis.length }})</button>
+      <button class="tab" :class="{active:tab==='search'}" @click="tab='search'">Find People</button>
+      <button class="tab" :class="{active:tab==='pending'}" @click="tab='pending'">
+        Requests<span v-if="pending.length" class="pending-badge">{{ pending.length }}</span>
+      </button>
+    </div>
+
+    <!-- MY SUKIS TAB -->
+    <div v-if="tab==='sukis'">
+      <div class="search-bar">
+        <input v-model="sukiFilter" placeholder="Filter sukis...">
+      </div>
+      <div v-if="loadingSukis" class="loading">Loading...</div>
+      <div v-else-if="filteredSukis.length === 0" class="empty">
+        No sukis yet.<br>
+        <span style="color:#0084ff;cursor:pointer;" @click="tab='search'">Find people to add</span>
+      </div>
+      <div v-for="u in filteredSukis" :key="u.id" class="card">
+        <div class="avatar" :style="{background:color(u.id)}">{{ u.firstname.charAt(0) }}</div>
+        <div class="info">
+          <div class="name">{{ u.firstname }} {{ u.lastname }}</div>
+          <div class="sub">@{{ u.username }} · {{ u.storename }}<br>{{ u.storelocation }}</div>
+        </div>
+        <button class="btn btn-remove" @click="removeSuki(u)">Remove</button>
+      </div>
+    </div>
+
+    <!-- SEARCH TAB -->
+    <div v-if="tab==='search'">
+      <div class="search-bar">
+        <input v-model="searchQ" @keyup.enter="searchUsers" placeholder="Search by name, username or store...">
+        <button @click="searchUsers">Search</button>
+      </div>
+      <div v-if="searching" class="loading">Searching...</div>
+      <div v-else-if="searchResults.length === 0 && searchQ && !searching" class="empty">No users found for "{{ searchQ }}"</div>
+      <div v-else-if="searchResults.length === 0 && !searchQ" class="empty" style="padding:20px;">Type a name or store to search all registered users</div>
+      <div v-for="u in searchResults" :key="u.id" class="card">
+        <div class="avatar" :style="{background:color(u.id)}">{{ u.firstname.charAt(0) }}</div>
+        <div class="info">
+          <div class="name">{{ u.firstname }} {{ u.lastname }}</div>
+          <div class="sub">@{{ u.username }} · {{ u.storename }}</div>
+        </div>
+        <button v-if="!u.suki_status" class="btn btn-add" @click="sendRequest(u)">Add Suki</button>
+        <button v-else-if="u.suki_status==='pending'" class="btn btn-pending">Pending</button>
+        <button v-else class="btn" style="background:#e8f5e9;color:#31a24c;">✓ Suki</button>
+      </div>
+    </div>
+
+    <!-- PENDING REQUESTS TAB -->
+    <div v-if="tab==='pending'">
+      <div v-if="loadingPending" class="loading">Loading...</div>
+      <div v-else-if="pending.length === 0" class="empty">No pending requests</div>
+
+      <div v-if="sent.length" class="section-title">Requests You Sent</div>
+      <div v-for="u in sent" :key="'sent-'+u.id" class="card">
+        <div class="avatar" :style="{background:color(u.id)}">{{ u.firstname.charAt(0) }}</div>
+        <div class="info">
+          <div class="name">{{ u.firstname }} {{ u.lastname }}</div>
+          <div class="sub">{{ u.storename }}</div>
+        </div>
+        <button class="btn btn-pending">Waiting...</button>
+      </div>
+
+      <div v-if="pending.length" class="section-title">Requests Received</div>
+      <div v-for="r in pending" :key="'pend-'+r.id" class="card">
+        <div class="avatar" :style="{background:color(r.id)}">{{ r.firstname.charAt(0) }}</div>
+        <div class="info">
+          <div class="name">{{ r.firstname }} {{ r.lastname }}</div>
+          <div class="sub">{{ r.storename }}</div>
+        </div>
+        <button class="btn btn-accept" @click="acceptRequest(r)">Accept</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = window.CONFIG_API || "https://inventory-python.onrender.com";
+
+Vue.createApp({
+  data() {
+    return {
+      myUserId: null,
+      tab: "sukis",
+      // My sukis
+      sukis: [], loadingSukis: true, sukiFilter: "",
+      // Search
+      searchQ: "", searchResults: [], searching: false,
+      // Pending
+      pending: [], sent: [], loadingPending: true,
+    };
+  },
+  computed: {
+    filteredSukis() {
+      if (!this.sukiFilter) return this.sukis;
+      const q = this.sukiFilter.toLowerCase();
+      return this.sukis.filter(u =>
+        (u.firstname + " " + u.lastname + " " + (u.username||"") + " " + (u.storename||"")).toLowerCase().includes(q)
+      );
+    }
+  },
+  methods: {
+    color(id) {
+      const c = ["#0084ff","#31a24c","#f5c33b","#fa3e3e","#764abc","#ff7800"];
+      return c[id % c.length];
+    },
+    async loadSukis() {
+      this.loadingSukis = true;
+      try {
+        const res = await fetch(`${API}/suki/${this.myUserId}`);
+        if (res.ok) this.sukis = await res.json();
+      } catch(e) {}
+      this.loadingSukis = false;
+    },
+    async loadPending() {
+      this.loadingPending = true;
+      try {
+        // Requests sent TO me (incoming)
+        const r1 = await fetch(`${API}/suki/pending/${this.myUserId}`);
+        if (r1.ok) this.pending = await r1.json();
+        // Requests I sent (outgoing) — search for users with pending status
+        const r2 = await fetch(`${API}/suki/sent/${this.myUserId}`);
+        if (r2.ok) this.sent = await r2.json();
+      } catch(e) {}
+      this.loadingPending = false;
+    },
+    async searchUsers() {
+      if (!this.searchQ.trim()) return;
+      this.searching = true;
+      this.searchResults = [];
+      try {
+        const res = await fetch(`${API}/users/search?q=${encodeURIComponent(this.searchQ)}&user_id=${this.myUserId}`);
+        if (res.ok) this.searchResults = await res.json();
+      } catch(e) { alert("Search failed"); }
+      this.searching = false;
+    },
+    async sendRequest(u) {
+      try {
+        const res = await fetch(`${API}/suki?owner_id=${this.myUserId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ suki_id: u.id })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          u.suki_status = "pending";
+          alert(data.message || "Request sent!");
+        }
+      } catch(e) { alert("Error sending request"); }
+    },
+    async acceptRequest(r) {
+      try {
+        await fetch(`${API}/suki/accept/${r.id}/${this.myUserId}`, { method: "PUT" });
+        this.pending = this.pending.filter(p => p.id !== r.id);
+        await this.loadSukis();
+        alert(`You are now Suki with ${r.firstname}!`);
+      } catch(e) { alert("Error accepting"); }
+    },
+    async removeSuki(u) {
+      if (!confirm(`Remove ${u.firstname} from your Sukis?`)) return;
+      try {
+        await fetch(`${API}/suki/${this.myUserId}/${u.id}`, { method: "DELETE" });
+        this.sukis = this.sukis.filter(s => s.id !== u.id);
+      } catch(e) { alert("Error removing"); }
+    }
+  },
+  watch: {
+    tab(val) {
+      if (val === "sukis") this.loadSukis();
+      if (val === "pending") this.loadPending();
+    }
+  },
+  mounted() {
+    const u = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!u.id) { window.location.href = "login.html"; return; }
+    this.myUserId = u.id;
+    this.loadSukis();
+    this.loadPending();
+  }
+}).mount("#app");
+</script>
+</body>
+</html>
