@@ -160,8 +160,13 @@ Vue.createApp({
   },
   computed: {
     latestProducts() {
-      // Sort by ID descending (latest first) and take top 5
-      return [...this.products].sort((a, b) => b.id - a.id).slice(0, 5);
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const store = user.storename;
+      // Filter by current store, sort by ID descending (latest first), and take top 5
+      return [...this.products]
+        .filter(p => !store || p.store_name === store)
+        .sort((a, b) => b.id - a.id)
+        .slice(0, 5);
     }
   },
   mounted() {
@@ -294,9 +299,11 @@ Vue.createApp({
     },
 
     loadProducts() {
-      fetch(`${API}/products`)
+      fetch(`${API}/products?page=1&limit=1000`)
         .then(r => r.json())
-        .then(data => { this.products = data; });
+        .then(data => { 
+          this.products = data.items || []; 
+        });
     },
 
     loadMonitoring() {
