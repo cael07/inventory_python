@@ -212,16 +212,22 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
         const sukiRes = await fetch(`${window.CONFIG_API}/suki/pending/${user.id}`);
-        const empRes = await fetch(`${window.CONFIG_API}/employee/pending/${user.id}`);
-        
-        if (sukiRes.ok && empRes.ok) {
-          const sReqs = await sukiRes.json();
-          const eReqs = await empRes.json();
+        if (sukiRes.ok) {
+          const reqs = await sukiRes.json();
           const sBadge = document.getElementById("suki-unread-badge");
           if (sBadge) {
-            const total = sReqs.length + eReqs.length;
-            sBadge.innerText = total;
-            sBadge.style.display = total > 0 ? "inline-block" : "none";
+            sBadge.innerText = reqs.length;
+            sBadge.style.display = reqs.length > 0 ? "inline-block" : "none";
+          }
+        }
+        
+        const empRes = await fetch(`${window.CONFIG_API}/employee/pending/${user.id}`);
+        if (empRes.ok) {
+          const eReqs = await empRes.json();
+          const eBadge = document.getElementById("emp-unread-badge");
+          if (eBadge) {
+            eBadge.innerText = eReqs.length;
+            eBadge.style.display = eReqs.length > 0 ? "inline-block" : "none";
           }
         }
       } catch (e) { console.error(e); }

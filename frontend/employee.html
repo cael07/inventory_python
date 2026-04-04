@@ -137,7 +137,7 @@
     <div class="tabs">
       <div class="tab" :class="{active: activeTab === 'list'}" @click="activeTab = 'list'">Staff List</div>
       <div class="tab" :class="{active: activeTab === 'add'}" @click="activeTab = 'add'">Hire Employee</div>
-      <div class="tab" :class="{active: activeTab === 'sent'}" @click="activeTab = 'sent'">Sent Requests</div>
+      <div class="tab" :class="{active: activeTab === 'sent'}" @click="activeTab = 'sent'">Requests</div>
     </div>
 
     <!-- TAB: LIST -->
@@ -198,29 +198,57 @@
       </div>
     </div>
 
-    <!-- TAB: SENT REQUESTS -->
+    <!-- TAB: REQUESTS -->
     <div v-if="activeTab === 'sent'">
       <div class="card">
-        <h3>Pending Offers</h3>
-        <p v-if="sentRequests.length === 0" style="color: #aaa;">No pending employment offers.</p>
-        <table v-if="sentRequests.length > 0">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Username</th>
-              <th>Offered Rank</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="req in sentRequests" :key="req.id">
-              <td>{{ req.firstname }} {{ req.lastname }}</td>
-              <td>@{{ req.username }}</td>
-              <td><span class="badge-rank">{{ req.suggested_rank }}</span></td>
-              <td style="color:#f39c12; font-weight:bold;">Pending...</td>
-            </tr>
-          </tbody>
-        </table>
+        <h3>Employment Offers</h3>
+        <p v-if="sentRequests.length === 0 && incomingRequests.length === 0" style="color: #aaa;">No active requests.</p>
+        
+        <div v-if="incomingRequests.length > 0">
+            <h4 style="color:#f39c12;">Incoming Job Offers (Action Required)</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Store Owner</th>
+                  <th>Username</th>
+                  <th>Offered Rank</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="req in incomingRequests" :key="req.id">
+                  <td>{{ req.firstname }} {{ req.lastname }}</td>
+                  <td>@{{ req.username }}</td>
+                  <td><span class="badge-rank">{{ req.suggested_rank }}</span></td>
+                  <td>
+                      <button class="btn-small" style="background:#4cd137; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;" @click="acceptIncoming(req)">Accept Role</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+        </div>
+
+        <div v-if="sentRequests.length > 0" style="margin-top:20px;">
+            <h4 style="color:#00eaff;">Job Offers Sent by You</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Target User</th>
+                  <th>Username</th>
+                  <th>Offered Rank</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="req in sentRequests" :key="req.id">
+                  <td>{{ req.firstname }} {{ req.lastname }}</td>
+                  <td>@{{ req.username }}</td>
+                  <td><span class="badge-rank">{{ req.suggested_rank }}</span></td>
+                  <td style="color:#f39c12; font-weight:bold;">Pending...</td>
+                </tr>
+              </tbody>
+            </table>
+        </div>
       </div>
     </div>
 
@@ -279,6 +307,7 @@
           activeTab: 'list',
           employees: [],
           sentRequests: [],
+          incomingRequests: [],
           
           searchQuery: "",
           searchResults: [],
@@ -310,6 +339,9 @@
           try {
             const r = await fetch(`${API}/employee/sent/${this.user.id}`);
             if(r.ok) this.sentRequests = await r.json();
+            
+            const r2 = await fetch(`${API}/employee/pending/${this.user.id}`);
+            if(r2.ok) this.incomingRequests = await r2.json();
           } catch(e) { console.error(e); }
         },
         async searchUsers() {
@@ -342,6 +374,18 @@
              this.searchResults = this.searchResults.filter(u => u.id !== targetUser.id);
            } catch(e) { console.error(e); }
         },
+         async acceptIncoming(req) {
+            try {
+                // req.id is the owner_id sent from get_pending_employees
+                const r = await fetch(`${API}/employee/accept/${req.id}/${this.user.id}`, { method: 'PUT' });
+                if(r.ok) {
+                    alert(`You are now hired as a ${req.suggested_rank} at ${req.storename}!\nPlease re-login to synchronize your store permissions.`);
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    window.location.href = "login.html";
+                }
+            } catch(e) { console.error(e); }
+         },
         openRemoveModal(emp) {
             this.targetEmployee = emp;
             this.removePurpose = "";
