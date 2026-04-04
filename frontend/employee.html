@@ -145,8 +145,8 @@
       <div class="card">
         <h3>Current Employees</h3>
         <p v-if="employees.length === 0" style="color: #aaa;">No employees currently hired.</p>
-        
-        <table v-if="employees.length > 0">
+        <div v-if="employees.length > 0" style="overflow-x: auto; width: 100%;">
+          <table>
           <thead>
             <tr>
               <th>Name</th>
@@ -167,6 +167,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
 
@@ -206,6 +207,7 @@
         
         <div v-if="incomingRequests.length > 0">
             <h4 style="color:#f39c12;">Incoming Job Offers (Action Required)</h4>
+            <div style="overflow-x: auto; width: 100%;">
             <table>
               <thead>
                 <tr>
@@ -226,10 +228,12 @@
                 </tr>
               </tbody>
             </table>
+            </div>
         </div>
 
         <div v-if="sentRequests.length > 0" style="margin-top:20px;">
             <h4 style="color:#00eaff;">Job Offers Sent by You</h4>
+            <div style="overflow-x: auto; width: 100%;">
             <table>
               <thead>
                 <tr>
@@ -248,6 +252,7 @@
                 </tr>
               </tbody>
             </table>
+            </div>
         </div>
       </div>
     </div>
