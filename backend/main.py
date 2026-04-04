@@ -9,8 +9,8 @@ from datetime import date, timedelta, datetime
 from sqlalchemy.types import Date
 from email.message import EmailMessage
 from backend.database import SessionLocal, engine
-from backend.models import User, Product, ProductMonitoring, Purchase, Message, Suki
-from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister, UserUpdate, MessageCreate, SukiCreate
+from backend.models import User, Product, ProductMonitoring, Purchase, Message, Suki, Employee, EmployeeHistory
+from backend.schemas import UserCreate, ProductCreate, ProductMonitoringCreate, PurchaseCreate, UserRegister, UserUpdate, MessageCreate, SukiCreate, EmployeeCreate, EmployeeHistoryCreate, EmployeeRemove
 from backend import auth
 
 import uuid
@@ -32,6 +32,8 @@ User.__table__.create(bind=engine, checkfirst=True)
 
 Purchase.__table__.create(bind=engine, checkfirst=True)
 Message.__table__.create(bind=engine, checkfirst=True)
+Employee.__table__.create(bind=engine, checkfirst=True)
+EmployeeHistory.__table__.create(bind=engine, checkfirst=True)
 
 # -------------------------------------------------
 # DB MIGRATION: Switch from global barcode unique to
@@ -1504,8 +1506,8 @@ def get_employees(owner_id: int, db: Session = Depends(get_db)):
     return results
 
 @app.delete("/employee/{owner_id}/{employee_id}")
-def remove_employee(owner_id: int, employee_id: int, payload: dict, db: Session = Depends(get_db)):
-    purpose = payload.get("purpose", "")
+def remove_employee(owner_id: int, employee_id: int, payload: EmployeeRemove, db: Session = Depends(get_db)):
+    purpose = payload.purpose
     if not purpose:
         raise HTTPException(400, "Removal purpose is required")
         
