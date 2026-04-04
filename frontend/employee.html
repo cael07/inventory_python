@@ -315,7 +315,7 @@
         async searchUsers() {
           if (!this.searchQuery.trim()) return;
           try {
-            const r = await fetch(`${API}/suki/search/${this.user.id}?q=${encodeURIComponent(this.searchQuery)}`);
+            const r = await fetch(`${API}/users/search?q=${encodeURIComponent(this.searchQuery)}&user_id=${this.user.id}`);
             this.searchPerformed = true;
             if (r.ok) {
                 let data = await r.json();
