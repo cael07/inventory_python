@@ -267,7 +267,10 @@ Vue.createApp({
           body: JSON.stringify(payload)
         });
 
-        if (!res.ok) throw new Error("Failed to save");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(`HTTP ${res.status}: ${errData.detail || "Failed to save"}`);
+        }
 
         this.showModal = false;
         this.loadProducts();
@@ -275,7 +278,7 @@ Vue.createApp({
         alert(this.existing ? "Updated" : "Saved");
       } catch (err) {
         console.error(err);
-        alert("Error saving");
+        alert("Error saving: " + err.message);
       }
     },
 
@@ -301,7 +304,10 @@ Vue.createApp({
           body: JSON.stringify(payload)
         });
 
-        if (!res.ok) throw new Error("Failed to update");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(`HTTP ${res.status}: ${errData.detail || "Failed to update"}`);
+        }
 
         this.cancelUpdate();
         this.loadProducts();
@@ -309,7 +315,7 @@ Vue.createApp({
         alert("Product updated and monitored");
       } catch (err) {
         console.error(err);
-        alert("Error updating product");
+        alert("Error updating product: " + err.message);
       }
     },
 

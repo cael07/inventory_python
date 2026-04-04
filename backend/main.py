@@ -33,6 +33,40 @@ User.__table__.create(bind=engine, checkfirst=True)
 Purchase.__table__.create(bind=engine, checkfirst=True)
 Message.__table__.create(bind=engine, checkfirst=True)
 
+# -------------------------------------------------
+# DB MIGRATION: Switch from global barcode unique to
+# composite unique (barcode + store_name)
+# -------------------------------------------------
+try:
+    with engine.connect() as conn:
+        # Drop old single-column unique constraint if it exists
+        conn.execute(text("""
+            DO $$ BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'products_barcode_key'
+                ) THEN
+                    ALTER TABLE products DROP CONSTRAINT products_barcode_key;
+                END IF;
+            END $$;
+        """))
+        # Add composite unique constraint if it doesn't exist
+        conn.execute(text("""
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'uix_barcode_store'
+                ) THEN
+                    ALTER TABLE products
+                    ADD CONSTRAINT uix_barcode_store
+                    UNIQUE (barcode, store_name);
+                END IF;
+            END $$;
+        """))
+        conn.commit()
+except Exception as e:
+    print(f"[MIGRATION WARNING] {e}")
+
 # DEV ONLY: reset suki for now
 Suki.__table__.drop(bind=engine, checkfirst=True)
 Suki.__table__.create(bind=engine, checkfirst=True)
