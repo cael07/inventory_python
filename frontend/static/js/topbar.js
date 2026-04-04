@@ -264,7 +264,5 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (e) { console.error(e); }
       btn.innerText = "Save";
     });
-
-    });
   }
 });
