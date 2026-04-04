@@ -202,6 +202,8 @@
 
 <script>
 const API = window.CONFIG_API || "https://inventory-python.onrender.com";
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+const storeName = user.storename || "";
 
 Vue.createApp({
   data() {
@@ -228,7 +230,7 @@ async loadMore() {
   this.loading = true;
 
   try {
-    const res = await fetch(`${API}/products?page=${this.page}&limit=${this.limit}`);
+    const res = await fetch(`${API}/products?page=${this.page}&limit=${this.limit}&store_name=${encodeURIComponent(storeName)}`);
     const data = await res.json();
 
     if (data.items && data.items.length) {
@@ -251,7 +253,7 @@ async doSearch() {
 
   try {
     const res = await fetch(
-      `${API}/products_manual_search?search=${encodeURIComponent(this.search)}`
+      `${API}/products_manual_search?search=${encodeURIComponent(this.search)}&store_name=${encodeURIComponent(storeName)}`
     );
     const data = await res.json();
     this.rows = data.items || [];

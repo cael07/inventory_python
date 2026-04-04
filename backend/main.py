@@ -604,26 +604,38 @@ def save_product(p: ProductCreate, db: Session = Depends(get_db)):
     }
 
 @app.get("/product/{barcode}")
-def get_product(barcode: str, db: Session = Depends(get_db)):
-    return db.query(Product).filter_by(barcode=barcode).first()
+def get_product(
+    barcode: str, 
+    store_name: str | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(Product).filter_by(barcode=barcode)
+    if store_name:
+        query = query.filter(Product.store_name == store_name)
+    return query.first()
 
 @app.get("/products")
 def get_products(
     page: int = 1,
     limit: int = 25,
+    store_name: str | None = None,
     db: Session = Depends(get_db)
 ):
     offset = (page - 1) * limit
 
+    query = db.query(Product)
+    if store_name:
+        query = query.filter(Product.store_name == store_name)
+
     rows = (
-        db.query(Product)
+        query
         .order_by(Product.id.desc())
         .offset(offset)
         .limit(limit)
         .all()
     )
 
-    total = db.query(Product).count()
+    total = query.count()
 
     # convert SQLAlchemy objects to plain dicts
     items = [
@@ -651,6 +663,7 @@ def monitoring_manual_search(
     search: str | None = None,
     date_from: str | None = None,   # YYYY-MM-DD
     date_to: str | None = None,     # YYYY-MM-DD
+    store_name: str | None = None,
     db: Session = Depends(get_db)
 ):
     filters = []
@@ -672,6 +685,9 @@ def monitoring_manual_search(
     if date_to:
         to_dt = datetime.strptime(date_to, "%Y-%m-%d")
         filters.append(ProductMonitoring.date <= to_dt)
+
+    if store_name:
+        filters.append(ProductMonitoring.store_name == store_name)
 
     rows = (
         db.query(ProductMonitoring)
@@ -760,15 +776,23 @@ def update_product_item(
     return {"message": "Success", "saved_as": c_by, "store": s_name}
 
 @app.get("/products_manual_search")
-def products_manual_search(search: str, db: Session = Depends(get_db)):
-    rows = (
-        db.query(Product)
-        .filter(
-            or_(
-                Product.barcode.ilike(f"%{search}%"),
-                Product.name.ilike(f"%{search}%")
-            )
+def products_manual_search(
+    search: str, 
+    store_name: str | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(Product).filter(
+        or_(
+            Product.barcode.ilike(f"%{search}%"),
+            Product.name.ilike(f"%{search}%")
         )
+    )
+    
+    if store_name:
+        query = query.filter(Product.store_name == store_name)
+
+    rows = (
+        query
         .limit(20)
         .all()
     )
@@ -826,19 +850,24 @@ def monitoring_manual_search(
 def get_monitoring(
     page: int = 1,
     limit: int = 25,
+    store_name: str | None = None,
     db: Session = Depends(get_db)
 ):
     offset = (page - 1) * limit
 
+    query = db.query(ProductMonitoring)
+    if store_name:
+        query = query.filter(ProductMonitoring.store_name == store_name)
+
     rows = (
-        db.query(ProductMonitoring)
+        query
         .order_by(ProductMonitoring.date.desc())
         .offset(offset)
         .limit(limit)
         .all()
     )
 
-    total = db.query(ProductMonitoring).count()
+    total = query.count()
 
     return {
         "page": page,
@@ -912,6 +941,7 @@ def pos_report(
     barcode: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    store_name: str | None = None,
     db: Session = Depends(get_db)
 ):
     offset = (page - 1) * limit
@@ -929,6 +959,9 @@ def pos_report(
 
     if date_to:
         query = query.filter(Purchase.date <= date_to)
+
+    if store_name:
+        query = query.filter(Purchase.store_name == store_name)
 
     total = query.count()
 
@@ -962,10 +995,18 @@ def pos_report(
 
 
 @app.get("/pos/{purchase_number}")
-def get_pos_items(purchase_number: str, db: Session = Depends(get_db)):
-    items = db.query(Purchase).filter_by(
-        purchase_number=purchase_number
-    ).all()
+def get_pos_items(
+    purchase_number: str, 
+    store_name: str | None = None,
+    db: Session = Depends(get_db)
+):
+    items = db.query(Purchase).filter(
+        Purchase.purchase_number == purchase_number
+    )
+    if store_name:
+        items = items.filter(Purchase.store_name == store_name)
+    
+    items = items.all()
 
     total = sum(i.total_price for i in items)
 
@@ -1023,6 +1064,7 @@ def export_pos_report(
     barcode: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    store_name: str | None = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(Purchase)
@@ -1038,6 +1080,9 @@ def export_pos_report(
 
     if date_to:
         query = query.filter(Purchase.date <= date_to)
+
+    if store_name:
+        query = query.filter(Purchase.store_name == store_name)
 
     rows = query.order_by(Purchase.date.desc()).all()
 
@@ -1071,16 +1116,23 @@ def export_pos_report(
 
 # ---------------- 📊 PURCHASE STATS (DAILY - LAST 7 DAYS) ----------------
 @app.get("/stats/purchases/daily")
-def purchase_stats_daily(db: Session = Depends(get_db)):
+def purchase_stats_daily(
+    store_name: str | None = None,
+    db: Session = Depends(get_db)
+):
     today = date.today()
     start_date = today - timedelta(days=6)
 
+    query = db.query(
+        cast(Purchase.date, Date).label("date"),
+        func.sum(Purchase.total_price).label("total")
+    ).filter(cast(Purchase.date, Date) >= start_date)
+
+    if store_name:
+        query = query.filter(Purchase.store_name == store_name)
+
     rows = (
-        db.query(
-            cast(Purchase.date, Date).label("date"),
-            func.sum(Purchase.total_price).label("total")
-        )
-        .filter(cast(Purchase.date, Date) >= start_date)
+        query
         .group_by(cast(Purchase.date, Date))
         .order_by(cast(Purchase.date, Date))
         .all()
@@ -1093,15 +1145,22 @@ def purchase_stats_daily(db: Session = Depends(get_db)):
 
 # ---------------- 📊 PURCHASE STATS (MONTHLY - CURRENT YEAR) ----------------
 @app.get("/stats/purchases/monthly")
-def purchase_stats_monthly(db: Session = Depends(get_db)):
+def purchase_stats_monthly(
+    store_name: str | None = None,
+    db: Session = Depends(get_db)
+):
     current_year = date.today().year
 
+    query = db.query(
+        func.to_char(Purchase.date, "YYYY-MM").label("month"),
+        func.sum(Purchase.total_price).label("total")
+    ).filter(func.extract("year", Purchase.date) == current_year)
+
+    if store_name:
+        query = query.filter(Purchase.store_name == store_name)
+
     rows = (
-        db.query(
-            func.to_char(Purchase.date, "YYYY-MM").label("month"),
-            func.sum(Purchase.total_price).label("total")
-        )
-        .filter(func.extract("year", Purchase.date) == current_year)
+        query
         .group_by(func.to_char(Purchase.date, "YYYY-MM"))
         .order_by(func.to_char(Purchase.date, "YYYY-MM"))
         .all()
@@ -1114,16 +1173,23 @@ def purchase_stats_monthly(db: Session = Depends(get_db)):
 
 # ---------------- 📊 PURCHASE STATS (YEARLY - LAST 7 YEARS) ----------------
 @app.get("/stats/purchases/yearly")
-def purchase_stats_yearly(db: Session = Depends(get_db)):
+def purchase_stats_yearly(
+    store_name: str | None = None,
+    db: Session = Depends(get_db)
+):
     current_year = date.today().year
     start_year = current_year - 6
 
+    query = db.query(
+        func.to_char(Purchase.date, "YYYY").label("year"),
+        func.sum(Purchase.total_price).label("total")
+    ).filter(func.extract("year", Purchase.date) >= start_year)
+
+    if store_name:
+        query = query.filter(Purchase.store_name == store_name)
+
     rows = (
-        db.query(
-            func.to_char(Purchase.date, "YYYY").label("year"),
-            func.sum(Purchase.total_price).label("total")
-        )
-        .filter(func.extract("year", Purchase.date) >= start_year)
+        query
         .group_by(func.to_char(Purchase.date, "YYYY"))
         .order_by(func.to_char(Purchase.date, "YYYY"))
         .all()
@@ -1137,13 +1203,20 @@ def purchase_stats_yearly(db: Session = Depends(get_db)):
 
 # ---------------- 🏆 TOP PRODUCT SALES ----------------
 @app.get("/stats/products/top/daily")
-def top_products_daily(db: Session = Depends(get_db)):
+def top_products_daily(
+    store_name: str | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(
+        Purchase.name.label("name"),
+        func.sum(Purchase.quantity).label("qty")
+    ).filter(cast(Purchase.date, Date) == cast(func.now(), Date))
+
+    if store_name:
+        query = query.filter(Purchase.store_name == store_name)
+
     rows = (
-        db.query(
-            Purchase.name.label("name"),
-            func.sum(Purchase.quantity).label("qty")
-        )
-        .filter(cast(Purchase.date, Date) == cast(func.now(), Date))
+        query
         .group_by(Purchase.name)
         .order_by(func.sum(Purchase.quantity).desc())
         .limit(10)
@@ -1157,15 +1230,22 @@ def top_products_daily(db: Session = Depends(get_db)):
 
 
 @app.get("/stats/products/top/monthly")
-def top_products_monthly(db: Session = Depends(get_db)):
+def top_products_monthly(
+    store_name: str | None = None,
+    db: Session = Depends(get_db)
+):
     current_month = func.to_char(func.now(), "YYYY-MM")
 
+    query = db.query(
+        Purchase.name.label("name"),
+        func.sum(Purchase.quantity).label("qty")
+    ).filter(func.to_char(Purchase.date, "YYYY-MM") == current_month)
+
+    if store_name:
+        query = query.filter(Purchase.store_name == store_name)
+
     rows = (
-        db.query(
-            Purchase.name.label("name"),
-            func.sum(Purchase.quantity).label("qty")
-        )
-        .filter(func.to_char(Purchase.date, "YYYY-MM") == current_month)
+        query
         .group_by(Purchase.name)
         .order_by(func.sum(Purchase.quantity).desc())
         .limit(10)

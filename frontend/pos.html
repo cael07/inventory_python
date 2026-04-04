@@ -277,6 +277,8 @@
 
 <script>
 const API = window.CONFIG_API || "https://inventory-python.onrender.com";
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+const storeName = user.storename || "";
 const beepSound = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
 
 Vue.createApp({
@@ -330,7 +332,7 @@ Vue.createApp({
         this.lastScan = barcode;
 
         try {
-          const res = await fetch(`${API}/product/${barcode}`);
+          const res = await fetch(`${API}/product/${barcode}?store_name=${encodeURIComponent(storeName)}`);
           if (!res.ok) throw new Error();
           const product = await res.json();
 
@@ -422,7 +424,6 @@ Vue.createApp({
 
       if (this.reader) this.reader.reset();
 
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
       const fullName = `${user.firstname || ""} ${user.middlename || ""} ${user.lastname || ""}`.trim() || user.username;
 
       await fetch(`${API}/pos/save`, {
@@ -455,7 +456,7 @@ async searchProducts() {
   if (!this.searchQuery) return;
 
   const res = await fetch(
-    `${API}/products_manual_search?search=${encodeURIComponent(this.searchQuery)}`
+    `${API}/products_manual_search?search=${encodeURIComponent(this.searchQuery)}&store_name=${encodeURIComponent(storeName)}`
   );
   const data = await res.json();
   this.searchResults = data.items || [];

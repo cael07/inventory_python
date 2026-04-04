@@ -171,6 +171,8 @@
 
 <script>
 const API = window.CONFIG_API || "https://inventory-python.onrender.com";
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+const storeName = user.storename || "";
 
 Vue.createApp({
   data() {
@@ -188,8 +190,7 @@ Vue.createApp({
   },
   computed: {
     latestProducts() {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const store = user.storename;
+      // API now returns already filtered data, but we keep the logic for robustness
       // Filter by current store, sort by ID descending (latest first), and take top 5
       return [...this.products]
         .filter(p => !store || p.store_name === store)
@@ -211,7 +212,7 @@ Vue.createApp({
           const barcode = result.text;
           this.status = "barcode detected";
 
-          fetch(`${API}/product/${barcode}`)
+          fetch(`${API}/product/${barcode}?store_name=${encodeURIComponent(storeName)}`)
             .then(r => r.json())
             .then(data => {
               if (data && data.barcode) {
@@ -327,7 +328,7 @@ Vue.createApp({
     },
 
     loadProducts() {
-      fetch(`${API}/products?page=1&limit=1000`)
+      fetch(`${API}/products?page=1&limit=1000&store_name=${encodeURIComponent(storeName)}`)
         .then(r => r.json())
         .then(data => { 
           this.products = data.items || []; 
@@ -335,7 +336,7 @@ Vue.createApp({
     },
 
     loadMonitoring() {
-      fetch(`${API}/monitoring`)
+      fetch(`${API}/monitoring?store_name=${encodeURIComponent(storeName)}`)
         .then(r => r.json())
         .then(data => { this.monitoring = data; });
     }

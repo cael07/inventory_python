@@ -101,13 +101,13 @@
 </div>
 
 <script>
-const API = window.CONFIG_API || "https://inventory-python.onrender.com";
-let purchaseChart, topChart;
-let lowStockProducts = [];
+/* ---------------- SESSION ---------------- */
+const u = JSON.parse(localStorage.getItem("user") || "{}");
+const storeName = u.storename || "";
 
 /* ---------------- LOW STOCK ---------------- */
 async function checkLowStock() {
-  const res = await fetch(`${API}/products?page=1&limit=1000`);
+  const res = await fetch(`${API}/products?page=1&limit=1000&store_name=${encodeURIComponent(storeName)}`);
   const data = await res.json();
   lowStockProducts = data.items.filter(p => p.quantity < 5);
   
@@ -145,7 +145,7 @@ document.getElementById("modalOverlay").addEventListener("click", e => {
 /* ---------------- PURCHASE CHART ---------------- */
 async function loadPurchaseChart(type="daily") {
   let endpoint = type;
-  const res = await fetch(`${API}/stats/purchases/${endpoint}`);
+  const res = await fetch(`${API}/stats/purchases/${endpoint}?store_name=${encodeURIComponent(storeName)}`);
   const data = await res.json();
 
   if (purchaseChart) purchaseChart.destroy();
@@ -168,7 +168,7 @@ async function loadPurchaseChart(type="daily") {
 
 /* ---------------- TOP PRODUCTS ---------------- */
 async function loadTopProducts(type="daily") {
-  const res = await fetch(`${API}/stats/products/top/${type}`);
+  const res = await fetch(`${API}/stats/products/top/${type}?store_name=${encodeURIComponent(storeName)}`);
   const data = await res.json();
 
   if(topChart) topChart.destroy();
@@ -225,7 +225,6 @@ document.querySelectorAll('input[name="topType"]').forEach(r=>{
 });
 
 /* ---------------- SESSION DISPLAY ---------------- */
-const u = JSON.parse(localStorage.getItem("user") || "{}");
 document.getElementById("storeName").innerText = u.storename || "No Store Set (Edit Profile)";
 document.getElementById("fullName").innerText = `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.username || "Unknown";
 

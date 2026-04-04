@@ -179,6 +179,8 @@
 
 <script>
 const API = window.CONFIG_API || "https://inventory-python.onrender.com";
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+const storeName = user.storename || "";
 
 Vue.createApp({
   data() {
@@ -213,6 +215,7 @@ Vue.createApp({
       const params = new URLSearchParams({
         page: this.page,
         limit: this.limit,
+        store_name: storeName,
         ...this.filters
       });
 
@@ -233,7 +236,10 @@ Vue.createApp({
     },
 
     exportExcel() {
-      const params = new URLSearchParams(this.filters);
+      const params = new URLSearchParams({
+        ...this.filters,
+        store_name: storeName
+      });
       window.location = `${API}/pos/report/export?${params}`;
     }
   },
