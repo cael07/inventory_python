@@ -80,6 +80,28 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // 🛡 ROLE-BASED ACCESS CONTROL (ROUTE GUARDS)
+  const userRank = user.rank || "owner";
+  const path = window.location.pathname;
+
+  if (userRank === "cashier" && (path.endsWith("product.html") || path.endsWith("products.html") || path.endsWith("monitoring.html"))) {
+    alert("Access Denied: Cashiers cannot access Inventory/Products.");
+    window.location.href = "dashboard.html";
+    return;
+  }
+
+  if (userRank === "bagger" && (path.endsWith("pos.html") || path.endsWith("report.html"))) {
+    alert("Access Denied: Baggers cannot access POS Terminal.");
+    window.location.href = "dashboard.html";
+    return;
+  }
+
+  if (userRank !== "owner" && path.endsWith("employee.html")) {
+    alert("Access Denied: Only store owners can manage employees.");
+    window.location.href = "dashboard.html";
+    return;
+  }
+
   // 🔝 CREATE TOPBAR
   if (!isLoginPage) {
     const topbarHtml = `
@@ -98,17 +120,19 @@ document.addEventListener("DOMContentLoaded", () => {
         <a href="dashboard.html">📊 Dashboard</a>
         
         <div class="dropdown-divider"></div>
-        
+
+        ${ userRank === "owner" || userRank === "cashier" ? `
         <a href="pos.html">🛒 POS Terminal</a>
         <a href="report.html">📈 POS Report</a>
-        
         <div class="dropdown-divider"></div>
+        ` : '' }
 
+        ${ userRank === "owner" || userRank === "bagger" ? `
         <a href="product.html">➕ Add Product</a>
         <a href="products.html">📦 Inventory</a>
         <a href="monitoring.html">📑 Product Report</a>
-        
         <div class="dropdown-divider"></div>
+        ` : '' }
 
         <a href="messages.html" id="nav-messages">
           💬 Messages
@@ -120,12 +144,19 @@ document.addEventListener("DOMContentLoaded", () => {
           <span id="suki-unread-badge" style="display:none; background:#f39c12; color:white; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:5px; font-weight:bold;">0</span>
         </a>
 
+        ${ userRank === "owner" ? `
+        <a href="employee.html">
+          💼 Employee Mgmt
+          <span id="emp-unread-badge" style="display:none; background:#f39c12; color:white; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:5px; font-weight:bold;">0</span>
+        </a>
+        ` : '' }
+
         <div class="dropdown-divider"></div>
         
         <div class="dropdown-user" id="user-profile-trigger" style="cursor:pointer; display:flex; align-items:center; padding:10px 0;">
            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px; opacity:0.8;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
            <div style="display:flex; flex-direction:column; align-items:flex-start;">
-              <span id="topbar-username" style="font-weight:600; color:#fff; font-size:14px;">${user.username}</span>
+              <span id="topbar-username" style="font-weight:600; color:#fff; font-size:14px;">${user.username} <span style="font-size:10px; background:#4b6584; padding:2px 4px; border-radius:4px; margin-left:4px; text-transform:uppercase;">${userRank}</span></span>
               <span style="font-size:11px; opacity:0.7; color:#fff;">${user.storename || 'No Store Set'}</span>
            </div>
         </div>
@@ -188,6 +219,17 @@ document.addEventListener("DOMContentLoaded", () => {
             sBadge.innerText = reqs.length;
             sBadge.style.display = reqs.length > 0 ? "inline-block" : "none";
           }
+        }
+        if (userRank === "owner") {
+            const empRes = await fetch(`${window.CONFIG_API}/employee/pending/${user.id}`);
+            if (empRes.ok) {
+              const reqs = await empRes.json();
+              const eBadge = document.getElementById("emp-unread-badge");
+              if (eBadge) {
+                eBadge.innerText = reqs.length;
+                eBadge.style.display = reqs.length > 0 ? "inline-block" : "none";
+              }
+            }
         }
       } catch (e) { console.error(e); }
     };

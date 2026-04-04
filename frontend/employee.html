@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Management</title>
+  <link rel="icon" href="/static/img/cael.ico" type="image/x-icon">
+  <script src="https://unpkg.com/vue@3"></script>
+  <!-- Load topbar CSS directly if topbar.js doesn't natively do head stuff fast enough to avoid jitter -->
+  <script src="/static/js/topbar.js" defer></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #fff;
+    }
+
+    .main-container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h2 { color: #00eaff; border-bottom: 2px solid #00eaff; padding-bottom: 10px; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #333;
+    }
+
+    .tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      color: #aaa;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .tab:hover { color: #fff; }
+    .tab.active {
+      color: #00eaff;
+      border-bottom: 3px solid #00eaff;
+    }
+
+    /* Cards */
+    .card {
+      background: #1e1e2f;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 15px 0;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #2a2a40;
+      color: #fff;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      background: #00eaff;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      box-shadow: 0 0 10px #00eaff;
+    }
+
+    .btn-danger { background: #ff4d4d; color: white; }
+    .btn-danger:hover { box-shadow: 0 0 10px #ff4d4d; }
+
+    .btn-small { padding: 5px 10px; font-size: 12px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #444;
+    }
+
+    th { background: #2a2a40; color: #00eaff; }
+    
+    .badge-rank {
+        background: #4b6584; 
+        padding: 4px 8px; 
+        border-radius: 4px; 
+        font-size: 11px; 
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+    
+    .search-result {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #2a2a40;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      display: flex; justify-content: center; align-items: center; z-index: 9999;
+    }
+    .modal-box {
+      background: #1e1e2f; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="main-container">
+    <h2>💼 Employee Management</h2>
+
+    <div class="tabs">
+      <div class="tab" :class="{active: activeTab === 'list'}" @click="activeTab = 'list'">Staff List</div>
+      <div class="tab" :class="{active: activeTab === 'add'}" @click="activeTab = 'add'">Hire Employee</div>
+      <div class="tab" :class="{active: activeTab === 'sent'}" @click="activeTab = 'sent'">Sent Requests</div>
+    </div>
+
+    <!-- TAB: LIST -->
+    <div v-if="activeTab === 'list'">
+      <div class="card">
+        <h3>Current Employees</h3>
+        <p v-if="employees.length === 0" style="color: #aaa;">No employees currently hired.</p>
+        
+        <table v-if="employees.length > 0">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Rank</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="emp in employees" :key="emp.id">
+              <td>{{ emp.firstname }} {{ emp.lastname }}</td>
+              <td>@{{ emp.username }}</td>
+              <td><span class="badge-rank">{{ emp.rank }}</span></td>
+              <td>
+                <button class="btn-small" style="margin-right:5px; background:#44bd32; color:white;" @click="openHistory(emp)">History Logs</button>
+                <button class="btn-small btn-danger" @click="openRemoveModal(emp)">Remove</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: ADD EMPLOYEE -->
+    <div v-if="activeTab === 'add'">
+      <div class="card">
+        <h3>Find User to Hire</h3>
+        <div style="display:flex; gap:10px;">
+            <input v-model="searchQuery" placeholder="Search un-hired users by name or username..." @keyup.enter="searchUsers">
+            <button @click="searchUsers" style="width:120px;">Search</button>
+        </div>
+
+        <div style="margin-top:20px;">
+          <div v-for="user in searchResults" :key="user.id" class="search-result">
+            <div>
+              <strong>{{ user.firstname }} {{ user.lastname }}</strong> (@{{ user.username }})
+              <div style="font-size:12px; color:#aaa; margin-top:4px;">Current Store: {{ user.storename || 'None' }}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <select v-model="user.selectedRank" style="margin:0; width:120px;">
+                    <option value="cashier">Cashier</option>
+                    <option value="bagger">Bagger</option>
+                </select>
+                <button class="btn-small" @click="sendHireRequest(user)">Send Offer</button>
+            </div>
+          </div>
+          <p v-if="searchPerformed && searchResults.length === 0" style="color:#ff6b81;">No eligible users found.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: SENT REQUESTS -->
+    <div v-if="activeTab === 'sent'">
+      <div class="card">
+        <h3>Pending Offers</h3>
+        <p v-if="sentRequests.length === 0" style="color: #aaa;">No pending employment offers.</p>
+        <table v-if="sentRequests.length > 0">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Offered Rank</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="req in sentRequests" :key="req.id">
+              <td>{{ req.firstname }} {{ req.lastname }}</td>
+              <td>@{{ req.username }}</td>
+              <td><span class="badge-rank">{{ req.suggested_rank }}</span></td>
+              <td style="color:#f39c12; font-weight:bold;">Pending...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MODAL: REMOVE EMPLOYEE -->
+    <div v-if="showRemoveModal" class="modal-overlay" @click.self="showRemoveModal = false">
+      <div class="modal-box">
+        <h3 style="color:#ff4d4d; margin-top:0;">Remove Employee</h3>
+        <p>You are about to remove <strong>{{ targetEmployee?.firstname }} {{ targetEmployee?.lastname }}</strong>.</p>
+        <label>Reason for Removal (Required):</label>
+        <input v-model="removePurpose" placeholder="e.g., Termination, Resignation, Layoff...">
+        <div style="display:flex; gap:10px;">
+          <button class="btn-danger" style="flex:1;" @click="confirmRemove">Confirm Removal</button>
+          <button style="flex:1; background:#444; color:white;" @click="showRemoveModal = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: EMPLOYEE HISTORY & LOGGING -->
+    <div v-if="showHistoryModal" class="modal-overlay" @click.self="showHistoryModal = false">
+      <div class="modal-box" style="max-width: 600px;">
+        <h3 style="margin-top:0;">Logs: {{ targetEmployee?.firstname }} {{ targetEmployee?.lastname }}</h3>
+        
+        <div style="max-height:300px; overflow-y:auto; background:#111; padding:10px; border-radius:6px; margin-bottom:15px;">
+            <p v-if="historyLogs.length === 0" style="color:#777; text-align:center;">No history recorded yet.</p>
+            <div v-for="log in historyLogs" :key="log.id" style="border-bottom:1px solid #333; padding:10px 0;">
+                <div style="font-size:11px; color:#aaa;">{{ new Date(log.date).toLocaleString() }}</div>
+                <div v-if="log.purpose"><strong style="color:#f39c12;">Action:</strong> {{ log.purpose }}</div>
+                <div v-if="log.report"><strong style="color:#ff4d4d;">Report:</strong> {{ log.report }}</div>
+                <div v-if="log.achievement"><strong style="color:#4cd137;">Achievement:</strong> {{ log.achievement }}</div>
+            </div>
+        </div>
+
+        <div style="background:#2a2a40; padding:15px; border-radius:6px;">
+            <h4 style="margin-top:0;">Add New Entry</h4>
+            <select v-model="newLogType">
+                <option value="report">Incident Report</option>
+                <option value="achievement">Achievement</option>
+            </select>
+            <textarea v-model="newLogText" rows="3" style="width:100%; border-radius:6px; background:#111; color:white; border:1px solid #444; padding:10px;" placeholder="Describe what happened..."></textarea>
+            <button style="width:100%; margin-top:10px;" @click="submitHistoryLog">Save Log</button>
+        </div>
+
+        <button style="width:100%; margin-top:15px; background:#444; color:white;" @click="showHistoryModal = false">Close</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const API = window.CONFIG_API || "https://inventory-python.onrender.com";
+
+    Vue.createApp({
+      data() {
+        return {
+          user: JSON.parse(localStorage.getItem('user') || '{}'),
+          activeTab: 'list',
+          employees: [],
+          sentRequests: [],
+          
+          searchQuery: "",
+          searchResults: [],
+          searchPerformed: false,
+
+          showRemoveModal: false,
+          targetEmployee: null,
+          removePurpose: "",
+
+          showHistoryModal: false,
+          historyLogs: [],
+          newLogType: 'report',
+          newLogText: ''
+        }
+      },
+      mounted() {
+        this.fetchEmployees();
+        this.fetchSentRequests();
+        setInterval(this.fetchSentRequests, 30000);
+      },
+      methods: {
+        async fetchEmployees() {
+          try {
+            const r = await fetch(`${API}/employee/${this.user.id}`);
+            if(r.ok) this.employees = await r.json();
+          } catch(e) { console.error(e); }
+        },
+        async fetchSentRequests() {
+          try {
+            const r = await fetch(`${API}/employee/sent/${this.user.id}`);
+            if(r.ok) this.sentRequests = await r.json();
+          } catch(e) { console.error(e); }
+        },
+        async searchUsers() {
+          if (!this.searchQuery.trim()) return;
+          try {
+            const r = await fetch(`${API}/suki/search/${this.user.id}?q=${encodeURIComponent(this.searchQuery)}`);
+            this.searchPerformed = true;
+            if (r.ok) {
+                let data = await r.json();
+                // We're adapting the Suki search endpoint which is global, but filtering out ourselves
+                // Wait! Suki endpoint returns all matching users. We just format.
+                this.searchResults = data.map(u => ({...u, selectedRank: 'cashier'}));
+            }
+          } catch(e) { console.error(e); }
+        },
+        async sendHireRequest(targetUser) {
+           try {
+             const payload = {
+                 employee_id: targetUser.id,
+                 rank: targetUser.selectedRank
+             };
+             const r = await fetch(`${API}/employee?owner_id=${this.user.id}`, {
+                 method: 'POST',
+                 headers: {'Content-Type': 'application/json'},
+                 body: JSON.stringify(payload)
+             });
+             const d = await r.json();
+             alert(d.message || d.detail);
+             this.fetchSentRequests();
+             // Remove from search results
+             this.searchResults = this.searchResults.filter(u => u.id !== targetUser.id);
+           } catch(e) { console.error(e); }
+        },
+        openRemoveModal(emp) {
+            this.targetEmployee = emp;
+            this.removePurpose = "";
+            this.showRemoveModal = true;
+        },
+        async confirmRemove() {
+            if(!this.removePurpose.trim()) { alert("Please provide a reason."); return; }
+            try {
+                const payload = { purpose: this.removePurpose };
+                const r = await fetch(`${API}/employee/${this.user.id}/${this.targetEmployee.id}`, {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if(r.ok) {
+                    alert("Employee removed successfully");
+                    this.showRemoveModal = false;
+                    this.fetchEmployees();
+                } else {
+                    const d = await r.json();
+                    alert(d.detail);
+                }
+            } catch(e) { console.error(e); }
+        },
+        async openHistory(emp) {
+            this.targetEmployee = emp;
+            this.newLogText = '';
+            this.showHistoryModal = true;
+            await this.fetchHistory();
+        },
+        async fetchHistory() {
+             try {
+                const r = await fetch(`${API}/employee/history/${this.user.id}/${this.targetEmployee.id}`);
+                if(r.ok) this.historyLogs = await r.json();
+             } catch(e) { console.error(e); }
+        },
+        async submitHistoryLog() {
+            if(!this.newLogText.trim()) return;
+            try {
+                const payload = {
+                    employee_id: this.targetEmployee.id,
+                    report: this.newLogType === 'report' ? this.newLogText : null,
+                    achievement: this.newLogType === 'achievement' ? this.newLogText : null
+                };
+                const r = await fetch(`${API}/employee/history/${this.user.id}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if(r.ok) {
+                    this.newLogText = '';
+                    await this.fetchHistory();
+                }
+            } catch(e) { console.error(e); }
+        }
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>

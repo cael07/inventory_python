@@ -57,3 +57,15 @@ class MessageCreate(BaseModel):
 
 class SukiCreate(BaseModel):
     suki_id: int
+
+class EmployeeCreate(BaseModel):
+    employee_id: int
+    rank: str
+
+class EmployeeRemove(BaseModel):
+    purpose: str
+
+class EmployeeHistoryCreate(BaseModel):
+    employee_id: int
+    report: Optional[str] = None
+    achievement: Optional[str] = None

@@ -428,7 +428,8 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
             "storename": user.storename,
             "firstname": user.firstname,
             "middlename": user.middlename,
-            "lastname": user.lastname
+            "lastname": user.lastname,
+            "rank": user.rank
         }
     }
 
@@ -1409,6 +1410,152 @@ def remove_suki(owner_id: int, suki_id: int, db: Session = Depends(get_db)):
     
     db.commit()
     return {"message": "Suki removed successfully"}
+
+# -------------------------------------------------
+# EMPLOYEE MANAGEMENT
+# -------------------------------------------------
+
+@app.post("/employee")
+def request_employee(owner_id: int, request: EmployeeCreate, db: Session = Depends(get_db)):
+    if owner_id == request.employee_id:
+        raise HTTPException(status_code=400, detail="Cannot hire yourself")
+    
+    # Check if already requested or accepted
+    existing = db.query(Employee).filter(Employee.owner_id == owner_id, Employee.employee_id == request.employee_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Employee relationship exists")
+        
+    emp = Employee(owner_id=owner_id, employee_id=request.employee_id, rank=request.rank, status="pending")
+    db.add(emp)
+    db.commit()
+    return {"message": "Employment request sent"}
+
+@app.get("/employee/pending/{user_id}")
+def get_pending_employees(user_id: int, db: Session = Depends(get_db)):
+    requests = db.query(Employee).filter(Employee.employee_id == user_id, Employee.status == "pending").all()
+    results = []
+    for r in requests:
+        u = db.query(User).filter(User.id == r.owner_id).first()
+        if u:
+            results.append({
+                "id": u.id,
+                "username": u.username,
+                "firstname": u.firstname,
+                "lastname": u.lastname,
+                "storename": u.storename,
+                "suggested_rank": r.rank
+            })
+    return results
+
+@app.get("/employee/sent/{user_id}")
+def get_sent_employees(user_id: int, db: Session = Depends(get_db)):
+    reqs = db.query(Employee).filter(Employee.owner_id == user_id, Employee.status == "pending").all()
+    results = []
+    for r in reqs:
+        u = db.query(User).filter(User.id == r.employee_id).first()
+        if u:
+            results.append({"id": u.id, "username": u.username, "firstname": u.firstname, "lastname": u.lastname, "storename": u.storename, "suggested_rank": r.rank})
+    return results
+
+@app.put("/employee/accept/{owner_id}/{employee_id}")
+def accept_employee(owner_id: int, employee_id: int, db: Session = Depends(get_db)):
+    emp = db.query(Employee).filter(Employee.owner_id == owner_id, Employee.employee_id == employee_id).first()
+    if not emp:
+        raise HTTPException(404, "Request not found")
+        
+    owner = db.query(User).filter(User.id == owner_id).first()
+    employee_user = db.query(User).filter(User.id == employee_id).first()
+    
+    if not owner or not employee_user:
+        raise HTTPException(404, "User not found")
+        
+    emp.status = "accepted"
+    employee_user.storename = owner.storename
+    employee_user.rank = emp.rank
+    
+    # Log to history
+    hist = EmployeeHistory(
+        owner_id=owner_id,
+        employee_id=employee_id,
+        employee_name=f"{employee_user.firstname} {employee_user.lastname}",
+        employee_store=owner.storename,
+        rank=emp.rank,
+        purpose="Hired / Accepted employment"
+    )
+    db.add(hist)
+    db.commit()
+    return {"message": "Accepted successfully"}
+
+@app.get("/employee/{owner_id}")
+def get_employees(owner_id: int, db: Session = Depends(get_db)):
+    emps = db.query(Employee).filter(Employee.owner_id == owner_id, Employee.status == "accepted").all()
+    results = []
+    for s in emps:
+        user = db.query(User).filter(User.id == s.employee_id).first()
+        if user:
+            results.append({
+                "id": user.id,
+                "username": user.username,
+                "firstname": user.firstname,
+                "lastname": user.lastname,
+                "storename": user.storename,
+                "rank": user.rank
+            })
+    return results
+
+@app.delete("/employee/{owner_id}/{employee_id}")
+def remove_employee(owner_id: int, employee_id: int, payload: dict, db: Session = Depends(get_db)):
+    purpose = payload.get("purpose", "")
+    if not purpose:
+        raise HTTPException(400, "Removal purpose is required")
+        
+    emp = db.query(Employee).filter(Employee.owner_id == owner_id, Employee.employee_id == employee_id).first()
+    if not emp:
+        raise HTTPException(404, "Employee not found")
+        
+    employee_user = db.query(User).filter(User.id == employee_id).first()
+    owner = db.query(User).filter(User.id == owner_id).first()
+    
+    if employee_user:
+        employee_user.storename = ""
+        employee_user.rank = "owner" # reset to default
+        
+        hist = EmployeeHistory(
+            owner_id=owner_id,
+            employee_id=employee_id,
+            employee_name=f"{employee_user.firstname} {employee_user.lastname}",
+            employee_store=owner.storename if owner else "",
+            rank=emp.rank,
+            purpose=f"Removed: {purpose}"
+        )
+        db.add(hist)
+        
+    db.delete(emp)
+    db.commit()
+    return {"message": "Employee removed"}
+
+@app.post("/employee/history/{owner_id}")
+def add_employee_history(owner_id: int, payload: EmployeeHistoryCreate, db: Session = Depends(get_db)):
+    employee_user = db.query(User).filter(User.id == payload.employee_id).first()
+    owner = db.query(User).filter(User.id == owner_id).first()
+    
+    hist = EmployeeHistory(
+        owner_id=owner_id,
+        employee_id=payload.employee_id,
+        employee_name=f"{employee_user.firstname} {employee_user.lastname}" if employee_user else "Unknown",
+        employee_store=owner.storename if owner else "",
+        report=payload.report,
+        achievement=payload.achievement,
+        rank=employee_user.rank if employee_user else "Unknown"
+    )
+    db.add(hist)
+    db.commit()
+    return {"message": "History added"}
+
+@app.get("/employee/history/{owner_id}/{employee_id}")
+def get_employee_history(owner_id: int, employee_id: int, db: Session = Depends(get_db)):
+    history = db.query(EmployeeHistory).filter(EmployeeHistory.owner_id == owner_id, EmployeeHistory.employee_id == employee_id).order_by(EmployeeHistory.date.desc()).all()
+    return [{"id": h.id, "report": h.report, "achievement": h.achievement, "rank": h.rank, "purpose": h.purpose, "date": h.date} for h in history]
 
 
 # -------------------------------------------------

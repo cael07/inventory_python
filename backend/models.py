@@ -20,6 +20,7 @@ class User(Base):
 
     verified = Column(Boolean, default=False)
     verification_code = Column(String, nullable=True)
+    rank = Column(String, default="owner") # owner, cashier, bagger
 
     created_at = Column(DateTime, server_default=func.now())
     last_activity = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -79,3 +80,25 @@ class Suki(Base):
     suki_id = Column(Integer, index=True)
     status = Column(String, default="pending") # pending, accepted
     created_at = Column(DateTime, server_default=func.now())
+
+class Employee(Base):
+    __tablename__ = "employees"
+    id = Column(Integer, primary_key=True)
+    owner_id = Column(Integer, index=True)
+    employee_id = Column(Integer, index=True)
+    rank = Column(String) # cashier, bagger
+    status = Column(String, default="pending") # pending, accepted
+    created_at = Column(DateTime, server_default=func.now())
+
+class EmployeeHistory(Base):
+    __tablename__ = "employee_history"
+    id = Column(Integer, primary_key=True)
+    owner_id = Column(Integer, index=True)
+    employee_id = Column(Integer, index=True)
+    employee_name = Column(String)
+    employee_store = Column(String)
+    report = Column(String, nullable=True)
+    achievement = Column(String, nullable=True)
+    rank = Column(String)
+    purpose = Column(String, nullable=True) # for removal reason etc
+    date = Column(DateTime(timezone=True), server_default=func.now())

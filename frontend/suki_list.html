@@ -41,6 +41,16 @@
     .loading { text-align:center; color:#aaa; padding:24px; }
 
     .section-title { font-size:13px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px; margin:16px 0 8px; }
+
+    .badge-rank {
+        background: #4b6584; 
+        padding: 2px 6px; 
+        border-radius: 4px; 
+        font-size: 10px; 
+        color: white;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -105,7 +115,17 @@
     <!-- PENDING REQUESTS TAB -->
     <div v-if="tab==='pending'">
       <div v-if="loadingPending" class="loading">Loading...</div>
-      <div v-else-if="pending.length === 0" class="empty">No pending requests</div>
+      <div v-else-if="pending.length === 0 && empPending.length === 0" class="empty">No pending requests</div>
+
+      <div v-if="empPending.length > 0" class="section-title" style="color:#f39c12;">💼 Employment Offers</div>
+      <div v-for="r in empPending" :key="'emp-'+r.id" class="card">
+        <div class="avatar" :style="{background:color(r.id)}">{{ r.firstname.charAt(0) }}</div>
+        <div class="info">
+          <div class="name">{{ r.firstname }} {{ r.lastname }}</div>
+          <div class="sub">{{ r.storename }} <br/> Offered Rank: <span class="badge-rank">{{ r.suggested_rank }}</span></div>
+        </div>
+        <button class="btn btn-accept" @click="acceptEmpRequest(r)">Accept Job</button>
+      </div>
 
       <div v-if="sent.length" class="section-title">Requests You Sent</div>
       <div v-for="u in sent" :key="'sent-'+u.id" class="card">
@@ -144,7 +164,7 @@ Vue.createApp({
       // Search
       searchQ: "", searchResults: [], searching: false,
       // Pending
-      pending: [], sent: [], loadingPending: true,
+      pending: [], sent: [], empPending: [], loadingPending: true,
     };
   },
   computed: {
@@ -178,6 +198,9 @@ Vue.createApp({
         // Requests I sent (outgoing) — search for users with pending status
         const r2 = await fetch(`${API}/suki/sent/${this.myUserId}`);
         if (r2.ok) this.sent = await r2.json();
+
+        const r3 = await fetch(`${API}/employee/pending/${this.myUserId}`);
+        if (r3.ok) this.empPending = await r3.json();
       } catch(e) {}
       this.loadingPending = false;
     },
@@ -212,6 +235,16 @@ Vue.createApp({
         await this.loadSukis();
         alert(`You are now Suki with ${r.firstname}!`);
       } catch(e) { alert("Error accepting"); }
+    },
+    async acceptEmpRequest(r) {
+      try {
+        await fetch(`${API}/employee/accept/${r.id}/${this.myUserId}`, { method: "PUT" });
+        this.empPending = this.empPending.filter(p => p.id !== r.id);
+        alert(`You are now hired as a ${r.suggested_rank} at ${r.storename}!\nPlease re-login to synchronize your store permissions.`);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      } catch(e) { alert("Error accepting employment"); }
     },
     async removeSuki(u) {
       if (!confirm(`Remove ${u.firstname} from your Sukis?`)) return;
