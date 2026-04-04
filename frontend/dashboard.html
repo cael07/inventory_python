@@ -101,6 +101,10 @@
 </div>
 
 <script>
+const API = window.CONFIG_API || "https://inventory-python.onrender.com";
+let purchaseChart, topChart;
+let lowStockProducts = [];
+
 /* ---------------- SESSION ---------------- */
 const u = JSON.parse(localStorage.getItem("user") || "{}");
 const storeName = u.storename || "";

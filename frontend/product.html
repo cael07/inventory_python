@@ -190,10 +190,8 @@ Vue.createApp({
   },
   computed: {
     latestProducts() {
-      // API now returns already filtered data, but we keep the logic for robustness
-      // Filter by current store, sort by ID descending (latest first), and take top 5
+      // API already returns store-filtered data; just sort by newest and take top 5
       return [...this.products]
-        .filter(p => !store || p.store_name === store)
         .sort((a, b) => b.id - a.id)
         .slice(0, 5);
     }
