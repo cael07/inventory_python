@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <span id="global-unread-badge" style="display:none; background:#fa3e3e; color:white; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:5px; font-weight:bold;">0</span>
         </a>
 
-        <a href="#" id="nav-suki">
+        <a href="suki_list.html" id="nav-suki">
           🤝 Suki List
           <span id="suki-unread-badge" style="display:none; background:#f39c12; color:white; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:5px; font-weight:bold;">0</span>
         </a>
@@ -265,31 +265,6 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.innerText = "Save";
     });
 
-    // --- SUKI MODAL ---
-    const sukiModalHtml = `
-      <div class="profile-modal" id="suki-modal">
-        <div class="profile-modal-box" style="width: 400px; max-height: 85vh; overflow-y: auto;">
-          <h3 style="display:flex; justify-content:space-between; align-items:center;">
-             Suki List
-             <span id="suki-modal-close" style="cursor:pointer; font-size:24px;">&times;</span>
-          </h3>
-          <input type="text" id="suki-search" placeholder="Search users to add..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;" />
-          <div id="suki-search-results" style="max-height:150px; overflow-y:auto; border:1px solid #eee; display:none; margin-bottom:10px;"></div>
-          <div id="suki-list" style="min-height:100px;">Loading...</div>
-        </div>
-      </div>
-    `;
-    document.body.insertAdjacentHTML("beforeend", sukiModalHtml);
-
-    document.getElementById("nav-suki").addEventListener("click", (e) => {
-      e.preventDefault();
-      document.getElementById("suki-modal").classList.add("show");
-      dropdown.classList.remove("show");
     });
-
-    document.getElementById("suki-modal-close").addEventListener("click", () => {
-      document.getElementById("suki-modal").classList.remove("show");
-    });
-
   }
 });
