@@ -1386,3 +1386,150 @@ def remove_suki(owner_id: int, suki_id: int, db: Session = Depends(get_db)):
     
     db.commit()
     return {"message": "Suki removed successfully"}
+
+
+# -------------------------------------------------
+# MESSAGING ENDPOINTS
+# -------------------------------------------------
+
+@app.get("/messages/contacts/{user_id}")
+def get_contacts(user_id: int, db: Session = Depends(get_db)):
+    """Return accepted sukis enriched with last message + unread count."""
+    sukis = db.query(Suki).filter(
+        Suki.owner_id == user_id, Suki.status == "accepted"
+    ).all()
+
+    results = []
+    for s in sukis:
+        u = db.query(User).filter(User.id == s.suki_id).first()
+        if not u:
+            continue
+
+        # Last message between the two users
+        last_msg = (
+            db.query(Message)
+            .filter(
+                or_(
+                    and_(Message.sender_id == user_id, Message.receiver_id == s.suki_id),
+                    and_(Message.sender_id == s.suki_id, Message.receiver_id == user_id),
+                )
+            )
+            .order_by(Message.timestamp.desc())
+            .first()
+        )
+
+        # Unread count
+        unread = db.query(Message).filter(
+            Message.sender_id == s.suki_id,
+            Message.receiver_id == user_id,
+            Message.is_read == False,
+        ).count()
+
+        results.append({
+            "user_id": u.id,
+            "username": u.username,
+            "firstname": u.firstname,
+            "lastname": u.lastname,
+            "storename": u.storename,
+            "is_online": False,
+            "last_message": last_msg.content if last_msg else None,
+            "last_message_time": last_msg.timestamp.isoformat() if last_msg else None,
+            "unread_count": unread,
+        })
+
+    results.sort(key=lambda x: x["last_message_time"] or "", reverse=True)
+    return results
+
+
+@app.get("/messages/{sender_id}/{receiver_id}")
+def get_messages(sender_id: int, receiver_id: int, db: Session = Depends(get_db)):
+    msgs = (
+        db.query(Message)
+        .filter(
+            or_(
+                and_(Message.sender_id == sender_id, Message.receiver_id == receiver_id),
+                and_(Message.sender_id == receiver_id, Message.receiver_id == sender_id),
+            )
+        )
+        .order_by(Message.timestamp.asc())
+        .limit(100)
+        .all()
+    )
+    return [
+        {
+            "id": m.id,
+            "sender_id": m.sender_id,
+            "receiver_id": m.receiver_id,
+            "content": m.content,
+            "is_read": m.is_read,
+            "timestamp": m.timestamp.isoformat(),
+        }
+        for m in msgs
+    ]
+
+
+@app.post("/messages/{sender_id}")
+def send_message(sender_id: int, data: MessageCreate, db: Session = Depends(get_db)):
+    msg = Message(
+        sender_id=sender_id,
+        receiver_id=data.receiver_id,
+        content=data.content,
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return {"id": msg.id, "sender_id": msg.sender_id, "content": msg.content}
+
+
+@app.post("/messages/{user_id}/read/{other_id}")
+def mark_read(user_id: int, other_id: int, db: Session = Depends(get_db)):
+    db.query(Message).filter(
+        Message.sender_id == other_id,
+        Message.receiver_id == user_id,
+        Message.is_read == False,
+    ).update({"is_read": True})
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.post("/user/{user_id}/ping")
+def ping_user(user_id: int, db: Session = Depends(get_db)):
+    """Keep-alive ping — no-op for now, returns ok."""
+    return {"status": "ok"}
+
+
+@app.get("/users/search")
+def search_users(q: str, user_id: int, db: Session = Depends(get_db)):
+    """Search registered users by name/username/store, excluding self."""
+    users = (
+        db.query(User)
+        .filter(
+            User.id != user_id,
+            or_(
+                User.username.ilike(f"%{q}%"),
+                User.firstname.ilike(f"%{q}%"),
+                User.lastname.ilike(f"%{q}%"),
+                User.storename.ilike(f"%{q}%"),
+            ),
+        )
+        .limit(20)
+        .all()
+    )
+
+    # For each result check suki status
+    results = []
+    for u in users:
+        rel = db.query(Suki).filter(
+            Suki.owner_id == user_id, Suki.suki_id == u.id
+        ).first()
+        results.append({
+            "id": u.id,
+            "username": u.username,
+            "firstname": u.firstname,
+            "lastname": u.lastname,
+            "storename": u.storename,
+            "storelocation": u.storelocation,
+            "suki_status": rel.status if rel else None,  # None / "pending" / "accepted"
+        })
+    return results
+
