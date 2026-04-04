@@ -739,7 +739,7 @@ def update_product_item(
             c_by = c_by or user.username
 
     # Fetch product
-    product = db.query(Product).filter_by(barcode=barcode).first()
+    product = db.query(Product).filter_by(barcode=barcode, store_name=s_name).first()
 
     if not product:
         # Create new product
@@ -898,9 +898,10 @@ def start_pos():
 def pos_scan(
     purchase_number: str,
     barcode: str,
+    store_name: str | None = None,
     db: Session = Depends(get_db)
 ):
-    product = db.query(Product).filter_by(barcode=barcode).first()
+    product = db.query(Product).filter_by(barcode=barcode, store_name=store_name).first()
     if not product:
         raise HTTPException(404, "Product not found")
 
@@ -1038,7 +1039,7 @@ def save_purchase(data: dict, db: Session = Depends(get_db)):
         db.add(p)
         
         # Deduct from inventory
-        product = db.query(Product).filter_by(barcode=item["barcode"]).first()
+        product = db.query(Product).filter_by(barcode=item["barcode"], store_name=store_name).first()
         if product:
             product.quantity -= item["quantity"]
             

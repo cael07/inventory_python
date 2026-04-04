@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, func, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, func, Boolean, UniqueConstraint
 from backend.database import Base
 
 class User(Base):
@@ -27,12 +27,14 @@ class User(Base):
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True, index=True)
-    barcode = Column(String, unique=True, index=True)
+    barcode = Column(String, index=True)
     name = Column(String)
     price = Column(Float)
     quantity = Column(Integer)
     store_name = Column(String, nullable=True)
     created_by = Column(String, nullable=True)
+
+    __table_args__ = (UniqueConstraint('barcode', 'store_name', name='uix_barcode_store'), )
 
 class ProductMonitoring(Base):
     __tablename__ = "product_monitoring"
