@@ -1568,6 +1568,11 @@ def add_employee_history(owner_id: int, payload: EmployeeHistoryCreate, db: Sess
     db.commit()
     return {"message": "History added"}
 
+@app.get("/employee/history/global/{employee_id}")
+def get_global_employee_history(employee_id: int, db: Session = Depends(get_db)):
+    history = db.query(EmployeeHistory).filter(EmployeeHistory.employee_id == employee_id).order_by(EmployeeHistory.date.desc()).all()
+    return [{"id": h.id, "report": h.report, "achievement": h.achievement, "rank": h.rank, "purpose": h.purpose, "date": h.date, "store": h.employee_store} for h in history]
+
 @app.get("/employee/history/{owner_id}/{employee_id}")
 def get_employee_history(owner_id: int, employee_id: int, db: Session = Depends(get_db)):
     history = db.query(EmployeeHistory).filter(EmployeeHistory.owner_id == owner_id, EmployeeHistory.employee_id == employee_id).order_by(EmployeeHistory.date.desc()).all()
