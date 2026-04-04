@@ -79,7 +79,10 @@
 </a>
 
 <div id="app">
-  <button @click="startScan">📷 Scan Barcode</button>
+  <div style="display:flex; gap:10px; margin-bottom: 10px;">
+    <button @click="startScan" style="background: #1f3a5f; color: white;">📷 Scan Barcode</button>
+    <button @click="manualAdd" style="background: #27ae60; color: white;">➕ Manual Add</button>
+  </div>
   <p>Status: {{ status }}</p>
 
   <video id="video"></video>
@@ -118,7 +121,11 @@
     <h3>Product {{ existing ? 'Found (Editable)' : 'New' }}</h3>
 
     <label>Barcode</label>
-    <input v-model="form.barcode" readonly />
+    <div v-if="isManualAdd" style="display:flex; gap:5px; margin-bottom:10px;">
+      <input v-model="form.barcode" placeholder="Enter barcode" style="margin-bottom:0;" />
+      <button @click="generateBarcode" style="padding: 6px 12px; font-size: 14px; margin: 0; background: #e67e22; border: none; color: white; border-radius: 4px; cursor: pointer;">Auto</button>
+    </div>
+    <input v-else v-model="form.barcode" readonly />
 
     <label>Product Name</label>
     <input v-model="form.name" placeholder="Product name" />
@@ -180,6 +187,7 @@ Vue.createApp({
       status: "idle",
       showModal: false,
       showUpdateModal: false,
+      isManualAdd: false,
       existing: false,
       reader: null,
       form: { barcode: "", name: "", price: "", quantity: 0 },
@@ -229,6 +237,7 @@ Vue.createApp({
                 this.form.price = 0;
                 this.form.quantity = 0;
                 this.existing = false;
+                this.isManualAdd = false;
                 this.showModal = true;
               }
             })
@@ -239,10 +248,26 @@ Vue.createApp({
               this.form.price = 0;
               this.form.quantity = 0;
               this.existing = false;
+              this.isManualAdd = false;
               this.showModal = true;
             });
         }
       });
+    },
+
+    manualAdd() {
+      this.status = "manual add mode";
+      if (this.reader) { 
+        this.reader.reset(); // stop camera if running
+      }
+      this.form = { barcode: "", name: "", price: "", quantity: 0 };
+      this.existing = false;
+      this.isManualAdd = true;
+      this.showModal = true;
+    },
+
+    generateBarcode() {
+      this.form.barcode = "MNL" + Math.floor(10000000 + Math.random() * 90000000);
     },
 
     async save() {
