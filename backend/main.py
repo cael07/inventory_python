@@ -137,6 +137,20 @@ def sync_db():
             except Exception as e2:
                 GLOBAL_ERRORS.append(f"Migration failed ({table_name} tracking): {str(e2)}")
 
+    # NEW MIGRATION: user rank
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT rank FROM users LIMIT 1"))
+    except Exception as e:
+        GLOBAL_ERRORS.append(f"Initial user rank check failed: {str(e)}")
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN rank VARCHAR DEFAULT 'owner'"))
+                conn.commit()
+                GLOBAL_ERRORS.append("✅ Successfully added user rank column")
+        except Exception as e2:
+            GLOBAL_ERRORS.append(f"Migration failed (user rank): {str(e2)}")
+
 # Run sync after app definition
 @app.on_event("startup")
 def on_startup():
