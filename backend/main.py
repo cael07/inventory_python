@@ -1185,14 +1185,12 @@ def purchase_stats_daily(
     db: Session = Depends(get_db)
 ):
     today = date.today()
-    first_day = today.replace(day=1)
-    last_day_num = calendar.monthrange(today.year, today.month)[1]
-    last_day = today.replace(day=last_day_num)
+    start_date = today - timedelta(days=6)
 
-    # Generate all dates in current month
+    # Generate all dates for last 7 days
     all_dates = []
-    curr = first_day
-    while curr <= last_day:
+    curr = start_date
+    while curr <= today:
         all_dates.append(curr.strftime("%Y-%m-%d"))
         curr += timedelta(days=1)
 
@@ -1200,8 +1198,8 @@ def purchase_stats_daily(
         cast(Purchase.date, Date).label("date"),
         func.sum(Purchase.total_price).label("total")
     ).filter(
-        cast(Purchase.date, Date) >= first_day,
-        cast(Purchase.date, Date) <= last_day
+        cast(Purchase.date, Date) >= start_date,
+        cast(Purchase.date, Date) <= today
     )
 
     if store_name:
