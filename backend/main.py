@@ -18,6 +18,7 @@ import secrets
 import smtplib
 import os
 import traceback
+import calendar
 import requests
 # -------------------------------------------------
 # CREATE TABLES
@@ -1184,12 +1185,24 @@ def purchase_stats_daily(
     db: Session = Depends(get_db)
 ):
     today = date.today()
-    start_date = today - timedelta(days=6)
+    first_day = today.replace(day=1)
+    last_day_num = calendar.monthrange(today.year, today.month)[1]
+    last_day = today.replace(day=last_day_num)
+
+    # Generate all dates in current month
+    all_dates = []
+    curr = first_day
+    while curr <= last_day:
+        all_dates.append(curr.strftime("%Y-%m-%d"))
+        curr += timedelta(days=1)
 
     query = db.query(
         cast(Purchase.date, Date).label("date"),
         func.sum(Purchase.total_price).label("total")
-    ).filter(cast(Purchase.date, Date) >= start_date)
+    ).filter(
+        cast(Purchase.date, Date) >= first_day,
+        cast(Purchase.date, Date) <= last_day
+    )
 
     if store_name:
         query = query.filter(Purchase.store_name == store_name)
@@ -1197,13 +1210,14 @@ def purchase_stats_daily(
     rows = (
         query
         .group_by(cast(Purchase.date, Date))
-        .order_by(cast(Purchase.date, Date))
         .all()
     )
 
+    data_map = {r.date.strftime("%Y-%m-%d"): float(r.total or 0) for r in rows}
+    
     return [
-        {"date": r.date.strftime("%Y-%m-%d"), "total": float(r.total or 0)}
-        for r in rows
+        {"date": d, "total": data_map.get(d, 0.0)}
+        for d in all_dates
     ]
 
 # ---------------- 📊 PURCHASE STATS (MONTHLY - CURRENT YEAR) ----------------
@@ -1213,6 +1227,7 @@ def purchase_stats_monthly(
     db: Session = Depends(get_db)
 ):
     current_year = date.today().year
+    all_months = [f"{current_year}-{m:02d}" for m in range(1, 13)]
 
     query = db.query(
         func.to_char(Purchase.date, "YYYY-MM").label("month"),
@@ -1225,13 +1240,14 @@ def purchase_stats_monthly(
     rows = (
         query
         .group_by(func.to_char(Purchase.date, "YYYY-MM"))
-        .order_by(func.to_char(Purchase.date, "YYYY-MM"))
         .all()
     )
 
+    data_map = {r.month: float(r.total or 0) for r in rows}
+
     return [
-        {"month": r.month, "total": float(r.total or 0)}
-        for r in rows
+        {"month": m, "total": data_map.get(m, 0.0)}
+        for m in all_months
     ]
 
 # ---------------- 📊 PURCHASE STATS (YEARLY - LAST 7 YEARS) ----------------
@@ -1241,12 +1257,12 @@ def purchase_stats_yearly(
     db: Session = Depends(get_db)
 ):
     current_year = date.today().year
-    start_year = current_year - 6
+    all_years = [str(y) for y in range(current_year - 5, current_year + 1)]
 
     query = db.query(
         func.to_char(Purchase.date, "YYYY").label("year"),
         func.sum(Purchase.total_price).label("total")
-    ).filter(func.extract("year", Purchase.date) >= start_year)
+    ).filter(func.extract("year", Purchase.date) >= (current_year - 5))
 
     if store_name:
         query = query.filter(Purchase.store_name == store_name)
@@ -1254,13 +1270,14 @@ def purchase_stats_yearly(
     rows = (
         query
         .group_by(func.to_char(Purchase.date, "YYYY"))
-        .order_by(func.to_char(Purchase.date, "YYYY"))
         .all()
     )
 
+    data_map = {r.year: float(r.total or 0) for r in rows}
+
     return [
-        {"year": r.year, "total": float(r.total or 0)}
-        for r in rows
+        {"year": y, "total": data_map.get(y, 0.0)}
+        for y in all_years
     ]
 
 
